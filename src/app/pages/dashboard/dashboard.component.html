@@ -12,10 +12,26 @@
       {{ empresaNombre }}
     </div>
 
+    <div
+      class="plan-actual"
+      *ngIf="planActual">
+      Plan: {{ planActual }}
+      <span class="estado-plan" [class.prueba]="planEstado === 'PRUEBA'"
+        [class.activa]="planEstado === 'ACTIVA'"
+        [class.vencida]="planEstado === 'VENCIDA'"
+        [class.suspendida]="planEstado === 'SUSPENDIDA' || planEstado === 'CANCELADA'">
+        {{ planEstado }}
+      </span>
+    </div>
+
     <nav>
 
       <a routerLink="/dashboard">
         🏠 Inicio
+      </a>
+
+      <a routerLink="/dashboard/mi-plan">
+        📋 Mi Plan
       </a>
 
       <a

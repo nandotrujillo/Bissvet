@@ -1,0 +1,133 @@
+<div class="miplan-container">
+
+  <div class="cabecera">
+    <div>
+      <h2>Mi Plan</h2>
+      <p>Plan contratado, consumo y módulos disponibles de su empresa</p>
+    </div>
+  </div>
+
+  <div class="mensaje exito" *ngIf="mensaje">{{ mensaje }}</div>
+  <div class="mensaje error" *ngIf="error">{{ error }}</div>
+
+  <div *ngIf="cargando" class="cargando">Cargando información del plan...</div>
+
+  <div *ngIf="!cargando && !existe" class="sin-plan">
+    <h3>Su empresa no tiene un plan activo</h3>
+    <p>Contacte al administrador de BissVet para asignar o activar una suscripción.</p>
+  </div>
+
+  <div *ngIf="!cargando && existe">
+
+    <div class="tarjeta-plan">
+      <div class="plan-info">
+        <div class="plan-nombre">
+          {{ suscripcion?.NombrePlan }}
+          <span class="estado-chip" [class.prueba]="suscripcion?.Estado === 'PRUEBA'"
+            [class.activa]="suscripcion?.Estado === 'ACTIVA'"
+            [class.vencida]="suscripcion?.Estado === 'VENCIDA'"
+            [class.suspendida]="suscripcion?.Estado === 'SUSPENDIDA' ||
+              suscripcion?.Estado === 'CANCELADA'">
+            {{ estadoLabel() }}
+          </span>
+        </div>
+        <div class="plan-codigo">{{ suscripcion?.CodigoPlan }}</div>
+        <div class="plan-descripcion">{{ suscripcion?.Descripcion }}</div>
+
+        <div class="plan-detalles">
+          <div class="detalle">
+            <span class="detalle-etiqueta">Vencimiento</span>
+            <span class="detalle-valor">{{ formatoFecha(suscripcion?.FechaFin) }}</span>
+          </div>
+          <div class="detalle">
+            <span class="detalle-etiqueta">Periodicidad</span>
+            <span class="detalle-valor">{{ suscripcion?.Periodicidad }}</span>
+          </div>
+          <div class="detalle">
+            <span class="detalle-etiqueta">Precio mensual</span>
+            <span class="detalle-valor">
+              {{ formatoMoneda(suscripcion?.PrecioMensual, suscripcion?.Moneda) }}
+            </span>
+          </div>
+          <div class="detalle">
+            <span class="detalle-etiqueta">Renovación automática</span>
+            <span class="detalle-valor">{{ suscripcion?.AutoRenovacion ? 'Sí' : 'No' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="plan-acciones">
+        <button class="btn-primary" (click)="abrirCambioPlan()">Actualizar plan</button>
+      </div>
+    </div>
+
+    <div class="seccion">
+      <h3>Consumo de su plan</h3>
+      <p class="nota">Utilización actual de los límites contratados.</p>
+
+      <div class="grid-consumo">
+        <div class="consumo-item" *ngFor="let limite of consumo?.consumos">
+          <div class="consumo-info">
+            <span class="consumo-nombre">{{ limite.nombre }}</span>
+            <span class="consumo-valor">
+              {{ limite.actual }} / {{ limite.maximo === -1 ? '∞' : limite.maximo }}
+              <span *ngIf="limite.unidad !== 'GB' || limite.maximo > 0" class="consumo-unidad">
+                {{ limite.unidad === 'GB' ? 'GB' : '' }}
+              </span>
+            </span>
+          </div>
+          <div class="barra-contenedor">
+            <div class="barra" [class.barra-alerta]="alertaLimite(limite)"
+              [style.width.%]="porcentajeUsado(limite)"></div>
+          </div>
+          <div *ngIf="alertaLimite(limite)" class="alerta-limite">
+            Ha alcanzado el límite contratado. Considere actualizar su plan.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="seccion">
+      <h3>Módulos incluidos</h3>
+      <div class="grid-modulos">
+        <div class="modulo-item" *ngFor="let mod of modulos">
+          <span class="check">✓</span>
+          <span>{{ mod.Icono ? mod.Icono + ' ' : '' }}{{ mod.NombreModulo }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="modal" *ngIf="mostrarCambioPlan">
+    <div class="formulario">
+      <h3>Actualizar plan</h3>
+      <p class="nota">Seleccione el nuevo plan para su empresa.<br>
+        Si el nuevo plan tiene menos usuarios de los que usa actualmente, el cambio será bloqueado.</p>
+
+      <div class="campo">
+        <label>Plan</label>
+        <select [(ngModel)]="planSeleccionado">
+          <option [ngValue]="0">Seleccione un plan...</option>
+          <option *ngFor="let plan of planes" [ngValue]="plan.IdPlan">
+            {{ plan.NombrePlan }} ({{ plan.MaxUsuarios }} usuarios) -
+            {{ formatoMoneda(plan.PrecioMensual, plan.Moneda) }}
+          </option>
+        </select>
+      </div>
+
+      <div class="campo" style="margin-top: 12px;">
+        <label>Motivo del cambio (opcional)</label>
+        <input type="text" [(ngModel)]="motivo" placeholder="Ej: ampliar capacidad de usuarios">
+      </div>
+
+      <div class="acciones">
+        <button class="btn-cancelar" (click)="mostrarCambioPlan = false">Cancelar</button>
+        <button class="btn-primary" (click)="cambiarPlan()" [disabled]="cambiando">
+          {{ cambiando ? 'Procesando...' : 'Cambiar plan' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

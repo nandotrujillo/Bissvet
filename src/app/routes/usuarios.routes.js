@@ -7,6 +7,7 @@ const pool = require('../../database/mysql.js');
 const { authenticate, generarToken } = require('../../middleware/auth.js');
 const { authorize } = require('../../middleware/authorize.js');
 const { registrarAuditoria } = require('../../middleware/auditoria.js');
+const { obtenerSuscripcionActiva, verificarLimiteUsuarios } = require('../../middleware/suscripcion.js');
 
 function obtenerIP(req) {
     return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
@@ -177,6 +178,9 @@ router.post('/login', async (req, res) => {
             Descripcion: `Login correcto de ${user.Username}`
         });
 
+        // Información de suscripción (RF-MON-013): plan, estado y vigencia
+        const suscripcion = await obtenerSuscripcionActiva(user.IdEmpresa);
+
         res.json({
             ok: true,
             mensaje: 'Login correcto',
@@ -191,7 +195,20 @@ router.post('/login', async (req, res) => {
             empresa: {
                 IdEmpresa: empresa.IdEmpresa,
                 NombreComercial: empresa.NombreComercial
-            }
+            },
+            suscripcion: suscripcion ? {
+                IdSuscripcion: suscripcion.IdSuscripcion,
+                IdPlan: suscripcion.IdPlan,
+                Estado: suscripcion.Estado,
+                FechaInicio: suscripcion.FechaInicio,
+                FechaFin: suscripcion.FechaFin,
+                Periodicidad: suscripcion.Periodicidad,
+                AutoRenovacion: suscripcion.AutoRenovacion,
+                CodigoPlan: suscripcion.CodigoPlan,
+                NombrePlan: suscripcion.NombrePlan,
+                PrecioMensual: suscripcion.PrecioMensual,
+                Moneda: suscripcion.Moneda
+            } : null
         });
     } catch (error) {
         console.error('Error login:', error);
@@ -342,6 +359,19 @@ router.post('/', authenticate, authorize('USUARIOS.CREAR'), async (req, res) => 
         }
 
         const IdEmpresa = req.auth.IdEmpresa;
+
+        // Monetización (RF-MON-009): verificar cupo de usuarios del plan
+        const limite = await verificarLimiteUsuarios(IdEmpresa);
+        if (!limite.permitido) {
+            return res.status(409).json({
+                ok: false,
+                mensaje: limite.mensaje,
+                detalles: {
+                    maximo: limite.maximo,
+                    actuales: limite.actuales
+                }
+            });
+        }
 
         const [existe] = await pool.query(
             `SELECT UsuarioId FROM Usuarios WHERE Username = ?`,

@@ -1,4 +1,5 @@
 const pool = require('../database/mysql');
+const { verificarModuloContratado } = require('./suscripcion');
 
 // =============================================================================
 // esSuperAdmin: ¿el usuario tiene rol SUPERADMIN global o perfil SUPERADMIN?
@@ -102,8 +103,7 @@ function authorize(codigoPermiso) {
             console.error('Error authorize:', error);
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error interno del servidor',
-                error: error.message
+                mensaje: 'Error interno del servidor'
             });
         }
     };
@@ -164,8 +164,7 @@ function authorizeAny(moduloCodigo) {
             console.error('Error authorizeAny:', error);
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error interno del servidor',
-                error: error.message
+                mensaje: 'Error interno del servidor'
             });
         }
     };
@@ -281,6 +280,12 @@ const REGLAS_MODULOS = {
     REPORTES: {
         GET: 'REPORTES.CONSULTAR',
         RUTAS: { '/imprimir': 'REPORTES.IMPRIMIR', '/exportar': 'REPORTES.EXPORTAR' }
+    },
+    CAJA: {
+        GET: 'CAJA.CONSULTAR',
+        POST: 'CAJA.CONSULTAR',
+        PUT: 'CAJA.CONSULTAR',
+        RUTAS: { '/apertura': 'CAJA.ABRIR', '/cierre': 'CAJA.CERRAR' }
     }
 };
 
@@ -307,6 +312,18 @@ function autorizarModulo(codigoModulo) {
         try {
             if (await esSuperAdmin(req.auth.UsuarioId)) {
                 return next();
+            }
+
+            // Monetización (RF-MON-008): la empresa debe tener contratado el módulo
+            const contratado = await verificarModuloContratado(
+                req.auth.IdEmpresa,
+                codigoModulo
+            );
+            if (!contratado) {
+                return res.status(403).json({
+                    ok: false,
+                    mensaje: `Módulo ${codigoModulo} no incluido en el plan contratado por su empresa`
+                });
             }
 
             const permisos = await obtenerPermisosUsuario(

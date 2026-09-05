@@ -138,22 +138,10 @@ export class VeterinariosComponent implements OnInit {
 
       next: (respuesta) => {
 
-        console.log(
-          'Respuesta ciudades:',
-          respuesta
-        );
-
-
         this.ciudades =
           respuesta.data ||
           respuesta.datos ||
           [];
-
-
-        console.log(
-          'Ciudades cargadas:',
-          this.ciudades
-        );
 
       },
 
@@ -191,12 +179,6 @@ export class VeterinariosComponent implements OnInit {
       .subscribe({
 
         next: (respuesta) => {
-
-          console.log(
-            'Respuesta veterinarios:',
-            respuesta
-          );
-
 
           this.veterinarios =
             respuesta.datos || [];
@@ -494,11 +476,6 @@ export class VeterinariosComponent implements OnInit {
       this.veterinario.UsuarioId =
         Number(usuarioId);
 
-      console.log(
-        'Actualizando veterinario:',
-        this.veterinario
-      );
-
 
       this.veterinariosService
         .actualizar(
@@ -547,12 +524,6 @@ export class VeterinariosComponent implements OnInit {
 
     this.veterinario.UsuarioId =
       Number(usuarioId);
-
-
-    console.log(
-      'Creando veterinario:',
-      this.veterinario
-    );
 
 
     this.veterinariosService

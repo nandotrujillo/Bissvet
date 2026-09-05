@@ -1,0 +1,890 @@
+<div class="caja-container">
+
+  <!-- ENCABEZADO -->
+
+  <div class="encabezado">
+
+    <div>
+
+      <h1>💰 Caja</h1>
+
+      <p>
+        Apertura, movimientos, cierre y arqueo de caja
+      </p>
+
+    </div>
+
+    <div class="encabezado-botones">
+
+      <button
+        *ngIf="puedeAbrir && !jornadaAbierta"
+        class="btn-nuevo"
+        (click)="abrirModalApertura()">
+
+        + Abrir caja
+
+      </button>
+
+      <button
+        *ngIf="puedeCerrar && jornadaAbierta"
+        class="btn-cerrar-caja"
+        (click)="abrirModalCierre()">
+
+        Cerrar caja
+
+      </button>
+
+      <button
+        *ngIf="puedeConsultar"
+        class="btn-arqueo"
+        (click)="abrirModalArqueo()">
+
+        📊 Arqueo
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- TARJETA JORNADA ABIERTA -->
+
+  <div
+    class="jornada-activa"
+    *ngIf="jornadaAbierta">
+
+    <div class="jornada-info">
+
+      <span class="estado abierta">Caja abierta</span>
+
+      <h2>
+        Caja Nº {{ jornadaAbierta.cajaMesa }}
+      </h2>
+
+      <p>
+        {{ jornadaAbierta.diaProceso | date:'dd/MM/yyyy' }}
+        · {{ jornadaAbierta.NombreBodega || 'Sin bodega' }}
+      </p>
+
+    </div>
+
+    <div class="jornada-totales">
+
+      <div class="total-item">
+        <span>Apertura</span>
+        <strong>$ {{ formatValor(jornadaAbierta.ValorApertura) }}</strong>
+      </div>
+
+      <div class="total-item ingreso">
+        <span>Ingresos</span>
+        <strong>$ {{ formatValor(jornadaAbierta.Ingresos) }}</strong>
+      </div>
+
+      <div class="total-item egreso">
+        <span>Egresos</span>
+        <strong>$ {{ formatValor(jornadaAbierta.Egresos) }}</strong>
+      </div>
+
+      <div class="total-item saldo">
+        <span>Saldo esperado</span>
+        <strong>$ {{ formatValor(jornadaAbierta.Saldo) }}</strong>
+      </div>
+
+    </div>
+
+    <div class="jornada-acciones">
+
+      <button
+        *ngIf="puedeConsultar"
+        class="btn-movimiento"
+        (click)="abrirModalMovimiento()">
+
+        + Registrar movimiento
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- SIN CAJA ABIERTA -->
+
+  <div
+    class="sin-caja"
+    *ngIf="!jornadaAbierta && !cargando">
+
+    <span>🔒</span>
+
+    <h2>No hay una caja abierta</h2>
+
+    <p>
+      Para registrar movimientos primero debe abrir la caja del día.
+    </p>
+
+  </div>
+
+
+  <!-- TABLA DE JORNADAS -->
+
+  <div class="barra-herramientas">
+
+    <select
+      [(ngModel)]="filtroEstado">
+
+      <option value="">
+        Todas las jornadas
+      </option>
+
+      <option value="ABIERTA">
+        Abiertas
+      </option>
+
+      <option value="CERRADA">
+        Cerradas
+      </option>
+
+    </select>
+
+    <span
+      class="contador"
+      *ngIf="!cargando">
+
+      {{ filtrar().length }}
+      jornada(s)
+
+    </span>
+
+  </div>
+
+
+  <div class="tabla-card">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+
+          <th>Caja</th>
+
+          <th>Fecha</th>
+
+          <th>Bodega</th>
+
+          <th>Apertura</th>
+
+          <th>Ingresos</th>
+
+          <th>Egresos</th>
+
+          <th>Saldo</th>
+
+          <th>Estado</th>
+
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr
+          *ngFor="let j of filtrar()">
+
+          <td>{{ j.Id }}</td>
+
+          <td><strong>{{ j.cajaMesa }}</strong></td>
+
+          <td>{{ j.diaProceso | date:'dd/MM/yyyy' }}</td>
+
+          <td>{{ j.NombreBodega || '-' }}</td>
+
+          <td>$ {{ formatValor(j.ValorApertura) }}</td>
+
+          <td class="celda-ingreso">$ {{ formatValor(j.Ingresos) }}</td>
+
+          <td class="celda-egreso">$ {{ formatValor(j.Egresos) }}</td>
+
+          <td><strong>$ {{ formatValor(j.Saldo) }}</strong></td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.abierta]="j.EstadoJornada === 'ABIERTA'"
+              [class.cerrada]="j.EstadoJornada === 'CERRADA'">
+
+              {{ j.EstadoJornada }}
+
+            </span>
+
+          </td>
+
+          <td class="acciones">
+
+            <button
+              *ngIf="puedeConsultar"
+              class="btn-icono"
+              title="Ver movimientos"
+              (click)="verMovimientos(j)">
+
+              🧾
+
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <tr
+          *ngIf="filtrar().length === 0">
+
+          <td
+            colspan="10"
+            class="sin-datos">
+
+            <span *ngIf="cargando">
+              Cargando jornadas...
+            </span>
+
+            <span *ngIf="!cargando">
+              No hay jornadas registradas.
+            </span>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+
+  <!-- MODAL APERTURA -->
+
+  <div
+    class="modal-overlay"
+    *ngIf="mostrarApertura">
+
+    <div class="modal-card">
+
+      <div class="modal-header">
+
+        <h2>Abrir caja</h2>
+
+        <button
+          class="btn-cerrar"
+          (click)="cerrarModales()">
+
+          ✕
+
+        </button>
+
+      </div>
+
+      <div class="campo">
+
+        <label>Nº de caja *</label>
+
+        <input
+          type="number"
+          min="1"
+          [(ngModel)]="apertura.cajaMesa">
+
+      </div>
+
+      <div class="campo">
+
+        <label>Fecha *</label>
+
+        <input
+          type="date"
+          [(ngModel)]="apertura.diaProceso">
+
+      </div>
+
+      <div class="campo">
+
+        <label>Bodega</label>
+
+        <select [(ngModel)]="apertura.IdBodega">
+
+          <option [ngValue]="null">
+            Sin bodega
+          </option>
+
+          <option
+            *ngFor="let b of bodegas"
+            [ngValue]="b.Id">
+
+            {{ b.NombreBodega }}
+
+          </option>
+
+        </select>
+
+      </div>
+
+      <div class="campo">
+
+        <label>Valor de apertura</label>
+
+        <input
+          type="number"
+          min="0"
+          [(ngModel)]="apertura.ValorApertura"
+          placeholder="0">
+
+      </div>
+
+      <div
+        class="mensaje error"
+        *ngIf="error">
+
+        {{ error }}
+
+      </div>
+
+      <div class="modal-botones">
+
+        <button
+          class="btn-cancelar"
+          (click)="cerrarModales()">
+
+          Cancelar
+
+        </button>
+
+        <button
+          class="btn-guardar"
+          (click)="abrirCaja()">
+
+          Abrir caja
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- MODAL MOVIMIENTO -->
+
+  <div
+    class="modal-overlay"
+    *ngIf="mostrarMovimiento">
+
+    <div class="modal-card">
+
+      <div class="modal-header">
+
+        <h2>Registrar movimiento</h2>
+
+        <button
+          class="btn-cerrar"
+          (click)="cerrarModales()">
+
+          ✕
+
+        </button>
+
+      </div>
+
+      <div class="campo">
+
+        <label>Tipo de movimiento *</label>
+
+        <select [(ngModel)]="movimiento.TipoMov">
+
+          <option [ngValue]="0">
+            Seleccione
+          </option>
+
+          <option
+            *ngFor="let t of tipos"
+            [ngValue]="t.id">
+
+            {{ t.DescTipoMovCaja }}
+            ({{ t.Signo === '+' ? 'ingreso' : 'egreso' }})
+
+          </option>
+
+        </select>
+
+      </div>
+
+      <div class="campo">
+
+        <label>Valor *</label>
+
+        <input
+          type="number"
+          min="1"
+          [(ngModel)]="movimiento.ValorMov">
+
+      </div>
+
+      <div class="campo">
+
+        <label>Descripción *</label>
+
+        <input
+          type="text"
+          maxlength="150"
+          [(ngModel)]="movimiento.DescMov"
+          placeholder="Descripción del movimiento">
+
+      </div>
+
+      <div class="campo">
+
+        <label>Nº documento proveedor</label>
+
+        <input
+          type="text"
+          maxlength="10"
+          [(ngModel)]="movimiento.NroDocumentoProveedor">
+
+      </div>
+
+      <div
+        class="mensaje error"
+        *ngIf="error">
+
+        {{ error }}
+
+      </div>
+
+      <div class="modal-botones">
+
+        <button
+          class="btn-cancelar"
+          (click)="cerrarModales()">
+
+          Cancelar
+
+        </button>
+
+        <button
+          class="btn-guardar"
+          (click)="registrarMovimiento()">
+
+          Registrar
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- MODAL CIERRE -->
+
+  <div
+    class="modal-overlay"
+    *ngIf="mostrarCierre">
+
+    <div class="modal-card">
+
+      <div class="modal-header">
+
+        <h2>Cerrar caja</h2>
+
+        <button
+          class="btn-cerrar"
+          (click)="cerrarModales()">
+
+          ✕
+
+        </button>
+
+      </div>
+
+      <p class="modal-subtitulo">
+        Ingrese el valor real que hay en caja. El descuadre se calculará contra el saldo esperado.
+      </p>
+
+      <div class="campo">
+
+        <label>Valor entregado *</label>
+
+        <input
+          type="number"
+          min="0"
+          [(ngModel)]="valorEntregado"
+          placeholder="0">
+
+      </div>
+
+      <div
+        class="mensaje error"
+        *ngIf="error">
+
+        {{ error }}
+
+      </div>
+
+      <div class="modal-botones">
+
+        <button
+          class="btn-cancelar"
+          (click)="cerrarModales()">
+
+          Cancelar
+
+        </button>
+
+        <button
+          class="btn-guardar"
+          (click)="cerrarCaja()">
+
+          Cerrar caja
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- MODAL MOVIMIENTOS DE JORNADA -->
+
+  <div
+    class="modal-overlay"
+    *ngIf="mostrarMovimientos">
+
+    <div class="modal-card modal-ancha">
+
+      <div class="modal-header">
+
+        <h2>
+          Movimientos · Caja
+          {{ movimientosJornada?.cajaMesa }}
+        </h2>
+
+        <button
+          class="btn-cerrar"
+          (click)="cerrarModales()">
+
+          ✕
+
+        </button>
+
+      </div>
+
+      <p class="modal-subtitulo">
+        {{ movimientosJornada?.diaProceso | date:'dd/MM/yyyy' }}
+      </p>
+
+      <table class="tabla-movimientos">
+
+        <thead>
+
+          <tr>
+
+            <th>Hora</th>
+
+            <th>Tipo</th>
+
+            <th>Descripción</th>
+
+            <th class="texto-derecha">Valor</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          <tr
+            *ngFor="let m of movimientos">
+
+            <td>{{ m.FechaRegistro | date:'HH:mm' }}</td>
+
+            <td>
+              <span
+                class="badge"
+                [class.ingreso]="m.Signo === '+'"
+                [class.egreso]="m.Signo === '-'">
+
+                {{ m.DescTipoMovCaja }}
+
+              </span>
+            </td>
+
+            <td>{{ m.DescMov }}</td>
+
+            <td
+              class="texto-derecha"
+              [class.celda-ingreso]="m.Signo === '+'"
+              [class.celda-egreso]="m.Signo === '-'">
+
+              {{ m.Signo === '+' ? '+' : '-' }}
+              $ {{ formatValor(m.ValorMov) }}
+
+            </td>
+
+          </tr>
+
+          <tr
+            *ngIf="movimientos.length === 0">
+
+            <td
+              colspan="4"
+              class="sin-datos">
+
+              Esta jornada no tiene movimientos.
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+        <tfoot
+          *ngIf="movimientos.length > 0">
+
+          <tr>
+
+            <td
+              colspan="3"
+              class="texto-derecha">
+
+              <strong>Saldo movimientos</strong>
+
+            </td>
+
+            <td class="texto-derecha">
+
+              <strong>
+                {{ saldoMovimientos() >= 0 ? '+' : '-' }}
+                $ {{ formatValor(Math.abs(saldoMovimientos())) }}
+              </strong>
+
+            </td>
+
+          </tr>
+
+        </tfoot>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- MODAL ARQUEO -->
+
+  <div
+    class="modal-overlay"
+    *ngIf="mostrarArqueo">
+
+    <div class="modal-card modal-ancha">
+
+      <div class="modal-header">
+
+        <h2>📊 Arqueo de caja</h2>
+
+        <button
+          class="btn-cerrar"
+          (click)="cerrarModales()">
+
+          ✕
+
+        </button>
+
+      </div>
+
+      <div class="arqueo-filtros">
+
+        <div class="campo">
+
+          <label>Desde</label>
+
+          <input
+            type="date"
+            [(ngModel)]="arqueoDesde">
+
+        </div>
+
+        <div class="campo">
+
+          <label>Hasta</label>
+
+          <input
+            type="date"
+            [(ngModel)]="arqueoHasta">
+
+        </div>
+
+        <div class="campo boton-filtro">
+
+          <button
+            class="btn-guardar"
+            (click)="generarArqueo()">
+
+            Generar
+
+          </button>
+
+        </div>
+
+      </div>
+
+      <div
+        class="mensaje error"
+        *ngIf="error">
+
+        {{ error }}
+
+      </div>
+
+      <div
+        *ngIf="arqueoCargado && arqueo">
+
+        <table class="tabla-movimientos">
+
+          <thead>
+
+            <tr>
+
+              <th>Tipo</th>
+
+              <th class="texto-derecha">Cantidad</th>
+
+              <th class="texto-derecha">Total</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            <tr
+              *ngFor="let t of arqueo.porTipo">
+
+              <td>
+                <span
+                  class="badge"
+                  [class.ingreso]="t.Signo === '+'"
+                  [class.egreso]="t.Signo === '-'">
+
+                  {{ t.DescTipoMovCaja }}
+
+                </span>
+              </td>
+
+              <td class="texto-derecha">{{ t.Cantidad }}</td>
+
+              <td
+                class="texto-derecha"
+                [class.celda-ingreso]="t.Signo === '+'"
+                [class.celda-egreso]="t.Signo === '-'">
+
+                {{ t.Signo === '+' ? '+' : '-' }}
+                $ {{ formatValor(t.Total) }}
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+          <tfoot>
+
+            <tr>
+
+              <td>Total ingresos</td>
+
+              <td></td>
+
+              <td class="texto-derecha celda-ingreso">
+                + $ {{ formatValor(arqueo.totales.TotalIngresos) }}
+              </td>
+
+            </tr>
+
+            <tr>
+
+              <td>Total egresos</td>
+
+              <td></td>
+
+              <td class="texto-derecha celda-egreso">
+                - $ {{ formatValor(arqueo.totales.TotalEgresos) }}
+              </td>
+
+            </tr>
+
+            <tr class="fila-total">
+
+              <td><strong>Saldo neto</strong></td>
+
+              <td></td>
+
+              <td class="texto-derecha">
+
+                <strong>
+                  {{ arqueo.totales.SaldoNeto >= 0 ? '+' : '-' }}
+                  $ {{ formatValor(Math.abs(arqueo.totales.SaldoNeto)) }}
+                </strong>
+
+              </td>
+
+            </tr>
+
+          </tfoot>
+
+        </table>
+
+      </div>
+
+      <div
+        class="sin-datos"
+        *ngIf="arqueoCargado && (!arqueo || arqueo.porTipo?.length === 0)">
+
+        No hay movimientos en el rango seleccionado.
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

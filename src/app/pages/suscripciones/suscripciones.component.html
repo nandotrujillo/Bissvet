@@ -1,0 +1,244 @@
+<div class="suscripciones-container">
+
+  <div class="cabecera">
+    <div>
+      <h2>Suscripciones</h2>
+      <p>Suscripciones de las empresas a los planes de BissVet</p>
+    </div>
+    <button class="btn-primary" *ngIf="puedeAsignar" (click)="nuevo()">+ Asignar suscripción</button>
+  </div>
+
+  <div class="barra-busqueda">
+    <input type="text" [(ngModel)]="textoBusqueda"
+      placeholder="Buscar por empresa, plan, NIT o estado">
+  </div>
+
+  <div class="mensaje exito" *ngIf="mensaje">{{ mensaje }}</div>
+  <div class="mensaje error" *ngIf="error">{{ error }}</div>
+
+  <div class="tabla-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Plan</th>
+          <th>Estado</th>
+          <th>Inicio</th>
+          <th>Vence</th>
+          <th>Usuarios</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of suscripcionesFiltradas()">
+          <td>
+            <strong>{{ s.NombreComercial }}</strong>
+            <div class="sub">{{ s.Nit }} · {{ s.CodigoEmpresa }}</div>
+          </td>
+          <td>
+            {{ s.NombrePlan }}
+            <div class="sub">{{ formatoMoneda(s.PrecioMensual, s.Moneda) }} / mes</div>
+          </td>
+          <td>
+            <span [class.estado-activa]="s.Estado === 'ACTIVA'"
+              [class.estado-prueba]="s.Estado === 'PRUEBA'"
+              [class.estado-vencida]="s.Estado === 'VENCIDA'"
+              [class.estado-suspendida]="s.Estado === 'SUSPENDIDA' || s.Estado === 'CANCELADA'">
+              {{ estadoLabel(s.Estado) }}
+            </span>
+          </td>
+          <td>{{ formatoFecha(s.FechaInicio) }}</td>
+          <td>{{ formatoFecha(s.FechaFin) }}</td>
+          <td>{{ s.usuariosActuales }} / {{ s.MaxUsuarios }}</td>
+          <td class="acciones-tabla">
+            <button class="btn-detalle" (click)="verDetalle(s)">Ver</button>
+            <button class="btn-editar" *ngIf="puedeSuspender" (click)="editar(s)">Editar</button>
+            <button class="btn-verde" *ngIf="puedeCambiarPlan" (click)="verAddons(s)">ADD-ONs</button>
+          </td>
+        </tr>
+        <tr *ngIf="suscripcionesFiltradas().length === 0">
+          <td colspan="7" class="sin-registros">No se encontraron suscripciones.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="modal" *ngIf="mostrarFormulario">
+    <div class="formulario">
+      <h3>{{ editando ? 'Editar suscripción' : 'Asignar suscripción' }}</h3>
+
+      <div *ngIf="editando" class="nota">Estado actual: {{ estadoLabel(suscripcion.Estado) }}</div>
+
+      <div class="grid">
+        <div class="campo campo-completo">
+          <label>Empresa *</label>
+          <select [(ngModel)]="suscripcion.IdEmpresa" [disabled]="editando">
+            <option [ngValue]="0">Seleccione la empresa...</option>
+            <option *ngFor="let e of empresas" [ngValue]="e.IdEmpresa">
+              {{ e.NombreComercial }} ({{ e.CodigoEmpresa }})
+            </option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Plan *</label>
+          <select [(ngModel)]="suscripcion.IdPlan">
+            <option [ngValue]="0">Seleccione el plan...</option>
+            <option *ngFor="let plan of planes" [ngValue]="plan.IdPlan">
+              {{ plan.NombrePlan }} ({{ plan.MaxUsuarios }} usuarios) - {{ formatoMoneda(plan.PrecioMensual, plan.Moneda) }}
+            </option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Estado</label>
+          <select [(ngModel)]="suscripcion.Estado">
+            <option value="PRUEBA">Periodo de prueba</option>
+            <option value="ACTIVA">Activa</option>
+            <option value="VENCIDA">Vencida</option>
+            <option value="SUSPENDIDA">Suspendida</option>
+            <option value="CANCELADA">Cancelada</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Periodicidad</label>
+          <select [(ngModel)]="suscripcion.Periodicidad">
+            <option value="MENSUAL">Mensual</option>
+            <option value="ANUAL">Anual</option>
+            <option value="UNICO">Único</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Fecha de inicio</label>
+          <input type="date" [(ngModel)]="suscripcion.FechaInicio" placeholder="yyyy-mm-dd">
+        </div>
+        <div class="campo">
+          <label>Fecha de vencimiento</label>
+          <input type="date" [(ngModel)]="suscripcion.FechaFin" placeholder="yyyy-mm-dd">
+        </div>
+        <div class="campo">
+          <label>Renovación automática</label>
+          <select [(ngModel)]="suscripcion.AutoRenovacion">
+            <option [ngValue]="1">Sí</option>
+            <option [ngValue]="0">No</option>
+          </select>
+        </div>
+        <div class="campo campo-completo" *ngIf="!editando">
+          <label>Motivo (opcional)</label>
+          <input type="text" [(ngModel)]="suscripcion.Motivo" placeholder="Ej: suscripción inicial">
+        </div>
+      </div>
+
+      <div class="acciones">
+        <button class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+        <button class="btn-primary" (click)="guardar()">{{ editando ? 'Actualizar' : 'Asignar' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" *ngIf="mostrandoDetalle && detalle">
+    <div class="formulario detalle">
+      <h3>Detalle de suscripción</h3>
+
+      <div class="linea-detalle">
+        <span class="clave">Empresa</span>
+        <span class="valor">{{ detalle.NombreComercial }} ({{ detalle.Nit }})</span>
+      </div>
+      <div class="linea-detalle">
+        <span class="clave">Plan</span>
+        <span class="valor">{{ detalle.NombrePlan }} · {{ formatoMoneda(detalle.PrecioMensual, detalle.Moneda) }}</span>
+      </div>
+      <div class="linea-detalle">
+        <span class="clave">Estado</span>
+        <span class="valor" [class.estado-activa]="detalle.Estado === 'ACTIVA'"
+          [class.estado-prueba]="detalle.Estado === 'PRUEBA'"
+          [class.estado-suspendida]="detalle.Estado === 'SUSPENDIDA' || detalle.Estado === 'CANCELADA'">
+          {{ estadoLabel(detalle.Estado) }}
+        </span>
+      </div>
+      <div class="linea-detalle">
+        <span class="clave">Vigencia</span>
+        <span class="valor">{{ formatoFecha(detalle.FechaInicio) }} → {{ formatoFecha(detalle.FechaFin) }}</span>
+      </div>
+      <div class="linea-detalle">
+        <span class="clave">Usuarios</span>
+        <span class="valor">{{ detalle.usuariosActuales }} / {{ detalle.MaxUsuarios }}</span>
+      </div>
+      <div class="linea-detalle">
+        <span class="clave">Módulos ADD-ON</span>
+        <span class="valor">{{ detalle.addons?.length || 0 }}</span>
+      </div>
+
+      <div class="bloque-acciones" *ngIf="puedeSuspender">
+        <h4>Cambiar estado</h4>
+        <div class="grupo-botones">
+          <button class="btn-verde" *ngIf="detalle.Estado !== 'ACTIVA'" (click)="cambiarEstadoDetalle('ACTIVA')">Activar</button>
+          <button class="btn-verde" *ngIf="detalle.Estado === 'ACTIVA'" (click)="cambiarEstadoDetalle('PRUEBA')">Poner en prueba</button>
+          <button class="btn-eliminar" *ngIf="detalle.Estado !== 'SUSPENDIDA'" (click)="cambiarEstadoDetalle('SUSPENDIDA')">Suspender</button>
+          <button class="btn-gris" *ngIf="detalle.Estado !== 'CANCELADA'" (click)="cambiarEstadoDetalle('CANCELADA')">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="bloque-acciones" *ngIf="puedeCambiarPlan">
+        <h4>Cambiar plan</h4>
+        <div class="grupo-botones">
+          <select #selectPlan>
+            <option [ngValue]="0">Seleccione el nuevo plan...</option>
+            <option *ngFor="let plan of planes" [ngValue]="plan.IdPlan">
+              {{ plan.NombrePlan }} - {{ formatoMoneda(plan.PrecioMensual, plan.Moneda) }}
+            </option>
+          </select>
+          <button class="btn-primary" (click)="cambiarPlanDetalle(selectPlan.value)">Cambiar</button>
+        </div>
+      </div>
+
+      <div class="bloque-acciones" *ngIf="detalle.historial?.length">
+        <h4>Historial de cambios</h4>
+        <table class="tabla-historial">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Plan anterior</th>
+              <th>Plan nuevo</th>
+              <th>Estado</th>
+              <th>Usuario</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let h of detalle.historial">
+              <td>{{ formatoFecha(h.FechaCambio) }}</td>
+              <td>{{ nombrePlanDesdeId(h.PlanAnterior) }}</td>
+              <td>{{ nombrePlanDesdeId(h.PlanNuevo) }}</td>
+              <td>{{ h.EstadoAnterior }} → {{ h.EstadoNuevo }}</td>
+              <td>{{ h.Username || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="acciones">
+        <button class="btn-cancelar" (click)="mostrandoDetalle = false">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" *ngIf="mostrarAddons">
+    <div class="formulario">
+      <h3>Módulos ADD-ON</h3>
+      <p class="nota">Módulos contratados adicionales al plan de la empresa.</p>
+
+      <div class="grid-modulos">
+        <label class="modulo" *ngFor="let mod of modulos">
+          <input type="checkbox" [checked]="!!addonsSeleccionados[mod.idModulos]"
+            (change)="addonsSeleccionados[mod.idModulos] = !addonsSeleccionados[mod.idModulos]">
+          {{ mod.Icono ? mod.Icono + ' ' : '' }}{{ mod.NombreModulo }}
+          <span class="codigo-modulo">{{ mod.Codigo }}</span>
+        </label>
+      </div>
+
+      <div class="acciones">
+        <button class="btn-cancelar" (click)="mostrarAddons = false">Cancelar</button>
+        <button class="btn-primary" (click)="guardarAddons()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+</div>

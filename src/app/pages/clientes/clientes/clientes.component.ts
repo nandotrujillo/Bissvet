@@ -91,11 +91,6 @@ export class ClientesComponent
 
         next: (respuesta:any) => {
 
-          console.log(
-            'Clientes:',
-            respuesta
-          );
-
           this.clientes =
             respuesta.datos || [];
 
@@ -125,11 +120,6 @@ export class ClientesComponent
       .subscribe({
 
         next: (respuesta:any) => {
-
-          console.log(
-            'Ciudades:',
-            respuesta
-          );
 
           this.ciudades =
             respuesta.datos || [];

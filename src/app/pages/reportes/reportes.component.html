@@ -1,0 +1,297 @@
+<div class="reportes-container">
+
+  <!-- ENCABEZADO -->
+
+  <div class="encabezado">
+
+    <div>
+
+      <h1>📊 Reportes</h1>
+
+      <p>
+        Consulta, exportación e impresión de reportes
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <div class="cuerpo-dos-columnas">
+
+    <!-- LISTA DE REPORTES -->
+
+    <aside class="lista-reportes">
+
+      <h3>Reportes disponibles</h3>
+
+      <button
+        *ngFor="let r of catalogo"
+        class="item-reporte"
+        [class.activo]="seleccion?.id === r.id"
+        (click)="seleccionar(r)">
+
+        <span class="nombre">{{ r.titulo }}</span>
+
+        <span class="descripcion">{{ r.descripcion }}</span>
+
+      </button>
+
+    </aside>
+
+
+    <!-- ÁREA DEL REPORTE SELECCIONADO -->
+
+    <div
+      class="area-reporte"
+      *ngIf="seleccion; else sinSeleccion">
+
+      <div class="tarjeta-filtros">
+
+        <h2>{{ seleccion.titulo }}</h2>
+
+        <p>{{ seleccion.descripcion }}</p>
+
+        <div class="filtros">
+
+          <div
+            class="campo"
+            *ngIf="requiereRango(seleccion.id)">
+
+            <label>Desde</label>
+
+            <input
+              type="date"
+              [(ngModel)]="desde">
+
+          </div>
+
+          <div
+            class="campo"
+            *ngIf="requiereRango(seleccion.id)">
+
+            <label>Hasta</label>
+
+            <input
+              type="date"
+              [(ngModel)]="hasta">
+
+          </div>
+
+          <div
+            class="campo"
+            *ngIf="requiereEstado(seleccion.id)">
+
+            <label>Estado</label>
+
+            <select [(ngModel)]="estado">
+
+              <option value="">
+                Todos
+              </option>
+
+              <option
+                *ngFor="let e of estadosDisponibles"
+                [value]="e">
+
+                {{ e }}
+
+              </option>
+
+            </select>
+
+          </div>
+
+          <div
+            class="campo"
+            *ngIf="requiereProducto(seleccion.id)">
+
+            <label>Producto *</label>
+
+            <select [(ngModel)]="productoId">
+
+              <option [ngValue]="null">
+                Seleccione un producto
+              </option>
+
+              <option
+                *ngFor="let p of productos"
+                [ngValue]="p.IdProducto">
+
+                {{ p.NombreProducto }}
+
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+        <div class="botones-accion">
+
+          <button
+            class="btn-generar"
+            (click)="ejecutar()">
+
+            🔄 Generar
+
+          </button>
+
+          <button
+            class="btn-secundario"
+            *ngIf="puedeExportar"
+            (click)="exportar()">
+
+            ⬇ Exportar CSV
+
+          </button>
+
+          <button
+            class="btn-secundario"
+            *ngIf="puedeImprimir"
+            (click)="imprimir()">
+
+            🖨 Imprimir PDF
+
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- TABLA DE RESULTADOS -->
+
+      <div class="tabla-card">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th
+                *ngFor="let col of columnas()">
+
+                {{ etiquetaColumna(col) }}
+
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            <tr
+              *ngFor="let fila of datos">
+
+              <td
+                *ngFor="let col of columnas()"
+                [class.texto-derecha]="esMoneda(col) || esCantidad(col)">
+
+                <span *ngIf="esMoneda(col) && fila[col] !== null && fila[col] !== undefined">
+                  $ {{ formatValor(fila[col]) }}
+                </span>
+
+                <span *ngIf="esCantidad(col) && fila[col] !== null && fila[col] !== undefined">
+                  {{ formatValor(fila[col]) }}
+                </span>
+
+                <span *ngIf="!esMoneda(col) && !esCantidad(col)">
+                  {{ fila[col] === null || fila[col] === undefined ? '-' : fila[col] }}
+                </span>
+
+              </td>
+
+            </tr>
+
+            <tr *ngIf="datos.length === 0">
+
+              <td
+                [attr.colspan]="columnas().length"
+                class="sin-datos">
+
+                <span *ngIf="cargando">
+                  Generando reporte...
+                </span>
+
+                <span *ngIf="!cargando">
+                  No hay datos para el reporte seleccionado.
+                </span>
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+          <tfoot *ngIf="totales()">
+
+            <tr class="fila-total">
+
+              <td
+                *ngFor="let col of columnas(); let i = index"
+                [class.texto-derecha]="esMoneda(col)">
+
+                <strong *ngIf="i === 0">
+                  {{ totales()!.Etiqueta }}
+                </strong>
+
+                <strong
+                  *ngIf="i !== 0 && puedeMostrarColumnaTotales(col)"
+                  class="total-moneda">
+                  $ {{ formatValor(totalColumna(col)) }}
+                </strong>
+
+              </td>
+
+            </tr>
+
+          </tfoot>
+
+        </table>
+
+      </div>
+
+    </div>
+
+
+    <ng-template #sinSeleccion>
+
+      <div class="area-reporte">
+
+        <div class="tarjeta-filtros">
+
+          <h2>Cargando reportes...</h2>
+
+        </div>
+
+      </div>
+
+    </ng-template>
+
+  </div>
+
+</div>

@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Antecedente } from '../Models/antecedente';
 
 @Injectable({ providedIn: 'root' })
 export class AntecedentesService {
-  private apiUrl = 'http://localhost:3000/api/antecedentes';
+  private apiUrl = `${environment.apiUrl}/antecedentes`;
 
   constructor(private http: HttpClient) {}
 

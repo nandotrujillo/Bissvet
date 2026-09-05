@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
@@ -7,7 +8,7 @@ import { Observable } from 'rxjs';
 })
 export class VentasService {
 
-  private apiUrl = 'http://localhost:3000/api/ventas';
+  private apiUrl = `${environment.apiUrl}/ventas`;
 
   constructor(private http: HttpClient) {}
 

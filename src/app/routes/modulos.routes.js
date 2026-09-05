@@ -17,9 +17,15 @@ router.get('/', async (req, res) => {
         const [rows] = await pool.query(`
             SELECT
                 idModulos,
-                NombreModulo
+                Codigo,
+                NombreModulo,
+                Descripcion,
+                Ruta,
+                Icono,
+                Orden,
+                Activo
             FROM modulos
-            ORDER BY NombreModulo
+            ORDER BY Orden, NombreModulo
         `);
 
         res.json({

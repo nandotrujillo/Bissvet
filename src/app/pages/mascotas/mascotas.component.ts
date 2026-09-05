@@ -293,13 +293,9 @@ cargarClientes(): void {
 
     next: (respuesta: any) => {
 
-      console.log('Respuesta clientes:', respuesta);
-
       this.clientes = respuesta.datos || [];
 
       this.clientesFiltrados = [...this.clientes];
-
-      console.log('Clientes cargados:', this.clientes);
 
     },
 

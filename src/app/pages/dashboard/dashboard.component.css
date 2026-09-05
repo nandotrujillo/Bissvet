@@ -92,6 +92,69 @@
 
 
 /* =====================================================
+   PLAN ACTUAL EN EL MENÚ
+   ===================================================== */
+
+.plan-actual {
+  padding: 8px 14px;
+
+  font-size: 12px;
+
+  color: #dceae6;
+
+  background: rgba(255,255,255,0.04);
+
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 6px;
+}
+
+.estado-plan {
+  font-size: 10px;
+
+  padding: 2px 8px;
+
+  border-radius: 10px;
+
+  font-weight: bold;
+
+  text-transform: uppercase;
+}
+
+.estado-plan.prueba {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.estado-plan.activa {
+  background: #d4edda;
+  color: #155724;
+}
+
+.estado-plan.vencida {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.estado-plan.suspendida {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+
+/* =====================================================
    NAVEGACIÓN
    ===================================================== */
 

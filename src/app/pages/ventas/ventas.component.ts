@@ -8,7 +8,7 @@ import { Producto } from '../../Models/producto';
 import { VentasService } from '../../Services/ventas.service';
 import { ClientesService } from '../../Services/clientes.service';
 import { MascotasService } from '../../Services/mascotas.service';
-import { BodegaService } from '../../Services/Bodega.service ';
+import { BodegaService } from '../../Services/Bodega.service';
 import { ProductosService } from '../../Services/productos.service';
 
 @Component({

@@ -221,9 +221,8 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () =>
-          import('./Shared/enconstruccion.component')
-            .then(m => m.EnConstruccionComponent),
-        data: { titulo: 'Inicio' }
+          import('./pages/dashboard/inicio/dashboard-inicio.component')
+            .then(m => m.DashboardInicioComponent)
       },
 
       // -------------------------------------------------
@@ -275,25 +274,47 @@ export const routes: Routes = [
       {
         path: 'caja',
         loadComponent: () =>
-          import('./Shared/enconstruccion.component')
-            .then(m => m.EnConstruccionComponent),
-        data: { titulo: 'Caja' }
+          import('./pages/caja/caja.component')
+            .then(m => m.CajaComponent)
       },
 
       {
         path: 'reportes',
         loadComponent: () =>
-          import('./Shared/enconstruccion.component')
-            .then(m => m.EnConstruccionComponent),
-        data: { titulo: 'Reportes' }
+          import('./pages/reportes/reportes.component')
+            .then(m => m.ReportesComponent)
       },
 
       {
         path: 'servicios',
         loadComponent: () =>
-          import('./Shared/enconstruccion.component')
-            .then(m => m.EnConstruccionComponent),
-        data: { titulo: 'Servicios' }
+          import('./pages/servicios/servicios.component')
+            .then(m => m.ServiciosComponent)
+      },
+
+      // -------------------------------------------------
+      // MONETIZACIÓN: PLANES, SUSCRIPCIONES Y MI PLAN
+      // -------------------------------------------------
+
+      {
+        path: 'planes',
+        loadComponent: () =>
+          import('./pages/planes/planes.component')
+            .then(m => m.PlanesComponent)
+      },
+
+      {
+        path: 'mi-plan',
+        loadComponent: () =>
+          import('./pages/mi-plan/mi-plan.component')
+            .then(m => m.MiPlanComponent)
+      },
+
+      {
+        path: 'suscripciones',
+        loadComponent: () =>
+          import('./pages/suscripciones/suscripciones.component')
+            .then(m => m.SuscripcionesComponent)
       }
 
     ]

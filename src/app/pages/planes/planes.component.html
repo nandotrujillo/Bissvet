@@ -1,0 +1,145 @@
+<div class="planes-container">
+
+  <div class="cabecera">
+    <div>
+      <h2>Planes</h2>
+      <p>Administración comercial de los planes de suscripción</p>
+    </div>
+    <button class="btn-primary" *ngIf="puedeCrear" (click)="nuevo()">+ Nuevo plan</button>
+  </div>
+
+  <div class="barra-busqueda">
+    <input type="text" [(ngModel)]="textoBusqueda"
+      placeholder="Buscar por nombre, código o descripción">
+  </div>
+
+  <div class="mensaje exito" *ngIf="mensaje">{{ mensaje }}</div>
+  <div class="mensaje error" *ngIf="error">{{ error }}</div>
+
+  <div class="tabla-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Plan</th>
+          <th>Precio mensual</th>
+          <th>Usuario máx.</th>
+          <th>Módulos</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let plan of plansFiltrados()">
+          <td>{{ plan.CodigoPlan }}</td>
+          <td>
+            <strong>{{ plan.NombrePlan }}</strong>
+            <div class="descripcion-plan">{{ plan.Descripcion }}</div>
+          </td>
+          <td>{{ formatoMoneda(plan.PrecioMensual, plan.Moneda) }}</td>
+          <td>{{ plan.MaxUsuarios }}</td>
+          <td><span class="badge-modulos">{{ plan.modulos?.length || 0 }}</span></td>
+          <td>
+            <span [class.activo]="plan.Activo" [class.inactivo]="!plan.Activo">
+              {{ plan.Activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td class="acciones-tabla">
+            <button class="btn-editar" *ngIf="puedeEditar || puedeConfigurar" (click)="editar(plan)">Editar</button>
+            <button class="btn-eliminar" *ngIf="puedeInactivar" (click)="cambiarEstado(plan)">
+              {{ plan.Activo ? 'Inactivar' : 'Activar' }}
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="plansFiltrados().length === 0">
+          <td colspan="7" class="sin-registros">No se encontraron planes.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="modal" *ngIf="mostrarFormulario">
+    <div class="formulario">
+      <h3>{{ editando ? 'Editar plan' : 'Nuevo plan' }}</h3>
+
+      <div class="grid">
+        <div class="campo">
+          <label>Código *</label>
+          <input type="text" [(ngModel)]="plan.CodigoPlan" placeholder="Ej: BASIC, PRO, EMPRESARIAL">
+        </div>
+        <div class="campo">
+          <label>Nombre *</label>
+          <input type="text" [(ngModel)]="plan.NombrePlan">
+        </div>
+        <div class="campo campo-completo">
+          <label>Descripción</label>
+          <textarea [(ngModel)]="plan.Descripcion" rows="2"></textarea>
+        </div>
+        <div class="campo">
+          <label>Precio mensual</label>
+          <input type="number" [(ngModel)]="plan.PrecioMensual" min="0">
+        </div>
+        <div class="campo">
+          <label>Precio anual</label>
+          <input type="number" [(ngModel)]="plan.PrecioAnual" min="0">
+        </div>
+        <div class="campo">
+          <label>Moneda</label>
+          <select [(ngModel)]="plan.Moneda">
+            <option value="COP">COP - Peso colombiano</option>
+            <option value="USD">USD - Dólar</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Máximo de usuarios *</label>
+          <input type="number" [(ngModel)]="plan.MaxUsuarios" min="1">
+        </div>
+        <div class="campo">
+          <label>Días de prueba (opcional)</label>
+          <input type="number" [(ngModel)]="plan.DiasPrueba" min="0">
+        </div>
+        <div class="campo">
+          <label>Estado</label>
+          <select [(ngModel)]="plan.Activo">
+            <option [ngValue]="1">Activo</option>
+            <option [ngValue]="0">Inactivo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="seccion-formulario" *ngIf="puedeConfigurar">
+        <h4>Módulos incluidos</h4>
+        <p class="nota">Seleccione los módulos que la empresa podrá utilizar con este plan.</p>
+        <div class="grid-modulos">
+          <label class="modulo" *ngFor="let mod of modulos">
+            <input type="checkbox" [checked]="!!modulosSeleccionados[mod.idModulos!]"
+              (change)="toggleModulo(mod.idModulos!)">
+            {{ mod.Icono ? mod.Icono + ' ' : '' }}{{ mod.NombreModulo }}
+            <span class="codigo-modulo">{{ mod.Codigo }}</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="seccion-formulario" *ngIf="puedeConfigurar">
+        <h4>Límites de uso</h4>
+        <p class="nota">Valor -1 significa ilimitado.</p>
+        <div class="grid-limites">
+          <div class="campo" *ngFor="let tipo of tiposLimite">
+            <label>{{ tipo.Nombre }} ({{ tipo.Unidad }})</label>
+            <input type="number"
+              [value]="obtenerMaximoLimite(tipo.IdTipoLimite)"
+              (change)="definirLimite(tipo.IdTipoLimite, $any($event.target).value)">
+          </div>
+        </div>
+      </div>
+
+      <div class="acciones">
+        <button class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+        <button class="btn-primary" (click)="guardar()">
+          {{ editando ? 'Actualizar' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -5,6 +5,7 @@ const pool = require('../../database/mysql.js');
 const { authenticate } = require('../../middleware/auth.js');
 const { authorize } = require('../../middleware/authorize.js');
 const { registrarAuditoria } = require('../../middleware/auditoria.js');
+const { modulosContratados } = require('../../middleware/suscripcion.js');
 
 function obtenerIP(req) {
     return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
@@ -58,12 +59,18 @@ router.get('/mi-menu', authenticate, async (req, res) => {
         );
 
         let modulos = rows;
+
+        // Monetización (RF-MON-008): los módulos no contratados no se muestran
+        // aunque el usuario tenga permisos sobre ellos.
         if (superAdmin[0].es) {
             const [todos] = await pool.query(
                 `SELECT idModulos, Codigo, NombreModulo, Ruta, Icono, Orden, Descripcion
                  FROM modulos WHERE Activo = 1 ORDER BY Orden, NombreModulo`
             );
             modulos = todos;
+        } else {
+            const contratados = await modulosContratados(req.auth.IdEmpresa);
+            modulos = rows.filter((m) => contratados.has(m.Codigo));
         }
 
         res.json({ ok: true, datos: modulos });

@@ -1,12 +1,16 @@
 const express = require('express');
 const cors = require('cors');
+const dotenv = require('dotenv');
+const path = require('path');
 
 const pool = require('./database/mysql');
 const { authenticate } = require('./middleware/auth');
 const { autorizarModulo } = require('./middleware/authorize');
 
+dotenv.config({ path: path.join(__dirname, '.env') });
+
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -165,6 +169,22 @@ app.use('/api/traslados', autorizarModulo('INVENTARIOS'), trasladosRoutes);
 
 const ajustesRoutes = require('./app/routes/ajustes.routes');
 app.use('/api/ajustes', autorizarModulo('INVENTARIOS'), ajustesRoutes);
+
+const cajaRoutes = require('./app/routes/caja.routes');
+app.use('/api/caja', autorizarModulo('CAJA'), cajaRoutes);
+
+const reportesRoutes = require('./app/routes/reportes.routes');
+app.use('/api/reportes', autorizarModulo('REPORTES'), reportesRoutes);
+
+// ============================================
+// RUTAS MÓDULO MONETIZACIÓN (PLANES / SUSCRIPCIONES)
+// ============================================
+
+const planesRoutes = require('./app/routes/planes.routes');
+app.use('/api/planes', planesRoutes);
+
+const suscripcionesRoutes = require('./app/routes/suscripciones.routes');
+app.use('/api/suscripciones', suscripcionesRoutes);
 
 console.log('5. Ruta /api/usuarios registrada');
 console.log('6. Rutas módulo Historia Clínica registradas');

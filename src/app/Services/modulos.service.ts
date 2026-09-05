@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
@@ -10,7 +11,7 @@ import { Modulo } from '../Models/modulo';
 export class ModulosService {
 
   private apiUrl =
-    'http://localhost:3000/api/modulos';
+    `${environment.apiUrl}/modulos`;
 
   constructor(
     private http: HttpClient

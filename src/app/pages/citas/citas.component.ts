@@ -20,9 +20,12 @@ import {
 } from '../../Models/categoria-servicio';
 
 import {
-  ServiciosService,
-  Servicio
+  ServiciosService
 } from '../../Services/servicios.service';
+
+import {
+  Servicio
+} from '../../Models/servicio';
 
 import {
   ModulosService
@@ -159,7 +162,7 @@ cambiarServicio(): void {
   if (servicio) {
 
     this.cita.Precio =
-      servicio.Precio;
+      servicio.Precio ?? 0;
 
   } else {
 
@@ -289,7 +292,6 @@ FechaCita: '',
       next: (respuesta:any) => {
 
         this.mascotas = respuesta.datos || [];
-        console.log('Mascotas cargadas:', this.mascotas);
       },
 
       error: (error:any) => {
@@ -349,19 +351,14 @@ FechaCita: '',
       Number(
         1
       );
-    console.log("categoria escogida");
-    console.log(idCategoria);
     this.serviciosFiltrados =
       this.servicios.filter(
         servicio =>
           Number(
             servicio.IdCategoriaServicio
           ) === idCategoria &&
-          servicio.Activo !== false
+          servicio.Activo !== 0
       );
-
-   console.log("servicio filtrado es ");
-    console.log(this.serviciosFiltrados );
 
     this.cita.IdServicio = 0;
 
@@ -584,8 +581,6 @@ FechaCita: '',
     this.cita.UsuarioIdCreacion = usuarioId;
     this.cita.FechaModificacion = new Date().toISOString();
     this.cita.UsuarioIdModificacion = usuarioId;
-    console.log("para crear la data es ");
-    console.log(this.cita);
     this.citasService
       .crear(this.cita)
       .subscribe({
@@ -619,32 +614,21 @@ FechaCita: '',
 
 cargarServiciosCitas(): void {
 
-  console.log('Cargando servicios...');
-
   this.serviciosService.listar().subscribe({
 
     next: (respuesta) => {
-
-      console.log('Respuesta servicios:', respuesta);
 
       this.servicios =
         respuesta.datos ||
         respuesta.data ||
         [];
 
-      console.log('Todos los servicios:', this.servicios);
-
       this.serviciosFiltrados =
         this.servicios.filter(
           servicio =>
             Number(servicio.IdCategoriaServicio) === 1 &&
-            servicio.Activo !== false
+            servicio.Activo !== 0
         );
-
-      console.log(
-        'Servicios categoría 1:',
-        this.serviciosFiltrados
-      );
 
     },
 

@@ -59,8 +59,6 @@ export class LoginComponent implements OnInit {
 
           }
 
-          console.log('Empresas cargadas:', this.empresas);
-
         },
 
         error: (error) => {
@@ -78,8 +76,6 @@ export class LoginComponent implements OnInit {
 
 
   ingresar(): void {
-
-    console.log("Consulta ok1");
 
     this.mensaje = '';
 
@@ -104,7 +100,6 @@ export class LoginComponent implements OnInit {
 
     this.cargando = true;
 
-    console.log("Vamos a validar el usuario desde login");
     this.usuarioService
       .validarUsuario(
         this.Username,
@@ -114,17 +109,7 @@ export class LoginComponent implements OnInit {
       .subscribe({
 
         next: (respuesta) => {
-          console.log(respuesta);  
           this.cargando = false;
-
-          console.log(
-            'Usuario autenticado:',
-            respuesta
-          );
-
-          console.log('RESPUESTA COMPLETA LOGIN:', respuesta);
-          console.log('UsuarioId recibido:', respuesta.usuario.UsuarioId);
-          console.log('IdEmpresa recibido:', respuesta.usuario.IdEmpresa);
 
           // Contexto de seguridad: usuario, empresa, token e IdEmpresa
           localStorage.clear();
@@ -149,6 +134,14 @@ export class LoginComponent implements OnInit {
             'IdSesion',
             JSON.stringify(respuesta.usuario.IdSesion)
           );
+          if (respuesta.suscripcion) {
+            localStorage.setItem(
+              'suscripcion',
+              JSON.stringify(respuesta.suscripcion)
+            );
+          } else {
+            localStorage.removeItem('suscripcion');
+          }
 
           this.seguridadService.limpiarCache();
 

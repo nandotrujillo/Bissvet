@@ -1,0 +1,281 @@
+.reportes-container {
+  padding: 25px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 70px);
+}
+
+/* ENCABEZADO */
+
+.encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.encabezado h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #1f2937;
+}
+
+.encabezado p {
+  margin: 5px 0 0;
+  color: #6b7280;
+}
+
+/* MENSAJES */
+
+.mensaje {
+  padding: 12px 15px;
+  border-radius: 7px;
+  margin-bottom: 15px;
+}
+
+.exito {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* CUERPO 2 COLUMNAS */
+
+.cuerpo-dos-columnas {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* LISTA DE REPORTES */
+
+.lista-reportes {
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 20px;
+}
+
+.lista-reportes h3 {
+  margin: 0 0 12px;
+  color: #374151;
+  font-size: 15px;
+}
+
+.item-reporte {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+.item-reporte:hover {
+  background: #f3f4f6;
+}
+
+.item-reporte.activo {
+  background: #eff6ff;
+  border-left: 3px solid #2563eb;
+}
+
+.item-reporte:active {
+  background: #eff6ff;
+}
+
+.nombre {
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.descripcion {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+/* ÁREA REPORTE */
+
+.area-reporte {
+  min-width: 0;
+}
+
+.tarjeta-filtros {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.tarjeta-filtros h2 {
+  margin: 0 0 4px;
+  color: #1f2937;
+  font-size: 20px;
+}
+
+.tarjeta-filtros p {
+  margin: 0 0 14px;
+  color: #6b7280;
+}
+
+.filtros {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+}
+
+.campo label {
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.campo input,
+.campo select {
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  font-size: 14px;
+  min-width: 160px;
+}
+
+.campo input:focus,
+.campo select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.botones-accion {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.btn-generar {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 11px 20px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-generar:hover {
+  background: #1d4ed8;
+}
+
+.btn-secundario {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 11px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-secundario:hover {
+  background: #e5e7eb;
+}
+
+/* TABLA */
+
+.tabla-card {
+  background: white;
+  border-radius: 12px;
+  overflow-x: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #f3f4f6;
+}
+
+th {
+  text-align: left;
+  padding: 14px;
+  color: #374151;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+td {
+  padding: 13px 14px;
+  border-top: 1px solid #e5e7eb;
+  color: #4b5563;
+  white-space: nowrap;
+}
+
+tbody tr:hover {
+  background: #f9fafb;
+}
+
+.texto-derecha {
+  text-align: right;
+}
+
+.total-moneda {
+  display: block;
+}
+
+.fila-total {
+  background: #eff6ff;
+}
+
+.fila-total td {
+  color: #1f2937;
+  border-top: 2px solid #bfdbfe;
+}
+
+/* SIN DATOS */
+
+.sin-datos {
+  text-align: center;
+  padding: 30px;
+  color: #9ca3af;
+  white-space: normal;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+  .cuerpo-dos-columnas {
+    grid-template-columns: 1fr;
+  }
+
+  .lista-reportes {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+  }
+}

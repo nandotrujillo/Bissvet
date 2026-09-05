@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
@@ -7,7 +8,7 @@ import { Observable } from 'rxjs';
 })
 export class UnidadesMedidaService {
 
-  private apiUrl = 'http://localhost:3000/api/unidades-medida';
+  private apiUrl = `${environment.apiUrl}/unidades-medida`;
 
   constructor(private http: HttpClient) {}
 

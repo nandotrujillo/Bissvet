@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 
@@ -25,7 +26,7 @@ export interface RolSistema {
 })
 export class SeguridadService {
 
-  private apiUrl = 'http://localhost:3000/api/seguridad';
+  private apiUrl = `${environment.apiUrl}/seguridad`;
 
   private modulosCache: ModuloSistema[] | null = null;
   private permisosCache: string[] | null = null;
@@ -57,6 +58,19 @@ export class SeguridadService {
       !!this.permisosCache &&
       this.permisosCache.includes(codigo)
     );
+  }
+
+  obtenerPermisosLocal(): string[] {
+    if (typeof localStorage === 'undefined') {
+      return [];
+    }
+
+    try {
+      const raw = localStorage.getItem('permisos');
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch (e) {
+      return [];
+    }
   }
 
   limpiarCache(): void {

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Usuario } from '../Models/usuario';
@@ -8,7 +9,7 @@ import { Usuario } from '../Models/usuario';
 })
 export class UsuarioService {
 
-  private apiUrl = 'http://localhost:3000/api/usuarios';
+  private apiUrl = `${environment.apiUrl}/usuarios`;
 
   constructor(private http: HttpClient) {}
 

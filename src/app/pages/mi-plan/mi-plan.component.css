@@ -1,0 +1,319 @@
+.miplan-container {
+  padding: 25px;
+}
+
+.cabecera {
+  margin-bottom: 20px;
+}
+
+.cabecera h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #222;
+}
+
+.cabecera p {
+  margin: 4px 0 0;
+  color: #777;
+  font-size: 14px;
+}
+
+.mensaje {
+  padding: 10px 14px;
+  border-radius: 5px;
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.mensaje.exito {
+  background: #d4edda;
+  color: #155724;
+}
+
+.mensaje.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.cargando {
+  color: #777;
+  padding: 20px 0;
+}
+
+.sin-plan {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
+.sin-plan h3 {
+  margin: 0 0 8px;
+}
+
+.tarjeta-plan {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  padding: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.plan-nombre {
+  font-size: 24px;
+  font-weight: bold;
+  color: #222;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.estado-chip {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.estado-chip.prueba {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.estado-chip.activa {
+  background: #d4edda;
+  color: #155724;
+}
+
+.estado-chip.vencida {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.estado-chip.suspendida {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.plan-codigo {
+  color: #888;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.plan-descripcion {
+  color: #555;
+  font-size: 14px;
+  margin-top: 8px;
+  max-width: 600px;
+}
+
+.plan-detalles {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.detalle-etiqueta {
+  color: #888;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.detalle-valor {
+  color: #333;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.plan-acciones {
+  text-align: right;
+}
+
+.btn-primary {
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-primary:hover {
+  background: #1565c0;
+}
+
+.btn-cancelar {
+  background: #fff;
+  color: #555;
+  border: 1px solid #ccc;
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.seccion {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  padding: 22px;
+  margin-top: 18px;
+}
+
+.seccion h3 {
+  margin: 0 0 5px;
+  font-size: 17px;
+}
+
+.nota {
+  margin: 0 0 15px;
+  color: #777;
+  font-size: 13px;
+}
+
+.grid-consumo {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.consumo-item {
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.consumo-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.consumo-nombre {
+  font-weight: 600;
+  color: #333;
+}
+
+.consumo-valor {
+  color: #1976d2;
+  font-weight: bold;
+}
+
+.consumo-unidad {
+  color: #888;
+  font-weight: normal;
+  font-size: 12px;
+}
+
+.barra-contenedor {
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.barra {
+  height: 100%;
+  background: #1976d2;
+  border-radius: 5px;
+  transition: width 0.3s;
+}
+
+.barra-alerta {
+  background: #dc3545;
+}
+
+.alerta-limite {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.grid-modulos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.modulo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.check {
+  color: #198754;
+  font-weight: bold;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.formulario {
+  width: 90%;
+  max-width: 480px;
+  padding: 25px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.formulario h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.campo label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.campo select,
+.campo input {
+  padding: 9px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}

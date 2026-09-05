@@ -6,7 +6,7 @@ import { Bodega } from '../../Models/bodega';
 import { Producto } from '../../Models/producto';
 
 import { AjustesService } from '../../Services/ajustes.service';
-import { BodegaService } from '../../Services/Bodega.service ';
+import { BodegaService } from '../../Services/Bodega.service';
 import { ProductosService } from '../../Services/productos.service';
 
 @Component({

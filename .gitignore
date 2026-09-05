@@ -33,6 +33,7 @@ src/app/JwtToken.env
 .history/*
 
 # Miscellaneous
+/*.rar
 /.angular/cache
 .sass-cache/
 /connect.lock

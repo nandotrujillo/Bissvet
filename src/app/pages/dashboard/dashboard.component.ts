@@ -7,6 +7,7 @@ import {
 } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { SeguridadService, ModuloSistema } from '../../Services/seguridad.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-dashboard',
@@ -26,6 +27,9 @@ export class DashboardComponent implements OnInit {
   empresaNombre: string = '';
   modulos: ModuloSistema[] = [];
   usuarioActual: string = '';
+  planActual: string = '';
+  planEstado: string = '';
+  planVence: string = '';
 
   constructor(
     private seguridadService: SeguridadService,
@@ -51,6 +55,24 @@ export class DashboardComponent implements OnInit {
         } catch (error) {
 
           console.error('Error leyendo empresa de sesión:', error);
+        }
+      }
+
+      const sub = localStorage.getItem('suscripcion');
+
+      if (sub) {
+
+        try {
+
+          const suscripcion = JSON.parse(sub);
+
+          this.planActual = suscripcion?.NombrePlan || '';
+          this.planEstado = suscripcion?.Estado || '';
+          this.planVence = suscripcion?.FechaFin || '';
+
+        } catch (error) {
+
+          console.error('Error leyendo suscripción de sesión:', error);
         }
       }
     }
@@ -90,7 +112,7 @@ export class DashboardComponent implements OnInit {
       if (idSesionNum) {
 
         this.http.post(
-          'http://localhost:3000/api/usuarios/logout',
+          `${environment.apiUrl}/usuarios/logout`,
           { IdSesion: idSesionNum }
         ).subscribe({
           next: () => {},

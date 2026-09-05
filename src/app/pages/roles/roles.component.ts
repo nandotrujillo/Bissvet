@@ -63,18 +63,7 @@ export class RolesComponent implements OnInit {
   }
 
   cargarPermisos(): void {
-    let permisos: string[] = [];
-
-    if (typeof localStorage !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('permisos');
-        if (raw) {
-          permisos = JSON.parse(raw);
-        }
-      } catch (e) {
-        permisos = [];
-      }
-    }
+    const permisos = this.seguridadService.obtenerPermisosLocal();
 
     this.puedeCrear = permisos.includes('SEGURIDAD.CREAR');
     this.puedeEditar = permisos.includes('SEGURIDAD.EDITAR');

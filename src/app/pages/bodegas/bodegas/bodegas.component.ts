@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { Bodega } from '../../../Models/bodega';
-import { BodegaService } from '../../../Services/Bodega.service ';
+import { BodegaService } from '../../../Services/Bodega.service';
 
 @Component({
   selector: 'app-bodegas',
@@ -52,8 +52,6 @@ nuevaBodega(): Bodega {
     this.bodegaService.listar().subscribe({
 
       next: (respuesta: any) => {
-
-        console.log('Bodegas:', respuesta);
 
         if (respuesta?.datos) {
           this.bodegas = respuesta.datos;

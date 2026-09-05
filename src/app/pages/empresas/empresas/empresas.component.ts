@@ -97,7 +97,6 @@ export class EmpresasComponent implements OnInit {
           this.ciudades = [];
         }
 
-        console.log('Ciudades cargadas:', this.ciudades.length);
       },
 
       error: (error: any) => {
