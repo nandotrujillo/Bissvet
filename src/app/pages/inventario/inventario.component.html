@@ -1,0 +1,410 @@
+<div class="inventario-container">
+
+  <div class="titulo">
+
+    <div>
+      <h2>📊 Inventario</h2>
+      <p>Existencias, consolidado y stock inicial</p>
+    </div>
+
+  </div>
+
+
+  <!-- TABS -->
+
+  <div class="tabs">
+
+    <button
+      class="tab"
+      [class.activo]="vista === 'existencias'"
+      (click)="cambiarVista('existencias')">
+
+      Existencias
+
+    </button>
+
+    <button
+      class="tab"
+      [class.activo]="vista === 'consolidado'"
+      (click)="cambiarVista('consolidado')">
+
+      Consolidado
+
+    </button>
+
+    <button
+      class="tab"
+      [class.activo]="vista === 'inicial'"
+      (click)="cambiarVista('inicial')">
+
+      Inventario Inicial
+
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+    {{ mensaje }}
+  </div>
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+    {{ error }}
+  </div>
+
+
+  <!-- ================================================
+       EXISTENCIAS
+       ================================================ -->
+
+  <div *ngIf="vista === 'existencias'">
+
+    <div class="barra-filtros">
+
+      <select [(ngModel)]="filtroBodega">
+
+        <option [ngValue]="0">Todas las bodegas</option>
+
+        <option
+          *ngFor="let bodega of bodegas"
+          [ngValue]="bodega.Id">
+          {{ bodega.NombreBodega }}
+        </option>
+
+      </select>
+
+      <input
+        type="text"
+        [(ngModel)]="buscar"
+        placeholder="Buscar producto..."
+        (keyup.enter)="cargarExistencias()">
+
+      <button
+        class="btn-buscar"
+        (click)="cargarExistencias()">
+        Buscar
+      </button>
+
+    </div>
+
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Bodega</th>
+            <th>Cantidad</th>
+            <th>Costo Prom.</th>
+            <th>Costo Total</th>
+            <th>Precio Venta</th>
+            <th>Alerta</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let item of existencias">
+
+            <td>
+              {{ item.CodigoProducto }}
+            </td>
+
+            <td>
+              {{ item.NombreProducto }}
+            </td>
+
+            <td>
+              {{ item.NombreBodega }}
+            </td>
+
+            <td>
+              {{ item.Cantidad }}
+            </td>
+
+            <td>
+              {{ item.CostoPromedio | currency }}
+            </td>
+
+            <td>
+              {{ item.CostoTotal | currency }}
+            </td>
+
+            <td>
+              {{ item.PrecioVenta | currency }}
+            </td>
+
+            <td>
+
+              <span
+                class="estado"
+                [class]="badgeAlerta(item.Alerta)">
+
+                {{ item.Alerta }}
+
+              </span>
+
+            </td>
+
+          </tr>
+
+
+          <tr *ngIf="existencias.length === 0">
+
+            <td
+              colspan="8"
+              class="sin-registros">
+              No existen registros de inventario.
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- ================================================
+       CONSOLIDADO
+       ================================================ -->
+
+  <div *ngIf="vista === 'consolidado'">
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Existencia Total</th>
+            <th>Costo Prom. Consol.</th>
+            <th>Valor Total</th>
+            <th>Precio Venta</th>
+            <th>Alerta</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let item of consolidado">
+
+            <td>
+              {{ item.CodigoProducto }}
+            </td>
+
+            <td>
+              {{ item.NombreProducto }}
+            </td>
+
+            <td>
+              {{ item.TotalExistencia }}
+            </td>
+
+            <td>
+              {{ item.CostoPromedioConsolidado | currency }}
+            </td>
+
+            <td>
+              {{ item.ValorTotal | currency }}
+            </td>
+
+            <td>
+              {{ item.PrecioVenta | currency }}
+            </td>
+
+            <td>
+
+              <span
+                class="estado"
+                [class]="badgeAlerta(item.Alerta)">
+
+                {{ item.Alerta }}
+
+              </span>
+
+            </td>
+
+          </tr>
+
+
+          <tr *ngIf="consolidado.length === 0">
+
+            <td
+              colspan="7"
+              class="sin-registros">
+              No existen productos con inventario.
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- ================================================
+       INVENTARIO INICIAL
+       ================================================ -->
+
+  <div *ngIf="vista === 'inicial'">
+
+    <div class="formulario">
+
+      <h3>Registrar Inventario Inicial</h3>
+
+      <div class="campo-inicial">
+
+        <div class="campo">
+
+          <label>Bodega *</label>
+
+          <select [(ngModel)]="IdBodegaInicial">
+
+            <option [ngValue]="0" disabled>
+              Seleccione una bodega
+            </option>
+
+            <option
+              *ngFor="let bodega of bodegas"
+              [ngValue]="bodega.Id">
+              {{ bodega.NombreBodega }}
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <div class="detalle-titulo">
+        <span>Productos</span>
+      </div>
+
+
+      <table class="tabla-detalle">
+
+        <thead>
+
+          <tr>
+
+            <th>Producto *</th>
+            <th>Cantidad *</th>
+            <th>Costo Unitario *</th>
+            <th></th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let item of itemsInicial; let i = index">
+
+            <td>
+
+              <select [(ngModel)]="item.IdProducto">
+
+                <option [ngValue]="0" disabled>
+                  Seleccione un producto
+                </option>
+
+                <option
+                  *ngFor="let producto of productos"
+                  [ngValue]="producto.IdProducto">
+                  {{ producto.CodigoProducto }} - {{ producto.NombreProducto }}
+                </option>
+
+              </select>
+
+            </td>
+
+            <td>
+
+              <input
+                type="number"
+                step="0.0001"
+                min="0"
+                [(ngModel)]="item.Cantidad">
+
+            </td>
+
+            <td>
+
+              <input
+                type="number"
+                step="0.0001"
+                min="0"
+                [(ngModel)]="item.CostoUnitario">
+
+            </td>
+
+            <td class="acciones">
+
+              <button
+                class="btn-eliminar"
+                (click)="quitarItemInicial(i)">
+                ✕
+              </button>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+
+      <button
+        class="btn-agregar"
+        (click)="agregarItemInicial()">
+        + Agregar Producto
+      </button>
+
+
+      <div class="acciones-formulario">
+
+        <button
+          class="btn-guardar"
+          (click)="guardarInventarioInicial()">
+          Registrar
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

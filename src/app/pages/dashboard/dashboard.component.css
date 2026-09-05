@@ -1,0 +1,283 @@
+/* =====================================================
+   BISSVET - DASHBOARD
+   ===================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+:host {
+  display: block;
+}
+
+/* =====================================================
+   CONTENEDOR PRINCIPAL
+   ===================================================== */
+
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: #f5f7f9;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* =====================================================
+   MENÚ LATERAL
+   ===================================================== */
+
+.sidebar {
+  width: 250px;
+  min-width: 250px;
+
+  background: #123d32;
+  color: white;
+
+  display: flex;
+  flex-direction: column;
+
+  position: fixed;
+
+  left: 0;
+  top: 0;
+  bottom: 0;
+
+  z-index: 1000;
+
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
+}
+
+
+/* =====================================================
+   LOGO
+   ===================================================== */
+
+.logo {
+  height: 80px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 18px;
+
+  font-size: 21px;
+  font-weight: bold;
+
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+
+/* =====================================================
+   EMPRESA ACTUAL EN EL MENÚ
+   ===================================================== */
+
+.empresa-actual {
+  padding: 10px 14px;
+
+  font-size: 12px;
+
+  color: #a8cfc4;
+
+  background: rgba(255,255,255,0.05);
+
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+/* =====================================================
+   NAVEGACIÓN
+   ===================================================== */
+
+.sidebar nav {
+
+  display: flex;
+
+  flex-direction: column;
+
+  width: 100%;
+
+  padding: 15px 12px;
+
+  gap: 5px;
+
+  flex: 1;
+
+  overflow-y: auto;
+
+  min-height: 0;
+}
+
+
+/* =====================================================
+   OPCIONES DEL MENÚ
+   ===================================================== */
+
+.sidebar nav a {
+
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 13px 14px;
+
+  border-radius: 8px;
+
+  color: #dceae6;
+
+  text-decoration: none;
+
+  font-size: 14px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+/* =====================================================
+   HOVER
+   ===================================================== */
+
+.sidebar nav a:hover {
+
+  background: #1d6955;
+
+  color: white;
+
+  transform: translateX(2px);
+}
+
+
+/* =====================================================
+   CONTENIDO PRINCIPAL
+   ===================================================== */
+
+.contenido-dashboard {
+
+  margin-left: 250px;
+
+  width: calc(100% - 250px);
+
+  min-height: 100vh;
+
+  padding: 30px 35px;
+
+  background: #f5f7f9;
+}
+
+
+/* =====================================================
+   ROUTER OUTLET
+   ===================================================== */
+
+.contenido-dashboard > router-outlet {
+
+  display: block;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 900px) {
+
+  .sidebar {
+
+    width: 70px;
+
+    min-width: 70px;
+
+  }
+
+  .logo {
+
+    justify-content: center;
+
+    padding: 10px;
+
+    font-size: 0;
+  }
+
+  .logo::before {
+
+    content: "🐾";
+
+    font-size: 28px;
+
+  }
+
+  .sidebar nav {
+
+    padding: 15px 8px;
+
+  }
+
+  .sidebar nav a {
+
+    justify-content: center;
+
+    padding: 13px 8px;
+
+    font-size: 0;
+
+  }
+
+  .sidebar nav a:hover {
+
+    transform: none;
+
+  }
+
+  .contenido-dashboard {
+
+    margin-left: 70px;
+
+    width: calc(100% - 70px);
+
+    padding: 20px;
+
+  }
+
+}
+
+
+/* =====================================================
+   PANTALLAS PEQUEÑAS
+   ===================================================== */
+
+@media (max-width: 600px) {
+
+  .sidebar {
+
+    width: 60px;
+
+    min-width: 60px;
+
+  }
+
+  .contenido-dashboard {
+
+    margin-left: 60px;
+
+    width: calc(100% - 60px);
+
+    padding: 15px;
+
+  }
+
+}

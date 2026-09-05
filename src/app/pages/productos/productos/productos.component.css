@@ -1,0 +1,319 @@
+.productos-container {
+  padding: 25px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+/* TITULO */
+
+.titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.titulo h2 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.titulo p {
+  margin: 5px 0 0;
+  color: #666;
+}
+
+
+/* TABS */
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px 20px;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555;
+}
+
+.tab.activo {
+  background: #1976d2;
+  border-color: #1976d2;
+  color: white;
+}
+
+
+/* BARRA DE BUSQUEDA */
+
+.barra-busqueda {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.barra-busqueda input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.barra-busqueda input:focus {
+  outline: none;
+  border-color: #1976d2;
+}
+
+
+/* BOTON NUEVO */
+
+.btn-nuevo {
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 11px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.btn-nuevo:hover {
+  opacity: 0.9;
+}
+
+.btn-buscar {
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-buscar:hover {
+  opacity: 0.9;
+}
+
+
+/* MENSAJES */
+
+.mensaje {
+  padding: 12px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+}
+
+.exito {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.error {
+  background: #ffebee;
+  color: #c62828;
+}
+
+
+/* FORMULARIO */
+
+.formulario {
+  background: white;
+  padding: 20px;
+  margin-bottom: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.formulario h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+
+/* GRID */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+}
+
+.campo-completo {
+  grid-column: 1 / -1;
+}
+
+.campo label {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.campo input,
+.campo textarea,
+.campo select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.campo input:focus,
+.campo textarea:focus,
+.campo select:focus {
+  outline: none;
+  border-color: #1976d2;
+}
+
+
+/* BOTONES FORMULARIO */
+
+.acciones-formulario {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.btn-guardar,
+.btn-cancelar {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-guardar {
+  background: #2e7d32;
+  color: white;
+}
+
+.btn-cancelar {
+  background: #757575;
+  color: white;
+}
+
+
+/* TABLA */
+
+.tabla-container {
+  background: white;
+  border-radius: 8px;
+  overflow-x: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+thead {
+  background: #f5f5f5;
+}
+
+th,
+td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  font-weight: 600;
+}
+
+
+/* ESTADO */
+
+.estado {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 5px 9px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.estado.inactivo {
+  background: #ffebee;
+  color: #c62828;
+}
+
+
+/* ACCIONES */
+
+.acciones {
+  white-space: nowrap;
+}
+
+.btn-editar,
+.btn-eliminar {
+  border: none;
+  padding: 7px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.btn-editar {
+  background: #1976d2;
+  color: white;
+}
+
+.btn-eliminar {
+  background: #d32f2f;
+  color: white;
+}
+
+
+/* SIN REGISTROS */
+
+.sin-registros {
+  text-align: center;
+  padding: 25px;
+  color: #777;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+
+  .titulo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .campo-completo {
+    grid-column: auto;
+  }
+
+  .barra-busqueda {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .barra-busqueda input {
+    width: 100%;
+  }
+
+}

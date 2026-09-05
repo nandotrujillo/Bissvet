@@ -1,0 +1,347 @@
+<div class="empresas-container">
+
+  <div class="titulo">
+
+    <div>
+      <h2>🏢 Empresa</h2>
+      <p>Información general de la empresa</p>
+    </div>
+
+    <button
+      *ngIf="!editando"
+      class="btn-nuevo"
+      (click)="editar()">
+      ✏️ Editar Empresa
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- FICHA (VISTA) -->
+
+  <div
+    class="ficha"
+    *ngIf="!editando">
+
+    <div class="ficha-header">
+
+      <h3>{{ empresa.NombreComercial }}</h3>
+
+      <span
+        class="estado"
+        [class.inactivo]="empresa.Activo === 0">
+
+        {{ empresa.Activo === 1 ? 'Activa' : 'Inactiva' }}
+
+      </span>
+
+    </div>
+
+    <div class="ficha-grid">
+
+      <div class="dato">
+        <span class="label">Código</span>
+        <span>{{ empresa.CodigoEmpresa }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Número documento</span>
+        <span>{{ empresa.Nit }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Razón social</span>
+        <span>{{ empresa.RazonSocial }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Nombre comercial</span>
+        <span>{{ empresa.NombreComercial }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Tipo de documento</span>
+        <span>{{ empresa.TipoDocumento || '-' }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Teléfono</span>
+        <span>{{ empresa.Telefono || '-' }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Correo</span>
+        <span>{{ empresa.Correo || '-' }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Contacto</span>
+        <span>{{ empresa.Contacto || '-' }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Teléfono contacto</span>
+        <span>{{ empresa.TelefonoContacto || '-' }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Dirección</span>
+        <span>{{ empresa.Direccion || '-' }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Ciudad</span>
+        <span>{{ nombreCiudad || '-' }}</span>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- FORMULARIO (EDICIÓN) -->
+
+  <div
+    class="formulario"
+    *ngIf="editando">
+
+    <h3>Editar Empresa</h3>
+
+    <div class="form-grid">
+
+      <!-- CODIGO -->
+
+      <div class="campo">
+
+        <label>Código *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="empresa.CodigoEmpresa"
+          maxlength="50"
+          placeholder="Código de la empresa">
+
+      </div>
+
+
+      <!-- NÚMERO DOCUMENTO -->
+
+      <div class="campo">
+
+        <label>Número Documento *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="empresa.Nit"
+          maxlength="20"
+          placeholder="Número de documento">
+
+      </div>
+
+
+      <!-- RAZON SOCIAL -->
+
+      <div class="campo campo-completo">
+
+        <label>Razón social *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="empresa.RazonSocial"
+          maxlength="200"
+          placeholder="Razón social">
+
+      </div>
+
+
+      <!-- NOMBRE COMERCIAL -->
+
+      <div class="campo campo-completo">
+
+        <label>Nombre comercial *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="empresa.NombreComercial"
+          maxlength="200"
+          placeholder="Nombre comercial">
+
+      </div>
+
+
+      <!-- TIPO DOCUMENTO -->
+
+      <div class="campo">
+
+        <label>Tipo de documento</label>
+
+        <input
+          type="text"
+          [(ngModel)]="empresa.TipoDocumento"
+          maxlength="20"
+          placeholder="NIT, CC, ...">
+
+      </div>
+
+
+      <!-- TELEFONO -->
+
+      <div class="campo">
+
+        <label>Teléfono</label>
+
+        <input
+          type="text"
+          [(ngModel)]="empresa.Telefono"
+          maxlength="30"
+          placeholder="Teléfono">
+
+      </div>
+
+
+      <!-- CORREO -->
+
+      <div class="campo campo-completo">
+
+        <label>Correo</label>
+
+        <input
+          type="email"
+          [(ngModel)]="empresa.Correo"
+          maxlength="120"
+          placeholder="Correo electrónico">
+
+      </div>
+
+
+      <!-- DIRECCION -->
+
+      <div class="campo campo-completo">
+
+        <label>Dirección</label>
+
+        <input
+          type="text"
+          [(ngModel)]="empresa.Direccion"
+          maxlength="300"
+          placeholder="Dirección">
+
+      </div>
+
+
+      <!-- CIUDAD -->
+
+      <div class="campo">
+
+        <label>Ciudad</label>
+
+        <select [(ngModel)]="empresa.IdCiudad">
+
+          <option [ngValue]="0">Seleccione ciudad...</option>
+
+          <option
+            *ngFor="let ciudad of ciudades"
+            [ngValue]="ciudad.Id">
+
+            {{ ciudad.Ciudad }} {{ ciudad.Departamento ? '- ' + ciudad.Departamento : '' }}
+
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- CONTACTO -->
+
+      <div class="campo campo-completo">
+
+        <label>Contacto</label>
+
+        <input
+          type="text"
+          [(ngModel)]="empresa.Contacto"
+          maxlength="60"
+          placeholder="Nombre de la persona de contacto">
+
+      </div>
+
+
+      <!-- TELÉFONO CONTACTO -->
+
+      <div class="campo">
+
+        <label>Teléfono contacto</label>
+
+        <input
+          type="text"
+          [(ngModel)]="empresa.TelefonoContacto"
+          maxlength="15"
+          placeholder="Teléfono de contacto">
+
+      </div>
+
+
+      <!-- ESTADO -->
+
+      <div class="campo">
+
+        <label>Estado</label>
+
+        <select [(ngModel)]="empresa.Activo">
+
+          <option [ngValue]="1">Activa</option>
+          <option [ngValue]="0">Inactiva</option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+
+    <!-- BOTONES -->
+
+    <div class="acciones-formulario">
+
+      <button
+        class="btn-guardar"
+        (click)="guardar()">
+
+        Guardar
+
+      </button>
+
+      <button
+        class="btn-cancelar"
+        (click)="cancelar()">
+
+        Cancelar
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>

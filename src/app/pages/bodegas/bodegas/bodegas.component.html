@@ -1,0 +1,293 @@
+<div class="bodegas-container">
+
+  <div class="titulo">
+
+    <div>
+      <h2>🏢 Bodegas</h2>
+      <p>Administración de bodegas</p>
+    </div>
+
+    <button
+      class="btn-nuevo"
+      (click)="nueva()">
+      + Nueva Bodega
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- FORMULARIO -->
+
+  <div
+    class="formulario"
+    *ngIf="mostrarFormulario">
+
+    <h3>
+      {{ editando ? 'Editar Bodega' : 'Nueva Bodega' }}
+    </h3>
+
+
+    <div class="form-grid">
+
+      <!-- CODIGO -->
+
+      <div class="campo">
+
+        <label>Código *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="bodega.CodigoBodega"
+          maxlength="50"
+          placeholder="Código de la bodega">
+
+      </div>
+
+
+      <!-- NOMBRE -->
+
+      <div class="campo">
+
+        <label>Nombre *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="bodega.NombreBodega"
+          maxlength="150"
+          placeholder="Nombre de la bodega">
+
+      </div>
+
+
+      <!-- DESCRIPCION -->
+
+      <div class="campo campo-completo">
+
+        <label>Descripción</label>
+
+        <textarea
+          [(ngModel)]="bodega.Descripcion"
+          maxlength="250"
+          rows="3"
+          placeholder="Descripción de la bodega">
+        </textarea>
+
+      </div>
+
+
+      <!-- DIRECCION -->
+
+      <div class="campo">
+
+        <label>Dirección</label>
+
+        <input
+          type="text"
+          [(ngModel)]="bodega.Direccion"
+          maxlength="250"
+          placeholder="Dirección">
+
+      </div>
+
+
+      <!-- RESPONSABLE -->
+
+      <div class="campo">
+
+        <label>Responsable</label>
+
+        <input
+          type="text"
+          [(ngModel)]="bodega.Responsable"
+          maxlength="150"
+          placeholder="Responsable">
+
+      </div>
+
+
+      <!-- ESTATUS -->
+      <div class="campo">
+        <label>Estatus</label>
+        <select [(ngModel)]="bodega.Estatus">
+          <option [ngValue]="1">Activo</option>
+          <option [ngValue]="0">Inactivo</option>
+        </select>
+      </div>
+
+      <!-- ACTIVO -->
+
+      <div class="campo">
+
+        <label>Estado</label>
+
+        <select [(ngModel)]="bodega.Activo">
+
+          <option [ngValue]="1">
+            Activa
+          </option>
+
+          <option [ngValue]="0">
+            Inactiva
+          </option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+
+    <!-- BOTONES -->
+
+    <div class="acciones-formulario">
+
+      <button
+        class="btn-guardar"
+        (click)="guardar()">
+
+        {{ editando ? 'Actualizar' : 'Guardar' }}
+
+      </button>
+
+
+      <button
+        class="btn-cancelar"
+        (click)="cancelar()">
+
+        Cancelar
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- LISTADO -->
+
+  <div class="tabla-container">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Dirección</th>
+          <th>Responsable</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr *ngFor="let item of bodegas">
+
+          <td>
+            {{ item.Id }}
+          </td>
+
+          <td>
+            {{ item.CodigoBodega }}
+          </td>
+
+          <td>
+            {{ item.NombreBodega }}
+          </td>
+
+          <td>
+            {{ item.Descripcion || '-' }}
+          </td>
+
+          <td>
+            {{ item.Direccion || '-' }}
+          </td>
+
+          <td>
+            {{ item.Responsable || '-' }}
+          </td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.inactivo]="item.Activo === 0">
+
+              {{ item.Activo === 1 ? 'Activa' : 'Inactiva' }}
+
+            </span>
+
+          </td>
+
+          <td class="acciones">
+
+            <button
+              class="btn-editar"
+              (click)="editar(item)">
+
+              Editar
+
+            </button>
+
+            <button
+              class="btn-eliminar"
+              (click)="eliminar(item)">
+
+              Eliminar
+
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <!-- SIN REGISTROS -->
+
+        <tr *ngIf="bodegas.length === 0">
+
+          <td
+            colspan="8"
+            class="sin-registros">
+
+            No existen bodegas registradas.
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

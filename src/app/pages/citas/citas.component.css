@@ -1,0 +1,483 @@
+.pagina {
+  padding: 30px;
+  background: #f5f7f9;
+  min-height: 100vh;
+}
+
+
+/* =====================================================
+   ENCABEZADO
+   ===================================================== */
+
+.encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.encabezado h1 {
+  margin: 0 0 5px;
+  color: #1f2937;
+  font-size: 25px;
+}
+
+.encabezado p {
+  margin: 0;
+  color: #7b838c;
+  font-size: 13px;
+}
+
+
+/* =====================================================
+   BOTÓN NUEVA
+   ===================================================== */
+
+.btn-nueva {
+  border: none;
+  border-radius: 8px;
+
+  padding: 12px 20px;
+
+  background: #174a32;
+  color: white;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: .2s;
+}
+
+.btn-nueva:hover {
+  background: #216a4a;
+  transform: translateY(-1px);
+}
+
+
+/* =====================================================
+   TABLA
+   ===================================================== */
+
+.tabla-card {
+  background: white;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 10px;
+
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #f8fafb;
+}
+
+th {
+  padding: 14px 16px;
+
+  text-align: left;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  text-transform: uppercase;
+
+  letter-spacing: .5px;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+td {
+  padding: 15px 16px;
+
+  border-bottom: 1px solid #f0f1f2;
+
+  color: #374151;
+
+  font-size: 13px;
+}
+
+tbody tr:hover {
+  background: #fafcfb;
+}
+
+
+/* =====================================================
+   ESTADOS
+   ===================================================== */
+
+.estado {
+  display: inline-block;
+
+  padding: 5px 10px;
+
+  border-radius: 20px;
+
+  font-size: 11px;
+
+  font-weight: 600;
+}
+
+.pendiente {
+  background: #fff4dc;
+  color: #a46c00;
+}
+
+.confirmado {
+  background: #e5f5ed;
+  color: #197a5b;
+}
+
+.cancelado {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+
+/* =====================================================
+   ACCIONES
+   ===================================================== */
+
+.acciones {
+  white-space: nowrap;
+}
+
+.btn-editar,
+.btn-eliminar {
+  border: none;
+
+  width: 34px;
+  height: 34px;
+
+  margin-right: 5px;
+
+  border-radius: 7px;
+
+  cursor: pointer;
+
+  background: #f3f4f6;
+}
+
+.btn-editar:hover {
+  background: #e0f2e9;
+}
+
+.btn-eliminar:hover {
+  background: #fee2e2;
+}
+
+.btn-historia {
+  border: none;
+
+  padding: 7px 14px;
+
+  margin-right: 5px;
+
+  border-radius: 7px;
+
+  cursor: pointer;
+
+  background: #e0f2e9;
+
+  color: #197a5b;
+
+  font-weight: 600;
+
+  font-size: 12px;
+
+  transition: .2s;
+}
+
+.btn-historia:hover {
+  background: #c9e9d8;
+
+  color: #174a32;
+}
+
+
+/* =====================================================
+   FORMULARIO
+   ===================================================== */
+
+.formulario-card {
+
+  margin-top: 25px;
+
+  background: white;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 12px;
+
+  overflow: hidden;
+}
+
+.formulario-header {
+
+  padding: 22px 25px;
+
+  border-bottom: 1px solid #edf0f2;
+}
+
+.formulario-header h2 {
+
+  margin: 0 0 5px;
+
+  font-size: 19px;
+
+  color: #263238;
+}
+
+.formulario-header p {
+
+  margin: 0;
+
+  color: #89939b;
+
+  font-size: 12px;
+}
+
+
+/* =====================================================
+   GRID
+   ===================================================== */
+
+.formulario-grid {
+
+  padding: 25px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 20px;
+}
+
+.campo {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.campo-completo {
+  grid-column: 1 / -1;
+}
+
+.campo label {
+
+  margin-bottom: 7px;
+
+  color: #374151;
+
+  font-size: 13px;
+
+  font-weight: 600;
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 11px 13px;
+
+  border: 1px solid #d9e0e3;
+
+  border-radius: 8px;
+
+  background: #fbfcfd;
+
+  color: #263238;
+
+  font-size: 13px;
+
+  outline: none;
+
+  transition: .2s;
+}
+
+.campo input,
+.campo select {
+  height: 44px;
+}
+
+.campo textarea {
+  resize: vertical;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+
+  background: white;
+
+  border-color: #1f8f6d;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(31, 143, 109, .10);
+}
+
+.campo select:disabled {
+
+  background: #f1f3f4;
+
+  color: #9ca3af;
+
+  cursor: not-allowed;
+}
+
+.campo small {
+
+  margin-top: 5px;
+
+  color: #8b949e;
+
+  font-size: 10px;
+}
+
+
+/* =====================================================
+   BOTONES
+   ===================================================== */
+
+.formulario-botones {
+
+  padding: 18px 25px;
+
+  border-top: 1px solid #edf0f2;
+
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+}
+
+.btn-cancelar,
+.btn-guardar {
+
+  padding: 11px 20px;
+
+  border-radius: 7px;
+
+  border: none;
+
+  cursor: pointer;
+
+  font-weight: 600;
+}
+
+.btn-cancelar {
+
+  background: #f1f3f4;
+
+  color: #4b5563;
+}
+
+.btn-guardar {
+
+  background: #174a32;
+
+  color: white;
+}
+
+.btn-guardar:hover {
+
+  background: #216a4a;
+}
+
+
+/* =====================================================
+   MENSAJES
+   ===================================================== */
+
+.mensaje {
+
+  padding: 12px 15px;
+
+  margin-bottom: 18px;
+
+  border-radius: 8px;
+
+  font-size: 13px;
+}
+
+.mensaje.exito {
+
+  background: #e8f6ef;
+
+  color: #18794e;
+}
+
+.mensaje.error {
+
+  background: #fff0f0;
+
+  color: #b42318;
+}
+
+
+/* =====================================================
+   CARGANDO / SIN DATOS
+   ===================================================== */
+
+.cargando,
+.sin-datos {
+
+  text-align: center;
+
+  padding: 35px;
+
+  color: #8a9199;
+
+  font-size: 13px;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 800px) {
+
+  .pagina {
+    padding: 20px;
+  }
+
+  .encabezado {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 15px;
+  }
+
+  .formulario-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .campo-completo {
+    grid-column: auto;
+  }
+
+  .tabla-card {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 750px;
+  }
+
+}

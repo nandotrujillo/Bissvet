@@ -1,0 +1,361 @@
+<div class="proveedores-container">
+
+  <div class="titulo">
+
+    <div>
+      <h2>🏭 Proveedores</h2>
+      <p>Administración de proveedores del inventario</p>
+    </div>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- BARRA DE BUSQUEDA -->
+
+  <div class="barra-busqueda">
+
+    <input
+      type="text"
+      [(ngModel)]="buscar"
+      placeholder="Buscar por nombre o NIT..."
+      (keyup.enter)="cargarProveedores()">
+
+    <button
+      class="btn-buscar"
+      (click)="cargarProveedores()">
+
+      Buscar
+
+    </button>
+
+    <button
+      class="btn-nuevo"
+      (click)="nueva()">
+
+      + Nuevo Proveedor
+
+    </button>
+
+  </div>
+
+
+  <!-- FORMULARIO -->
+
+  <div
+    class="formulario"
+    *ngIf="mostrarFormulario">
+
+    <h3>
+      {{ editando ? 'Editar Proveedor' : 'Nuevo Proveedor' }}
+    </h3>
+
+
+    <div class="form-grid">
+
+      <div class="campo">
+
+        <label>Nombre *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="proveedor.Nombre"
+          maxlength="150"
+          placeholder="Nombre del proveedor">
+
+      </div>
+
+
+      <div class="campo">
+
+        <label>Tipo de Documento</label>
+
+        <select [(ngModel)]="proveedor.TipoDocumento">
+
+          <option value="NIT">NIT</option>
+          <option value="CC">Cédula de Ciudadanía</option>
+          <option value="CE">Cédula de Extranjería</option>
+          <option value="RUT">RUT</option>
+
+        </select>
+
+      </div>
+
+
+      <div class="campo">
+
+        <label>Número de Documento</label>
+
+        <input
+          type="text"
+          [(ngModel)]="proveedor.NumeroDocumento"
+          maxlength="30"
+          placeholder="Número de documento">
+
+      </div>
+
+
+      <div class="campo">
+
+        <label>NIT</label>
+
+        <input
+          type="text"
+          [(ngModel)]="proveedor.Nit"
+          maxlength="30"
+          placeholder="NIT">
+
+      </div>
+
+
+      <div class="campo">
+
+        <label>Teléfono</label>
+
+        <input
+          type="text"
+          [(ngModel)]="proveedor.Telefono"
+          maxlength="30"
+          placeholder="Teléfono">
+
+      </div>
+
+
+      <div class="campo">
+
+        <label>Email</label>
+
+        <input
+          type="email"
+          [(ngModel)]="proveedor.Email"
+          maxlength="150"
+          placeholder="correo@proveedor.com">
+
+      </div>
+
+
+      <div class="campo campo-completo">
+
+        <label>Dirección</label>
+
+        <input
+          type="text"
+          [(ngModel)]="proveedor.Direccion"
+          maxlength="250"
+          placeholder="Dirección">
+
+      </div>
+
+
+      <div class="campo">
+
+        <label>Ciudad</label>
+
+        <select [(ngModel)]="proveedor.IdCiudad">
+
+          <option
+            [ngValue]="0"
+            disabled>
+            Seleccione una ciudad
+          </option>
+
+          <option
+            *ngFor="let ciudad of ciudades"
+            [ngValue]="ciudad.Id">
+
+            {{ ciudad.Ciudad }}
+
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="campo">
+
+        <label>Contacto</label>
+
+        <input
+          type="text"
+          [(ngModel)]="proveedor.Contacto"
+          maxlength="100"
+          placeholder="Persona de contacto">
+
+      </div>
+
+
+      <div class="campo">
+
+        <label>Estado</label>
+
+        <select [(ngModel)]="proveedor.Activo">
+
+          <option [ngValue]="1">Activo</option>
+          <option [ngValue]="0">Inactivo</option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+
+    <!-- BOTONES -->
+
+    <div class="acciones-formulario">
+
+      <button
+        class="btn-guardar"
+        (click)="guardar()">
+
+        {{ editando ? 'Actualizar' : 'Guardar' }}
+
+      </button>
+
+
+      <button
+        class="btn-cancelar"
+        (click)="cancelar()">
+
+        Cancelar
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- TABLA -->
+
+  <div class="tabla-container">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>NIT</th>
+          <th>Teléfono</th>
+          <th>Email</th>
+          <th>Ciudad</th>
+          <th>Contacto</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr *ngFor="let item of proveedores">
+
+          <td>
+            {{ item.IdProveedor }}
+          </td>
+
+          <td>
+            {{ item.Nombre }}
+          </td>
+
+          <td>
+            {{ item.Nit || '-' }}
+          </td>
+
+          <td>
+            {{ item.Telefono || '-' }}
+          </td>
+
+          <td>
+            {{ item.Email || '-' }}
+          </td>
+
+          <td>
+            {{ item.NombreCiudad || '-' }}
+          </td>
+
+          <td>
+            {{ item.Contacto || '-' }}
+          </td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.inactivo]="item.Activo === 0">
+
+              {{ item.Activo === 1 ? 'Activo' : 'Inactivo' }}
+
+            </span>
+
+          </td>
+
+          <td class="acciones">
+
+            <button
+              class="btn-editar"
+              (click)="editar(item)">
+
+              Editar
+
+            </button>
+
+            <button
+              class="btn-eliminar"
+              (click)="eliminar(item)">
+
+              Eliminar
+
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <!-- SIN REGISTROS -->
+
+        <tr *ngIf="proveedores.length === 0">
+
+          <td
+            colspan="9"
+            class="sin-registros">
+
+            No existen proveedores registrados.
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

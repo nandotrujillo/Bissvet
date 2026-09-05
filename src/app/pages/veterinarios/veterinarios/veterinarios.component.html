@@ -1,0 +1,501 @@
+<div class="pagina">
+
+  <!-- ENCABEZADO -->
+
+  <div class="encabezado">
+
+    <div>
+
+      <h1>👨‍⚕️ Veterinarios</h1>
+
+      <p>
+        Administración de profesionales veterinarios
+      </p>
+
+    </div>
+
+    <button
+      class="btn-nuevo"
+      type="button"
+      (click)="nuevo()">
+
+      + Nuevo veterinario
+
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    *ngIf="mensaje"
+    class="mensaje exito">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    *ngIf="error"
+    class="mensaje error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- FORMULARIO -->
+
+  <div
+    *ngIf="mostrarFormulario"
+    class="formulario-card">
+
+    <div class="formulario-header">
+
+      <div>
+
+        <h2>
+          {{ modoEdicion
+            ? 'Editar veterinario'
+            : 'Nuevo veterinario' }}
+        </h2>
+
+        <p>
+          Información profesional y personal
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <div class="formulario-grid">
+
+      <!-- TIPO DOCUMENTO -->
+
+      <div class="campo">
+
+        <label>Tipo documento *</label>
+
+        <select
+          [(ngModel)]="veterinario.TipoDocumento">
+
+          <option value="CC">
+            Cédula de ciudadanía
+          </option>
+
+          <option value="CE">
+            Cédula de extranjería
+          </option>
+
+          <option value="TI">
+            Tarjeta de identidad
+          </option>
+
+          <option value="Pasaporte">
+            Pasaporte
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- DOCUMENTO -->
+
+      <div class="campo">
+
+        <label>Número documento *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="veterinario.NumeroDocumento"
+          placeholder="Número de documento">
+
+      </div>
+
+
+      <!-- PRIMER NOMBRE -->
+
+      <div class="campo">
+
+        <label>Primer nombre *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="veterinario.PrimerNombre">
+
+      </div>
+
+
+      <!-- SEGUNDO NOMBRE -->
+
+      <div class="campo">
+
+        <label>Segundo nombre</label>
+
+        <input
+          type="text"
+          [(ngModel)]="veterinario.SegundoNombre">
+
+      </div>
+
+
+      <!-- PRIMER APELLIDO -->
+
+      <div class="campo">
+
+        <label>Primer apellido *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="veterinario.PrimerApellido">
+
+      </div>
+
+
+      <!-- SEGUNDO APELLIDO -->
+
+      <div class="campo">
+
+        <label>Segundo apellido</label>
+
+        <input
+          type="text"
+          [(ngModel)]="veterinario.SegundoApellido">
+
+      </div>
+
+
+      <!-- TARJETA PROFESIONAL -->
+
+      <div class="campo">
+
+        <label>Tarjeta profesional *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="veterinario.TarjetaProfesional">
+
+      </div>
+
+
+      <!-- ESPECIALIDAD -->
+
+      <div class="campo">
+
+        <label>Especialidad</label>
+
+        <input
+          type="text"
+          [(ngModel)]="veterinario.Especialidad"
+          placeholder="Ej. Cirugía">
+
+      </div>
+
+
+      <!-- TELÉFONO -->
+
+      <div class="campo">
+
+        <label>Teléfono</label>
+
+        <input
+          type="text"
+          [(ngModel)]="veterinario.Telefono">
+
+      </div>
+
+
+      <!-- TELÉFONO 2 -->
+
+      <div class="campo">
+
+        <label>Teléfono 2</label>
+
+        <input
+          type="text"
+          [(ngModel)]="veterinario.Telefono2">
+
+      </div>
+
+
+      <!-- CORREO -->
+
+      <div class="campo">
+
+        <label>Correo electrónico</label>
+
+        <input
+          type="email"
+          [(ngModel)]="veterinario.Correo">
+
+      </div>
+
+
+      <!-- FECHA NACIMIENTO -->
+
+      <div class="campo">
+
+        <label>Fecha nacimiento</label>
+
+        <input
+          type="date"
+          [(ngModel)]="veterinario.FechaNacimiento">
+
+      </div>
+
+
+      <!-- DIRECCIÓN -->
+
+      <div class="campo campo-completo">
+
+        <label>Dirección</label>
+
+        <input
+          type="text"
+          [(ngModel)]="veterinario.Direccion">
+
+      </div>
+
+      <!-- CIUDAD -->
+      <div class="campo campo-completo">
+          <select
+            [(ngModel)]="veterinario.IdCiudad"
+            name="IdCiudad">
+
+            <option [ngValue]="undefined">
+              Seleccione una ciudad
+            </option>
+
+            <option
+              *ngFor="let ciudad of ciudades"
+              [ngValue]="ciudad.Id">
+
+              {{ ciudad.Ciudad }} - {{ ciudad.Departamento }}
+
+            </option>
+
+          </select>
+      </div>
+      <!-- OBSERVACIONES -->
+
+      <div class="campo campo-completo">
+
+        <label>Observaciones</label>
+
+        <textarea
+          rows="4"
+          [(ngModel)]="veterinario.Observaciones">
+        </textarea>
+
+      </div>
+
+
+      <!-- ACTIVO -->
+
+      <div class="campo checkbox">
+
+        <label>
+
+          <input
+            type="checkbox"
+            [(ngModel)]="veterinario.Activo">
+
+          Veterinario activo
+
+        </label>
+
+      </div>
+
+    </div>
+
+
+    <!-- BOTONES -->
+
+    <div class="formulario-botones">
+
+      <button
+        type="button"
+        class="btn-cancelar"
+        (click)="cancelar()">
+
+        Cancelar
+
+      </button>
+
+      <button
+        type="button"
+        class="btn-guardar"
+        (click)="guardar()">
+
+        {{ modoEdicion
+          ? 'Actualizar'
+          : 'Guardar' }}
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- LISTADO -->
+
+  <div
+    *ngIf="!mostrarFormulario"
+    class="tabla-card">
+
+
+    <!-- BUSCADOR -->
+
+    <div class="barra-herramientas">
+
+      <input
+        type="text"
+        [(ngModel)]="textoBusqueda"
+        (input)="buscar()"
+        placeholder="Buscar por nombre, documento, tarjeta o especialidad...">
+
+    </div>
+
+
+    <div *ngIf="cargando" class="cargando">
+
+      Cargando veterinarios...
+
+    </div>
+
+
+    <table *ngIf="!cargando">
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+
+          <th>Veterinario</th>
+
+          <th>Documento</th>
+
+          <th>Tarjeta profesional</th>
+
+          <th>Especialidad</th>
+
+          <th>Teléfono</th>
+
+          <th>Estado</th>
+
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr
+          *ngFor="let veterinario of veterinariosFiltrados">
+
+          <td>
+            {{ veterinario.IdVeterinario }}
+          </td>
+
+          <td>
+
+            <strong>
+              {{ nombreCompleto(veterinario) }}
+            </strong>
+
+          </td>
+
+          <td>
+
+            {{ veterinario.TipoDocumento }}
+            -
+            {{ veterinario.NumeroDocumento }}
+
+          </td>
+
+          <td>
+
+            {{ veterinario.TarjetaProfesional }}
+
+          </td>
+
+          <td>
+
+            {{ veterinario.Especialidad || '-' }}
+
+          </td>
+
+          <td>
+
+            {{ veterinario.Telefono || '-' }}
+
+          </td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.activo]="veterinario.Activo"
+              [class.inactivo]="!veterinario.Activo">
+
+              {{ veterinario.Activo
+                ? 'Activo'
+                : 'Inactivo' }}
+
+            </span>
+
+          </td>
+
+          <td class="acciones">
+
+            <button
+              type="button"
+              class="btn-editar"
+              (click)="editar(veterinario)">
+
+              ✏️
+
+            </button>
+
+            <button
+              type="button"
+              class="btn-eliminar"
+              (click)="eliminar(veterinario)">
+
+              🗑️
+
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <tr
+          *ngIf="veterinariosFiltrados.length === 0">
+
+          <td
+            colspan="8"
+            class="sin-datos">
+
+            No hay veterinarios registrados.
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

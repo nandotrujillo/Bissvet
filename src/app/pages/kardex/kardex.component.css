@@ -1,0 +1,183 @@
+.kardex-container {
+  padding: 25px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.titulo h2 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.titulo p {
+  margin: 5px 0 0;
+  color: #666;
+}
+
+/* TABS */
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px 20px;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555;
+}
+
+.tab.activo {
+  background: #1976d2;
+  border-color: #1976d2;
+  color: white;
+}
+
+/* BARRA DE FILTROS */
+
+.barra-filtros {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.barra-filtros select,
+.barra-filtros input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.barra-filtros input[type="date"] {
+  width: 150px;
+}
+
+.barra-filtros select:focus,
+.barra-filtros input:focus {
+  outline: none;
+  border-color: #1976d2;
+}
+
+.barra-filtros select {
+  min-width: 170px;
+}
+
+.btn-buscar {
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-buscar:hover {
+  opacity: 0.9;
+}
+
+/* MENSAJES */
+
+.mensaje {
+  padding: 12px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+}
+
+.exito {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.error {
+  background: #ffebee;
+  color: #c62828;
+}
+
+/* TABLA */
+
+.tabla-container {
+  background: white;
+  border-radius: 8px;
+  overflow-x: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+}
+
+thead {
+  background: #f5f5f5;
+}
+
+th,
+td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  font-weight: 600;
+}
+
+.entrada {
+  color: #2e7d32;
+}
+
+.salida {
+  color: #c62828;
+}
+
+.doc-detail {
+  color: #777;
+  font-size: 12px;
+}
+
+/* SIN REGISTROS */
+
+.sin-registros {
+  text-align: center;
+  padding: 25px;
+  color: #777;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+
+  .titulo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .barra-filtros {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .barra-filtros select,
+  .barra-filtros input {
+    width: 100%;
+  }
+
+}

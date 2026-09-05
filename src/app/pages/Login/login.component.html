@@ -1,0 +1,77 @@
+<p>login works!</p>
+<div class="login-container">
+
+  <div class="login-card">
+
+    <h1>BissVet</h1>
+
+    <h2>Acceso al sistema</h2>
+
+    <div class="form-group">
+
+      <label>Usuario</label>
+
+      <input
+        type="text"
+        [(ngModel)]="Username"
+        placeholder="Ingrese usuario"
+        autocomplete="username"
+      >
+
+    </div>
+
+
+    <div class="form-group">
+
+
+      <label>Contraseña</label>
+
+      <input
+        type="password"
+        [(ngModel)]="PasswordHash"
+        placeholder="Ingrese contraseña"
+        autocomplete="current-password"
+      >
+
+    </div>
+
+
+    <div class="form-group">
+
+
+      <label>Empresa</label>
+
+      <select [(ngModel)]="IdEmpresa">
+
+        <option *ngFor="let empresa of empresas" [ngValue]="empresa.IdEmpresa">
+          {{ empresa.NombreComercial }}
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div
+      class="mensaje"
+      *ngIf="mensaje"
+    >
+
+      {{ mensaje }}
+
+    </div>
+
+
+    <button
+      type="button"
+      (click)="ingresar()"
+      [disabled]="cargando"
+    >
+
+      {{ cargando ? 'Ingresando...' : 'Ingresar' }}
+
+    </button>
+
+  </div>
+
+</div>

@@ -1,0 +1,293 @@
+<div class="kardex-container">
+
+  <div class="titulo">
+
+    <div>
+      <h2>📒 Kardex</h2>
+      <p>Movimientos de inventario (fuente de verdad)</p>
+    </div>
+
+  </div>
+
+
+  <!-- TABS -->
+
+  <div class="tabs">
+
+    <button
+      class="tab"
+      [class.activo]="vista === 'movimientos'"
+      (click)="cambiarVista('movimientos')">
+
+      Movimientos
+
+    </button>
+
+    <button
+      class="tab"
+      [class.activo]="vista === 'resumen'"
+      (click)="cargarResumen(); cambiarVista('resumen')">
+
+      Resumen
+
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+    {{ mensaje }}
+  </div>
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+    {{ error }}
+  </div>
+
+
+  <!-- FILTROS -->
+
+  <div class="barra-filtros">
+
+    <select [(ngModel)]="filtroProducto">
+
+      <option [ngValue]="0">Todos los productos</option>
+
+      <option
+        *ngFor="let producto of productos"
+        [ngValue]="producto.IdProducto">
+        {{ producto.NombreProducto }}
+      </option>
+
+    </select>
+
+    <select [(ngModel)]="filtroBodega">
+
+      <option [ngValue]="0">Todas las bodegas</option>
+
+      <option
+        *ngFor="let bodega of bodegas"
+        [ngValue]="bodega.Id">
+        {{ bodega.NombreBodega }}
+      </option>
+
+    </select>
+
+    <select [(ngModel)]="filtroTipo">
+
+      <option value="">Todos los tipos</option>
+      <option value="COMPRA">COMPRA</option>
+      <option value="VENTA">VENTA</option>
+      <option value="TRASLADO_SALIDA">TRASLADO SALIDA</option>
+      <option value="TRASLADO_ENTRADA">TRASLADO ENTRADA</option>
+      <option value="AJUSTE_POSITIVO">AJUSTE POSITIVO</option>
+      <option value="AJUSTE_NEGATIVO">AJUSTE NEGATIVO</option>
+      <option value="INVENTARIO_INICIAL">INVENTARIO INICIAL</option>
+      <option value="OTRO">OTRO</option>
+
+    </select>
+
+    <input
+      type="date"
+      [(ngModel)]="desde"
+      title="Desde">
+
+    <input
+      type="date"
+      [(ngModel)]="hasta"
+      title="Hasta">
+
+    <button
+      class="btn-buscar"
+      (click)="vista === 'movimientos' ? cargarMovimientos() : cargarResumen()">
+      Filtrar
+    </button>
+
+  </div>
+
+
+  <!-- ================================================
+       MOVIMIENTOS
+       ================================================ -->
+
+  <div *ngIf="vista === 'movimientos'">
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Fecha</th>
+            <th>Producto</th>
+            <th>Bodega</th>
+            <th>Tipo / Doc</th>
+            <th>Entrada</th>
+            <th>Salida</th>
+            <th>Saldo</th>
+            <th>Costo Prom.</th>
+            <th>Valor Saldo</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let item of movimientos">
+
+            <td>
+              {{ item.Fecha | date:'dd/MM/yyyy HH:mm' }}
+            </td>
+
+            <td>
+              {{ item.NombreProducto }}
+            </td>
+
+            <td>
+              {{ item.NombreBodega }}
+            </td>
+
+            <td>
+              {{ item.TipoMovimiento }}
+              <span class="doc-detail">
+                ({{ item.DocumentoTipo }} #{{ item.IdDocumento || '-' }})
+              </span>
+            </td>
+
+            <td class="entrada">
+              {{ esEntrada(item) ? item.EntradaCantidad : '-' }}
+            </td>
+
+            <td class="salida">
+              {{ !esEntrada(item) ? item.SalidaCantidad : '-' }}
+            </td>
+
+            <td>
+              {{ item.SaldoCantidad }}
+            </td>
+
+            <td>
+              {{ item.CostoPromedio | currency }}
+            </td>
+
+            <td>
+              {{ item.SaldoValor | currency }}
+            </td>
+
+          </tr>
+
+
+          <tr *ngIf="movimientos.length === 0">
+
+            <td
+              colspan="9"
+              class="sin-registros">
+              No existen movimientos para los filtros aplicados.
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- ================================================
+       RESUMEN
+       ================================================ -->
+
+  <div *ngIf="vista === 'resumen'">
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Producto</th>
+            <th>Bodega</th>
+            <th>Entradas</th>
+            <th>Valor Entradas</th>
+            <th>Salidas</th>
+            <th>Valor Salidas</th>
+            <th>Saldo Actual</th>
+            <th>Costo Prom.</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let item of resumen">
+
+            <td>
+              {{ item.NombreProducto }}
+            </td>
+
+            <td>
+              {{ item.NombreBodega }}
+            </td>
+
+            <td>
+              {{ item.TotalEntradas }}
+            </td>
+
+            <td>
+              {{ item.ValorEntradas | currency }}
+            </td>
+
+            <td>
+              {{ item.TotalSalidas }}
+            </td>
+
+            <td>
+              {{ item.ValorSalidas | currency }}
+            </td>
+
+            <td>
+              {{ item.SaldoActual }}
+            </td>
+
+            <td>
+              {{ item.CostoPromedio | currency }}
+            </td>
+
+          </tr>
+
+
+          <tr *ngIf="resumen.length === 0">
+
+            <td
+              colspan="8"
+              class="sin-registros">
+              No existen movimientos para los filtros aplicados.
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>

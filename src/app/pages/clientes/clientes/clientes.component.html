@@ -1,0 +1,472 @@
+<div class="clientes-container">
+
+  <div class="cabecera">
+
+    <div>
+
+      <h2>Clientes</h2>
+
+      <p>
+        Administración de propietarios
+      </p>
+
+    </div>
+
+
+    <button
+      class="btn-primary"
+      (click)="nuevo()">
+
+      + Nuevo cliente
+
+    </button>
+
+  </div>
+
+
+  <!-- BUSCADOR -->
+
+  <div class="barra-busqueda">
+
+    <input
+      type="text"
+      [(ngModel)]="textoBusqueda"
+      placeholder="Buscar por nombre, documento o teléfono">
+
+  </div>
+
+
+  <!-- TABLA -->
+
+  <div class="tabla-container">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>Documento</th>
+
+          <th>Cliente</th>
+
+          <th>Teléfono</th>
+
+          <th>Correo</th>
+
+          <th>Ciudad</th>
+
+          <th>Estado</th>
+
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr
+          *ngFor="let cliente of clientesFiltrados()">
+
+          <td>
+
+            {{ cliente.TipoDocumento }}
+            -
+            {{ cliente.NumeroDocumento }}
+
+          </td>
+
+
+          <td>
+
+            {{ nombreCompleto(cliente) }}
+
+          </td>
+
+
+          <td>
+
+            {{ cliente.Telefono }}
+
+          </td>
+
+
+          <td>
+
+            {{ cliente.Correo }}
+
+          </td>
+
+
+          <td>
+
+            
+
+          </td>
+
+
+          <td>
+
+            <span
+              [class.activo]="cliente.Activo"
+              [class.inactivo]="!cliente.Activo">
+
+              {{ cliente.Activo
+                ? 'Activo'
+                : 'Inactivo' }}
+
+            </span>
+
+          </td>
+
+
+          <td>
+
+            <button
+              class="btn-editar"
+              (click)="editar(cliente)">
+
+              Editar
+
+            </button>
+
+
+            <button
+              class="btn-eliminar"
+              (click)="eliminar(cliente)">
+
+              Eliminar
+
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <tr
+          *ngIf="clientesFiltrados().length === 0">
+
+          <td
+            colspan="7"
+            class="sin-registros">
+
+            No se encontraron clientes.
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+
+  <!-- FORMULARIO -->
+
+  <div
+    class="modal"
+    *ngIf="mostrarFormulario">
+
+
+    <div class="formulario">
+
+      <h3>
+
+        {{ editando
+          ? 'Editar cliente'
+          : 'Nuevo cliente' }}
+
+      </h3>
+
+
+      <div class="grid">
+
+
+        <!-- TIPO DOCUMENTO -->
+
+        <div class="campo">
+
+          <label>
+            Tipo documento
+          </label>
+
+          <select
+            [(ngModel)]="cliente.TipoDocumento">
+
+            <option value="CC">
+              Cédula de ciudadanía
+            </option>
+
+            <option value="CE">
+              Cédula de extranjería
+            </option>
+
+            <option value="NIT">
+              NIT
+            </option>
+
+            <option value="PAS">
+              Pasaporte
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- DOCUMENTO -->
+
+        <div class="campo">
+
+          <label>
+            Número documento *
+          </label>
+
+          <input
+            type="text"
+            [(ngModel)]="cliente.NumeroDocumento">
+
+        </div>
+
+
+        <!-- PRIMER NOMBRE -->
+
+        <div class="campo">
+
+          <label>
+            Primer nombre *
+          </label>
+
+          <input
+            type="text"
+            [(ngModel)]="cliente.PrimerNombre">
+
+        </div>
+
+
+        <!-- SEGUNDO NOMBRE -->
+
+        <div class="campo">
+
+          <label>
+            Segundo nombre
+          </label>
+
+          <input
+            type="text"
+            [(ngModel)]="cliente.SegundoNombre">
+
+        </div>
+
+
+        <!-- PRIMER APELLIDO -->
+
+        <div class="campo">
+
+          <label>
+            Primer apellido *
+          </label>
+
+          <input
+            type="text"
+            [(ngModel)]="cliente.PrimerApellido">
+
+        </div>
+
+
+        <!-- SEGUNDO APELLIDO -->
+
+        <div class="campo">
+
+          <label>
+            Segundo apellido
+          </label>
+
+          <input
+            type="text"
+            [(ngModel)]="cliente.SegundoApellido">
+
+        </div>
+
+
+        <!-- TELEFONO -->
+
+        <div class="campo">
+
+          <label>
+            Teléfono *
+          </label>
+
+          <input
+            type="text"
+            [(ngModel)]="cliente.Telefono">
+
+        </div>
+
+
+        <!-- TELEFONO 2 -->
+
+        <div class="campo">
+
+          <label>
+            Teléfono 2
+          </label>
+
+          <input
+            type="text"
+            [(ngModel)]="cliente.Telefono2">
+
+        </div>
+
+
+        <!-- CORREO -->
+
+        <div class="campo">
+
+          <label>
+            Correo
+          </label>
+
+          <input
+            type="email"
+            [(ngModel)]="cliente.Correo">
+
+        </div>
+
+
+        <!-- CIUDAD -->
+
+        <div class="campo">
+
+<!-- CIUDAD -->
+
+<div class="campo">
+
+  <label>Ciudad</label>
+
+  <select
+    [(ngModel)]="cliente.IdCiudad"
+    name="IdCiudad">
+
+    <option [ngValue]="null">
+      Seleccione una ciudad
+    </option>
+
+    <option
+      *ngFor="let ciudad of ciudades"
+      [ngValue]="ciudad.Id">
+
+      {{ ciudad.Ciudad }} - {{ ciudad.Departamento }}
+
+    </option>
+
+  </select>
+
+</div>
+        <!-- DIRECCION -->
+
+        <div class="campo campo-completo">
+
+          <label>
+            Dirección
+          </label>
+
+          <input
+            type="text"
+            [(ngModel)]="cliente.Direccion">
+
+        </div>
+
+
+        <!-- FECHA NACIMIENTO -->
+
+        <div class="campo">
+
+          <label>
+            Fecha nacimiento
+          </label>
+
+          <input
+            type="date"
+            [(ngModel)]="cliente.FechaNacimiento">
+
+        </div>
+
+
+        <!-- ACTIVO -->
+
+        <div class="campo">
+
+          <label>
+            Estado
+          </label>
+
+          <select
+            [(ngModel)]="cliente.Activo">
+
+            <option [ngValue]="true">
+              Activo
+            </option>
+
+            <option [ngValue]="false">
+              Inactivo
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- OBSERVACIONES -->
+
+        <div class="campo campo-completo">
+
+          <label>
+            Observaciones
+          </label>
+
+          <textarea
+            rows="3"
+            [(ngModel)]="cliente.Observaciones">
+          </textarea>
+
+        </div>
+
+      </div>
+
+
+      <!-- BOTONES -->
+
+      <div class="acciones">
+
+        <button
+          class="btn-cancelar"
+          (click)="cancelar()">
+
+          Cancelar
+
+        </button>
+
+
+        <button
+          class="btn-primary"
+          (click)="guardar()">
+
+          {{ editando
+            ? 'Actualizar'
+            : 'Guardar' }}
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

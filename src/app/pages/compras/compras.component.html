@@ -1,0 +1,591 @@
+<div class="compras-container">
+
+  <div class="titulo">
+
+    <div>
+      <h2>🛒 Compras</h2>
+      <p>Gestión de documentos de compra y entrada de inventario</p>
+    </div>
+
+    <button
+      *ngIf="!mostrarFormulario && !detalleVista"
+      class="btn-nuevo"
+      (click)="nueva()">
+      + Nueva Compra
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+    {{ mensaje }}
+  </div>
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+    {{ error }}
+  </div>
+
+
+  <!-- LISTADO -->
+
+  <div *ngIf="!mostrarFormulario && !detalleVista">
+
+    <div class="barra-filtros">
+
+      <select [(ngModel)]="filtroEstado">
+
+        <option value="">Todos los estados</option>
+        <option value="BORRADOR">BORRADOR</option>
+        <option value="CONFIRMADA">CONFIRMADA</option>
+        <option value="ANULADA">ANULADA</option>
+
+      </select>
+
+      <select [(ngModel)]="filtroProveedor">
+
+        <option [ngValue]="0">Todos los proveedores</option>
+
+        <option
+          *ngFor="let proveedor of proveedores"
+          [ngValue]="proveedor.IdProveedor">
+          {{ proveedor.Nombre }}
+        </option>
+
+      </select>
+
+      <select [(ngModel)]="filtroBodega">
+
+        <option [ngValue]="0">Todas las bodegas</option>
+
+        <option
+          *ngFor="let bodega of bodegas"
+          [ngValue]="bodega.Id">
+          {{ bodega.NombreBodega }}
+        </option>
+
+      </select>
+
+      <button
+        class="btn-buscar"
+        (click)="cargarCompras()">
+        Filtrar
+      </button>
+
+    </div>
+
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Número</th>
+            <th>Fecha</th>
+            <th>Proveedor</th>
+            <th>Bodega</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let compra of compras">
+
+            <td>
+              {{ compra.Numero }}
+            </td>
+
+            <td>
+              {{ compra.Fecha | date:'dd/MM/yyyy' }}
+            </td>
+
+            <td>
+              {{ compra.NombreProveedor }}
+            </td>
+
+            <td>
+              {{ compra.NombreBodega }}
+            </td>
+
+            <td>
+              {{ compra.Total | currency }}
+            </td>
+
+            <td>
+
+              <span
+                class="estado"
+                [class]="compra.Estado.toLowerCase()">
+
+                {{ compra.Estado }}
+
+              </span>
+
+            </td>
+
+            <td class="acciones-fila">
+
+              <button
+                class="btn btn-ver"
+                (click)="ver(compra)"
+                title="Ver">
+                👁️
+              </button>
+
+              <button
+                *ngIf="compra.Estado === 'BORRADOR'"
+                class="btn btn-editar"
+                (click)="editar(compra)"
+                title="Editar">
+                ✏️
+              </button>
+
+              <button
+                *ngIf="compra.Estado === 'BORRADOR'"
+                class="btn btn-confirmar"
+                (click)="confirmar(compra)"
+                title="Confirmar (afecta inventario)">
+                ✔️
+              </button>
+
+              <button
+                *ngIf="compra.Estado === 'CONFIRMADA'"
+                class="btn btn-anular"
+                (click)="anular(compra)"
+                title="Anular">
+                ⛔
+              </button>
+
+              <button
+                *ngIf="compra.Estado === 'BORRADOR'"
+                class="btn btn-eliminar"
+                (click)="eliminar(compra)"
+                title="Eliminar">
+                🗑️
+              </button>
+
+            </td>
+
+          </tr>
+
+
+          <tr *ngIf="compras.length === 0">
+
+            <td
+              colspan="7"
+              class="sin-registros">
+              No existen compras registradas.
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- FORMULARIO BORRADOR -->
+
+  <div
+    class="formulario"
+    *ngIf="mostrarFormulario">
+
+    <h3>
+      {{ editando ? 'Editar Compra' : 'Nueva Compra' }}
+    </h3>
+
+    <div class="cabecera">
+
+      <div class="campo">
+
+        <label>Número *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="compra.Numero"
+          placeholder="Ej: C-0001">
+
+      </div>
+
+      <div class="campo">
+
+        <label>Proveedor *</label>
+
+        <select [(ngModel)]="compra.IdProveedor">
+
+          <option [ngValue]="0" disabled>
+            Seleccione un proveedor
+          </option>
+
+          <option
+            *ngFor="let proveedor of proveedores"
+            [ngValue]="proveedor.IdProveedor">
+            {{ proveedor.Nombre }}
+          </option>
+
+        </select>
+
+      </div>
+
+      <div class="campo">
+
+        <label>Bodega *</label>
+
+        <select [(ngModel)]="compra.IdBodega">
+
+          <option [ngValue]="0" disabled>
+            Seleccione una bodega
+          </option>
+
+          <option
+            *ngFor="let bodega of bodegas"
+            [ngValue]="bodega.Id">
+            {{ bodega.NombreBodega }}
+          </option>
+
+        </select>
+
+      </div>
+
+      <div class="campo">
+
+        <label>Fecha</label>
+
+        <input
+          type="date"
+          [(ngModel)]="compra.Fecha">
+
+      </div>
+
+    </div>
+
+
+    <div class="campo observaciones">
+
+      <label>Observaciones</label>
+
+      <input
+        type="text"
+        [(ngModel)]="compra.Observaciones">
+
+    </div>
+
+
+    <div class="detalle-titulo">
+      <span>Detalle de productos</span>
+    </div>
+
+
+    <table class="tabla-detalle">
+
+      <thead>
+
+        <tr>
+
+          <th>Producto *</th>
+          <th>Cantidad *</th>
+          <th>Costo Unitario *</th>
+          <th>Descuento</th>
+          <th>Impuesto</th>
+          <th>Subtotal</th>
+          <th></th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr *ngFor="let item of detalle; let i = index">
+
+          <td>
+
+            <select [(ngModel)]="item.IdProducto">
+
+              <option [ngValue]="0" disabled>
+                Seleccione un producto
+              </option>
+
+              <option
+                *ngFor="let producto of productos"
+                [ngValue]="producto.IdProducto">
+                {{ producto.CodigoProducto }} - {{ producto.NombreProducto }}
+              </option>
+
+            </select>
+
+          </td>
+
+          <td>
+
+            <input
+              type="number"
+              step="0.0001"
+              min="0"
+              [(ngModel)]="item.Cantidad">
+
+          </td>
+
+          <td>
+
+            <input
+              type="number"
+              step="0.0001"
+              min="0"
+              [(ngModel)]="item.CostoUnitario">
+
+          </td>
+
+          <td>
+
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              [(ngModel)]="item.Descuento">
+
+          </td>
+
+          <td>
+
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              [(ngModel)]="item.Impuesto">
+
+          </td>
+
+          <td>
+            {{ ((item.Cantidad || 0) * (item.CostoUnitario || 0)) - (item.Descuento || 0) | currency }}
+          </td>
+
+          <td class="acciones">
+
+            <button
+              class="btn-eliminar"
+              (click)="quitarItem(i)">
+              ✕
+            </button>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+
+    <button
+      class="btn-agregar"
+      (click)="agregarItem()">
+      + Agregar Producto
+    </button>
+
+
+    <div class="totales">
+
+      <div>
+        <span>Subtotal:</span>
+        <strong>{{ calcularTotales().Subtotal | currency }}</strong>
+      </div>
+
+      <div>
+        <span>Descuento:</span>
+        <strong>{{ calcularTotales().Descuento | currency }}</strong>
+      </div>
+
+      <div>
+        <span>Impuesto:</span>
+        <strong>{{ calcularTotales().Impuesto | currency }}</strong>
+      </div>
+
+      <div class="total-final">
+        <span>Total:</span>
+        <strong>{{ calcularTotales().Total | currency }}</strong>
+      </div>
+
+    </div>
+
+
+    <div class="acciones-formulario">
+
+      <button
+        class="btn-guardar"
+        (click)="guardar()">
+        {{ editando ? 'Guardar Cambios' : 'Guardar Borrador' }}
+      </button>
+
+      <button
+        class="btn-cancelar"
+        (click)="cancelar()">
+        Cancelar
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- VER DETALLE -->
+
+  <div
+    class="formulario"
+    *ngIf="detalleVista">
+
+    <h3>Compra #{{ detalleVista.Numero }}</h3>
+
+    <div class="detalle-info">
+
+      <p><strong>Fecha:</strong> {{ detalleVista.Fecha | date:'dd/MM/yyyy' }}</p>
+
+      <p><strong>Proveedor:</strong> {{ detalleVista.NombreProveedor }}</p>
+
+      <p><strong>NIT:</strong> {{ detalleVista.Nit || '-' }}</p>
+
+      <p><strong>Bodega:</strong> {{ detalleVista.NombreBodega }}</p>
+
+      <p><strong>Estado:</strong>
+
+        <span
+          class="estado"
+          [class]="detalleVista.Estado.toLowerCase()">
+
+          {{ detalleVista.Estado }}
+
+        </span>
+
+      </p>
+
+      <p *ngIf="detalleVista.Observaciones">
+        <strong>Observaciones:</strong> {{ detalleVista.Observaciones }}
+      </p>
+
+    </div>
+
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Costo Unit.</th>
+            <th>Descuento</th>
+            <th>Impuesto</th>
+            <th>Subtotal</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let d of detalleVista.Detalle">
+
+            <td>
+              {{ d.CodigoProducto }} - {{ d.NombreProducto }}
+            </td>
+
+            <td>
+              {{ d.Cantidad }}
+            </td>
+
+            <td>
+              {{ d.CostoUnitario | currency }}
+            </td>
+
+            <td>
+              {{ d.Descuento | currency }}
+            </td>
+
+            <td>
+              {{ d.Impuesto | currency }}
+            </td>
+
+            <td>
+              {{ (d.Cantidad * d.CostoUnitario) - d.Descuento | currency }}
+            </td>
+
+          </tr>
+
+          <tr *ngIf="!detalleVista.Detalle || detalleVista.Detalle.length === 0">
+
+            <td
+              colspan="6"
+              class="sin-registros">
+              Sin detalle registrado.
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <div class="totales">
+
+      <div>
+        <span>Subtotal:</span>
+        <strong>{{ detalleVista.Subtotal | currency }}</strong>
+      </div>
+
+      <div>
+        <span>Descuento:</span>
+        <strong>{{ detalleVista.Descuento | currency }}</strong>
+      </div>
+
+      <div>
+        <span>Impuesto:</span>
+        <strong>{{ detalleVista.Impuesto | currency }}</strong>
+      </div>
+
+      <div class="total-final">
+        <span>Total:</span>
+        <strong>{{ detalleVista.Total | currency }}</strong>
+      </div>
+
+    </div>
+
+
+    <div class="acciones-formulario">
+
+      <button
+        class="btn-cancelar"
+        (click)="cerrarVista()">
+        Cerrar
+      </button>
+
+    </div>
+
+  </div>
+
+</div>

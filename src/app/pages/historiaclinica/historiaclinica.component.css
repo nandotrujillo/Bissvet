@@ -1,0 +1,737 @@
+/* =====================================================
+   PÁGINA
+   ===================================================== */
+
+.pagina {
+  padding: 30px;
+  background: #f5f7f9;
+  min-height: 100vh;
+}
+
+
+/* =====================================================
+   ENCABEZADO
+   ===================================================== */
+
+.encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.encabezado-texto h1 {
+  margin: 0 0 5px;
+  color: #1f2937;
+  font-size: 25px;
+}
+
+.encabezado-texto p {
+  margin: 0;
+  color: #7b838c;
+  font-size: 13px;
+}
+
+
+/* =====================================================
+   MENSAJES
+   ===================================================== */
+
+.mensaje {
+  padding: 12px 15px;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.mensaje.exito {
+  background: #e8f6ef;
+  color: #18794e;
+  border: 1px solid #c9e9d8;
+}
+
+.mensaje.error {
+  background: #fff0f0;
+  color: #b42318;
+  border: 1px solid #f7d0cc;
+}
+
+
+/* =====================================================
+   PASO NUMERADO DEL ENCABEZADO DEL FORMULARIO
+   ===================================================== */
+
+.paso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 10px;
+  border-radius: 50%;
+  background: #174a32;
+  color: white;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+
+/* =====================================================
+   TARJETAS / FORMULARIOS
+   ===================================================== */
+
+.formulario-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.formulario-header {
+  padding: 22px 25px;
+  border-bottom: 1px solid #edf0f2;
+}
+
+.formulario-header h2 {
+  margin: 0 0 5px;
+  font-size: 19px;
+  color: #263238;
+}
+
+.formulario-header p {
+  margin: 0;
+  color: #89939b;
+  font-size: 12px;
+}
+
+.formulario-body {
+  padding: 25px;
+}
+
+.formulario-botones {
+  padding: 18px 25px;
+  border-top: 1px solid #edf0f2;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+
+/* =====================================================
+   GRID DEL FORMULARIO
+   ===================================================== */
+
+.formulario-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+}
+
+.campo-completo {
+  grid-column: 1 / -1;
+}
+
+.campo label {
+  margin-bottom: 7px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid #d9e0e3;
+  border-radius: 8px;
+  background: #fbfcfd;
+  color: #263238;
+  font-size: 13px;
+  outline: none;
+  transition: .2s;
+}
+
+.campo input,
+.campo select {
+  height: 44px;
+}
+
+.campo textarea {
+  resize: vertical;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  background: white;
+  border-color: #1f8f6d;
+  box-shadow: 0 0 0 3px rgba(31, 143, 109, .10);
+}
+
+.campo select:disabled {
+  background: #f1f3f4;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.campo input::placeholder,
+.campo textarea::placeholder {
+  color: #b0b7bf;
+}
+
+
+/* =====================================================
+   SECCIÓN (título que precede a cada tarjeta)
+   ===================================================== */
+
+.seccion {
+  margin-top: 5px;
+}
+
+.seccion-titulo {
+  margin-bottom: 14px;
+}
+
+.seccion-titulo h3 {
+  margin: 0 0 4px;
+  color: #1f2937;
+  font-size: 19px;
+}
+
+.seccion-titulo p {
+  margin: 0;
+  color: #89939b;
+  font-size: 12px;
+}
+
+
+/* =====================================================
+   TABLAS
+   ===================================================== */
+
+.tabla-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.tabla-head-right {
+  padding: 15px 16px;
+  border-bottom: 1px solid #edf0f2;
+  display: flex;
+  justify-content: flex-end;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #f8fafb;
+}
+
+th {
+  padding: 14px 16px;
+  text-align: left;
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #f0f1f2;
+  color: #374151;
+  font-size: 13px;
+}
+
+tbody tr:hover {
+  background: #fafcfb;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.col-acciones {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.celda-principal {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+
+/* =====================================================
+   ESTADOS / BADGES
+   ===================================================== */
+
+.estado {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pendiente {
+  background: #fff4dc;
+  color: #a46c00;
+}
+
+.confirmado {
+  background: #e5f5ed;
+  color: #197a5b;
+}
+
+.cancelado {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+
+/* =====================================================
+   BOTONES
+   ===================================================== */
+
+.btn-nueva {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  background: #174a32;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.btn-nueva:hover {
+  background: #216a4a;
+  transform: translateY(-1px);
+}
+
+.btn-guardar {
+  padding: 11px 20px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: #174a32;
+  color: white;
+  transition: .2s;
+}
+
+.btn-guardar:hover {
+  background: #216a4a;
+}
+
+.btn-cancelar {
+  padding: 11px 20px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: #f1f3f4;
+  color: #4b5563;
+  transition: .2s;
+}
+
+.btn-cancelar:hover {
+  background: #e4e7ea;
+}
+
+.btn-secundario {
+  padding: 11px 20px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: #f1f3f4;
+  color: #4b5563;
+  transition: .2s;
+}
+
+.btn-secundario:hover {
+  background: #e4e7ea;
+}
+
+.btn-editar {
+  border: none;
+  padding: 8px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  background: #e0f2e9;
+  color: #197a5b;
+  font-weight: 600;
+  font-size: 12px;
+  transition: .2s;
+}
+
+.btn-editar:hover {
+  background: #c9e9d8;
+}
+
+.btn-eliminar {
+  border: none;
+  padding: 8px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 600;
+  font-size: 12px;
+  transition: .2s;
+}
+
+.btn-eliminar:hover {
+  background: #f7c9c9;
+}
+
+.btn-seleccionar {
+  border: none;
+  padding: 7px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  background: #174a32;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  transition: .2s;
+}
+
+.btn-seleccionar:hover {
+  background: #216a4a;
+}
+
+.btn-pequeno {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+
+/* =====================================================
+   PESTAÑAS
+   ===================================================== */
+
+.pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 25px 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 6px;
+}
+
+.pestana {
+  border: none;
+  background: transparent;
+  padding: 10px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  transition: .2s;
+}
+
+.pestana:hover {
+  background: #f3f5f7;
+  color: #1f2937;
+}
+
+.pestana.activa {
+  background: #174a32;
+  color: white;
+}
+
+
+/* =====================================================
+   INFO MASCOTA SELECCIONADA
+   ===================================================== */
+
+.mascota-info {
+  margin-top: 20px;
+  background: #f4faf7;
+  border: 1px solid #dbece4;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.mascota-info-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #e9f4ee;
+  border-bottom: 1px solid #dbece4;
+}
+
+.mascota-nombre {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mascota-nombre>div {
+  display: flex;
+  flex-direction: column;
+}
+
+.mascota-nombre strong {
+  color: #174a32;
+  font-size: 16px;
+}
+
+.mascota-nombre small {
+  color: #197a5b;
+  font-size: 12px;
+}
+
+.mascota-icono {
+  font-size: 22px;
+}
+
+.info-grupo-titulo {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 12px;
+}
+
+.mascota-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 18px 20px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.info-item span {
+  color: #8b949e;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.info-item strong {
+  color: #263238;
+  font-size: 14px;
+}
+
+.divisor {
+  border: none;
+  border-top: 1px solid #edf0f2;
+  margin: 20px 0;
+}
+
+
+/* =====================================================
+   SUB SECCIÓN DENTRO DE UN FORMULARIO
+   ===================================================== */
+
+.sub-seccion {
+  margin: 20px 0 14px;
+}
+
+.sub-seccion h4 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 15px;
+}
+
+
+/* =====================================================
+   CRONOLOGÍA (TIMELINE)
+   ===================================================== */
+
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 5px;
+  bottom: 5px;
+  width: 2px;
+  background: #d9e7df;
+}
+
+.historia-evento {
+  position: relative;
+  margin-bottom: 22px;
+}
+
+.timeline-marcador {
+  position: absolute;
+  left: -30px;
+  top: 18px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #174a32;
+  z-index: 1;
+}
+
+.historia-evento-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 18px 20px;
+  transition: .2s;
+}
+
+.historia-evento-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .07);
+}
+
+.historia-evento-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.historia-fecha {
+  color: #174a32;
+  font-size: 14px;
+}
+
+.historia-detalles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.historia-detalles span {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.historia-diagnosticos {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #f4faf7;
+  border-radius: 7px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.historia-diagnosticos span:first-child {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.historia-diagnosticos em {
+  color: #174a32;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.sin-datos-caja {
+  text-align: center;
+  padding: 35px;
+  background: white;
+  border: 1px dashed #d9e0e3;
+  border-radius: 10px;
+  color: #8a9199;
+  font-size: 13px;
+}
+
+
+/* =====================================================
+   SIN DATOS / CARGANDO
+   ===================================================== */
+
+.sin-datos {
+  text-align: center;
+  padding: 25px;
+  color: #8a9199;
+  font-size: 13px;
+}
+
+
+/* =====================================================
+   ESPACIADORES AUXILIARES
+   ===================================================== */
+
+.mt-15 {
+  margin-top: 15px;
+}
+
+.mt-25 {
+  margin-top: 25px;
+}
+
+.mt-30 {
+  margin-top: 30px;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 900px) {
+  .pagina {
+    padding: 20px;
+  }
+
+  .encabezado {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .formulario-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .campo-completo {
+    grid-column: auto;
+  }
+
+  .tabla-card {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 720px;
+  }
+
+  .pestanas {
+    flex-direction: column;
+  }
+
+  .mascota-info-grid {
+    grid-template-columns: 1fr;
+  }
+}

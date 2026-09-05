@@ -1,0 +1,87 @@
+<div class="dashboard-container">
+
+  <aside class="sidebar">
+
+    <div class="logo">
+      🐾 BissVet
+    </div>
+
+    <div
+      class="empresa-actual"
+      *ngIf="empresaNombre">
+      {{ empresaNombre }}
+    </div>
+
+    <nav>
+
+      <a routerLink="/dashboard">
+        🏠 Inicio
+      </a>
+
+      <a routerLink="/dashboard/clientes">
+        👥 Clientes
+      </a>
+
+      <a routerLink="/dashboard/mascotas">
+        🐾 Mascotas
+      </a>
+      <a routerLink="/dashboard/veterinarios">
+          👨‍⚕️ Veterinarios
+        </a>
+      <a routerLink="/dashboard/citas">
+        📅 Citas
+      </a>
+      <a routerLink="/dashboard/bodegas">
+        🏢 Bodegas
+      </a>
+
+      <a routerLink="/dashboard/empresas">
+        🏬 Empresa
+      </a>
+
+      <a routerLink="/dashboard/productos">
+        📦 Productos
+      </a>
+
+      <a routerLink="/dashboard/proveedores">
+        🏭 Proveedores
+      </a>
+
+      <a routerLink="/dashboard/inventario">
+        📊 Inventario
+      </a>
+
+      <a routerLink="/dashboard/kardex">
+        📒 Kardex
+      </a>
+
+      <a routerLink="/dashboard/compras">
+        🛒 Compras
+      </a>
+
+      <a routerLink="/dashboard/ventas">
+        🧾 Ventas
+      </a>
+
+      <a routerLink="/dashboard/traslados">
+        🚚 Traslados
+      </a>
+
+      <a routerLink="/dashboard/ajustes">
+        ⚖️ Ajustes
+      </a>
+
+      <a routerLink="/dashboard/historiaclinica">
+        📋 Historia Clínica
+      </a>
+    </nav>
+
+  </aside>
+
+  <main class="contenido-dashboard">
+
+    <router-outlet></router-outlet>
+
+  </main>
+
+</div>

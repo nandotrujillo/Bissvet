@@ -1,0 +1,469 @@
+<div class="pagina">
+
+  <!-- ENCABEZADO -->
+
+  <div class="encabezado">
+
+    <div>
+
+      <h1>📅 Citas veterinarias</h1>
+
+      <p>
+        Administración y programación de citas
+      </p>
+
+    </div>
+
+    <button
+      type="button"
+      class="btn-nueva"
+      (click)="nuevaCita()">
+
+      + Nueva cita
+
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    *ngIf="mensaje"
+    class="mensaje exito">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    *ngIf="error"
+    class="mensaje error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- CARGANDO -->
+
+  <div
+    *ngIf="cargando"
+    class="cargando">
+
+    Cargando citas...
+
+  </div>
+
+
+  <!-- TABLA -->
+
+  <div
+    *ngIf="!cargando"
+    class="tabla-card">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>Fecha</th>
+
+          <th>Hora</th>
+
+          <th>Mascota</th>
+
+          <th>Servicio</th>
+
+          <th>Precio</th>
+
+          <th>Estado</th>
+
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr
+          *ngFor="let item of citas">
+
+          <td>
+
+            {{ item.FechaCita |
+               date:'dd/MM/yyyy' }}
+
+          </td>
+
+          <td>
+
+            {{ item.HoraCita }}
+
+          </td>
+
+          <td>
+
+            <strong>
+
+              🐾
+              {{ nombreMascota(item.IdMascota) }}
+
+            </strong>
+
+          </td>
+
+          <td>
+
+            {{ nombreServicio(item.IdServicio) }}
+
+          </td>
+
+          <td>
+
+            {{ item.Precio |
+               currency:'COP':'symbol':'1.0-0' }}
+
+          </td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.pendiente]="
+                item.Estado === 'Pendiente'
+              "
+              [class.confirmado]="
+                item.Estado === 'Confirmada'
+              "
+              [class.cancelado]="
+                item.Estado === 'Cancelada'
+              ">
+
+              {{ item.Estado }}
+
+            </span>
+
+          </td>
+
+          <td class="acciones">
+
+            <button
+              type="button"
+              class="btn-historia"
+              *ngIf="puedeCrearHistoria(item)"
+              (click)="crearHistoriaClinica(item)">
+
+              🩺 Historia clínica
+
+            </button>
+
+            <button
+              type="button"
+              class="btn-editar"
+              (click)="editar(item)">
+
+              ✏️
+
+            </button>
+
+            <button
+              type="button"
+              class="btn-eliminar"
+              (click)="eliminar(item.IdCita!)">
+
+              🗑️
+
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <tr
+          *ngIf="citas.length === 0">
+
+          <td
+            colspan="7"
+            class="sin-datos">
+
+            No hay citas registradas.
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+
+  <!-- ================================================= -->
+  <!-- FORMULARIO -->
+  <!-- ================================================= -->
+
+  <div
+    class="formulario-card"
+    *ngIf="mostrarFormulario">
+
+
+    <div class="formulario-header">
+
+      <div>
+
+        <h2>
+
+          {{
+            modoEdicion
+              ? 'Editar cita'
+              : 'Nueva cita'
+          }}
+
+        </h2>
+
+        <p>
+          Complete la información de la cita
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <div class="formulario-grid">
+
+
+      <!-- MASCOTA -->
+<div class="campo">
+
+  <label>Mascota *</label>
+
+  <select
+    [(ngModel)]="cita.IdMascota"
+    name="IdMascota">
+
+    <option [ngValue]="0">
+      Seleccione una mascota
+    </option>
+
+    <option
+      *ngFor="let mascota of mascotas"
+      [ngValue]="mascota.IdMascota">
+        {{ mascota.Nombre }} - {{ mascota.Especie }}
+    </option>
+
+  </select>
+
+</div>
+
+
+
+      <!-- SERVICIO -->
+
+      <div class="campo">
+
+  <label>Servicio *</label>
+
+  <select
+    [(ngModel)]="cita.IdServicio"
+    name="IdServicio"
+    (change)="cambiarServicio()">
+
+    <option [ngValue]="0">
+      Seleccione un servicio
+    </option>
+
+    <option
+      *ngFor="let servicio of serviciosFiltrados"
+      [ngValue]="servicio.IdServicio">
+      {{ servicio.Nombre }} - {{ servicio.Precio }}
+
+    </option>
+
+  </select>
+
+</div>
+
+<div class="campo">
+
+  <label for="veterinario">
+    Veterinario
+  </label>
+
+  <select
+    id="veterinario"
+    name="IdVeterinario"
+    [(ngModel)]="cita.IdVeterinario">
+
+    <option [ngValue]="undefined">
+      Seleccione un veterinario
+    </option>
+
+    <option
+      *ngFor="let veterinario of veterinarios"
+      [ngValue]="veterinario.IdVeterinario">
+
+      {{ nombreCompletoVeterinario(veterinario) }}
+
+    </option>
+
+  </select>
+
+</div>
+      <!-- PRECIO -->
+
+      <div class="campo">
+
+        <label>
+          Precio
+        </label>
+
+        <input
+          type="number"
+          [(ngModel)]="cita.Precio"
+          readonly>
+
+        <small>
+          El precio se obtiene del servicio seleccionado.
+        </small>
+
+      </div>
+
+
+      <!-- FECHA -->
+
+      <div class="campo">
+
+        <label>
+          Fecha *
+        </label>
+
+        <input
+          type="date"
+          [(ngModel)]="cita.FechaCita">
+
+      </div>
+
+
+      <!-- HORA -->
+
+      <div class="campo">
+
+        <label>
+          Hora *
+        </label>
+
+        <input
+          type="time"
+          [(ngModel)]="cita.HoraCita">
+
+      </div>
+
+
+      <!-- ESTADO -->
+
+      <div class="campo">
+
+        <label>
+          Estado
+        </label>
+
+        <select
+          [(ngModel)]="cita.Estado">
+
+          <option value="Pendiente">
+            Pendiente
+          </option>
+
+          <option value="Confirmada">
+            Confirmada
+          </option>
+
+          <option value="Atendida">
+            Atendida
+          </option>
+
+          <option value="Cancelada">
+            Cancelada
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- OBSERVACIONES -->
+
+      <div
+        class="campo campo-completo">
+
+        <label>
+          Motivo de consulta
+        </label>
+
+        <input
+          type="text"
+          [(ngModel)]="cita.MotivoConsulta"
+          placeholder="Motivo por el que se agenda la consulta...">
+
+      </div>
+
+
+      <!-- OBSERVACIONES -->
+
+      <div
+        class="campo campo-completo">
+
+        <label>
+          Observaciones
+        </label>
+
+        <textarea
+          rows="4"
+          [(ngModel)]="cita.Observaciones"
+          placeholder="Observaciones de la cita...">
+        </textarea>
+
+      </div>
+
+    </div>
+
+
+    <!-- BOTONES -->
+
+    <div class="formulario-botones">
+
+      <button
+        type="button"
+        class="btn-cancelar"
+        (click)="cerrarFormulario()">
+
+        Cancelar
+
+      </button>
+
+      <button
+        type="button"
+        class="btn-guardar"
+        (click)="guardar()">
+
+        {{
+          modoEdicion
+            ? 'Actualizar cita'
+            : 'Guardar cita'
+        }}
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>

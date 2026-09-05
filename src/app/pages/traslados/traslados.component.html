@@ -1,0 +1,491 @@
+<div class="traslados-container">
+
+  <div class="titulo">
+
+    <div>
+      <h2>🚚 Traslados</h2>
+      <p>Movimiento de mercancía entre bodegas</p>
+    </div>
+
+    <button
+      *ngIf="!mostrarFormulario && !detalleVista"
+      class="btn-nuevo"
+      (click)="nueva()">
+      + Nuevo Traslado
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+    {{ mensaje }}
+  </div>
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+    {{ error }}
+  </div>
+
+
+  <!-- LISTADO -->
+
+  <div *ngIf="!mostrarFormulario && !detalleVista">
+
+    <div class="barra-filtros">
+
+      <select [(ngModel)]="filtroEstado">
+
+        <option value="">Todos los estados</option>
+        <option value="BORRADOR">BORRADOR</option>
+        <option value="CONFIRMADA">CONFIRMADA</option>
+        <option value="ANULADA">ANULADA</option>
+
+      </select>
+
+      <select [(ngModel)]="filtroOrigen">
+
+        <option [ngValue]="0">Todos los orígenes</option>
+
+        <option
+          *ngFor="let bodega of bodegas"
+          [ngValue]="bodega.Id">
+          {{ bodega.NombreBodega }}
+        </option>
+
+      </select>
+
+      <select [(ngModel)]="filtroDestino">
+
+        <option [ngValue]="0">Todos los destinos</option>
+
+        <option
+          *ngFor="let bodega of bodegas"
+          [ngValue]="bodega.Id">
+          {{ bodega.NombreBodega }}
+        </option>
+
+      </select>
+
+      <button
+        class="btn-buscar"
+        (click)="cargarTraslados()">
+        Filtrar
+      </button>
+
+    </div>
+
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Número</th>
+            <th>Fecha</th>
+            <th>Origen</th>
+            <th>Destino</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let traslado of traslados">
+
+            <td>
+              {{ traslado.Numero }}
+            </td>
+
+            <td>
+              {{ traslado.Fecha | date:'dd/MM/yyyy' }}
+            </td>
+
+            <td>
+              {{ traslado.BodegaOrigen }}
+            </td>
+
+            <td>
+              {{ traslado.BodegaDestino }}
+            </td>
+
+            <td>
+
+              <span
+                class="estado"
+                [class]="traslado.Estado.toLowerCase()">
+
+                {{ traslado.Estado }}
+
+              </span>
+
+            </td>
+
+            <td class="acciones-fila">
+
+              <button
+                class="btn btn-ver"
+                (click)="ver(traslado)"
+                title="Ver">
+                👁️
+              </button>
+
+              <button
+                *ngIf="traslado.Estado === 'BORRADOR'"
+                class="btn btn-editar"
+                (click)="editar(traslado)"
+                title="Editar">
+                ✏️
+              </button>
+
+              <button
+                *ngIf="traslado.Estado === 'BORRADOR'"
+                class="btn btn-confirmar"
+                (click)="confirmar(traslado)"
+                title="Confirmar (afecta inventario)">
+                ✔️
+              </button>
+
+              <button
+                *ngIf="traslado.Estado === 'CONFIRMADA'"
+                class="btn btn-anular"
+                (click)="anular(traslado)"
+                title="Anular">
+                ⛔
+              </button>
+
+              <button
+                *ngIf="traslado.Estado === 'BORRADOR'"
+                class="btn btn-eliminar"
+                (click)="eliminar(traslado)"
+                title="Eliminar">
+                🗑️
+              </button>
+
+            </td>
+
+          </tr>
+
+
+          <tr *ngIf="traslados.length === 0">
+
+            <td
+              colspan="6"
+              class="sin-registros">
+              No existen traslados registrados.
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- FORMULARIO BORRADOR -->
+
+  <div
+    class="formulario"
+    *ngIf="mostrarFormulario">
+
+    <h3>
+      {{ editando ? 'Editar Traslado' : 'Nuevo Traslado' }}
+    </h3>
+
+    <div class="cabecera">
+
+      <div class="campo">
+
+        <label>Número *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="traslado.Numero"
+          placeholder="Ej: T-0001">
+
+      </div>
+
+      <div class="campo">
+
+        <label>Origen *</label>
+
+        <select [(ngModel)]="traslado.IdBodegaOrigen">
+
+          <option [ngValue]="0" disabled>
+            Seleccione la bodega de origen
+          </option>
+
+          <option
+            *ngFor="let bodega of bodegas"
+            [ngValue]="bodega.Id">
+            {{ bodega.NombreBodega }}
+          </option>
+
+        </select>
+
+      </div>
+
+      <div class="campo">
+
+        <label>Destino *</label>
+
+        <select [(ngModel)]="traslado.IdBodegaDestino">
+
+          <option [ngValue]="0" disabled>
+            Seleccione la bodega de destino
+          </option>
+
+          <option
+            *ngFor="let bodega of bodegas"
+            [ngValue]="bodega.Id">
+            {{ bodega.NombreBodega }}
+          </option>
+
+        </select>
+
+      </div>
+
+      <div class="campo">
+
+        <label>Fecha</label>
+
+        <input
+          type="date"
+          [(ngModel)]="traslado.Fecha">
+
+      </div>
+
+    </div>
+
+
+    <div class="campo observaciones">
+
+      <label>Observaciones</label>
+
+      <input
+        type="text"
+        [(ngModel)]="traslado.Observaciones">
+
+    </div>
+
+
+    <div class="detalle-titulo">
+      <span>Detalle de productos</span>
+      <small
+        *ngIf="error && !mensaje"
+        class="texto-error">
+        {{ error }}
+      </small>
+    </div>
+
+
+    <table class="tabla-detalle">
+
+      <thead>
+
+        <tr>
+
+          <th>Producto *</th>
+          <th>Cantidad *</th>
+          <th></th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr *ngFor="let item of detalle; let i = index">
+
+          <td>
+
+            <select [(ngModel)]="item.IdProducto">
+
+              <option [ngValue]="0" disabled>
+                Seleccione un producto
+              </option>
+
+              <option
+                *ngFor="let producto of productos"
+                [ngValue]="producto.IdProducto">
+                {{ producto.CodigoProducto }} - {{ producto.NombreProducto }}
+              </option>
+
+            </select>
+
+          </td>
+
+          <td>
+
+            <input
+              type="number"
+              step="0.0001"
+              min="0"
+              [(ngModel)]="item.Cantidad">
+
+          </td>
+
+          <td class="acciones">
+
+            <button
+              class="btn-eliminar"
+              (click)="quitarItem(i)">
+              ✕
+            </button>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+
+    <button
+      class="btn-agregar"
+      (click)="agregarItem()">
+      + Agregar Producto
+    </button>
+
+
+    <div class="acciones-formulario">
+
+      <button
+        class="btn-guardar"
+        (click)="guardar()">
+        {{ editando ? 'Guardar Cambios' : 'Guardar Borrador' }}
+      </button>
+
+      <button
+        class="btn-cancelar"
+        (click)="cancelar()">
+        Cancelar
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- VER DETALLE -->
+
+  <div
+    class="formulario"
+    *ngIf="detalleVista">
+
+    <h3>Traslado #{{ detalleVista.Numero }}</h3>
+
+    <div class="detalle-info">
+
+      <p><strong>Fecha:</strong> {{ detalleVista.Fecha | date:'dd/MM/yyyy' }}</p>
+
+      <p><strong>Origen:</strong> {{ detalleVista.BodegaOrigen }}</p>
+
+      <p><strong>Destino:</strong> {{ detalleVista.BodegaDestino }}</p>
+
+      <p><strong>Estado:</strong>
+
+        <span
+          class="estado"
+          [class]="detalleVista.Estado.toLowerCase()">
+
+          {{ detalleVista.Estado }}
+
+        </span>
+
+      </p>
+
+      <p *ngIf="detalleVista.Observaciones">
+        <strong>Observaciones:</strong> {{ detalleVista.Observaciones }}
+      </p>
+
+    </div>
+
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Costo Unit.</th>
+            <th>Costo Total</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let d of detalleVista.Detalle">
+
+            <td>
+              {{ d.CodigoProducto }} - {{ d.NombreProducto }}
+            </td>
+
+            <td>
+              {{ d.Cantidad }}
+            </td>
+
+            <td>
+              {{ d.CostoUnitario | currency }}
+            </td>
+
+            <td>
+              {{ d.Cantidad * d.CostoUnitario | currency }}
+            </td>
+
+          </tr>
+
+          <tr *ngIf="!detalleVista.Detalle || detalleVista.Detalle.length === 0">
+
+            <td
+              colspan="4"
+              class="sin-registros">
+              Sin detalle registrado.
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <div class="acciones-formulario">
+
+      <button
+        class="btn-cancelar"
+        (click)="cerrarVista()">
+        Cerrar
+      </button>
+
+    </div>
+
+  </div>
+
+</div>

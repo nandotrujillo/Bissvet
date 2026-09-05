@@ -1,0 +1,696 @@
+<div class="productos-container">
+
+  <div class="titulo">
+
+    <div>
+      <h2>📦 Productos</h2>
+      <p>Administración de productos y categorías del inventario</p>
+    </div>
+
+  </div>
+
+
+  <!-- TABS -->
+
+  <div class="tabs">
+
+    <button
+      class="tab"
+      [class.activo]="vista === 'productos'"
+      (click)="cambiarVista('productos')">
+
+      Productos
+
+    </button>
+
+    <button
+      class="tab"
+      [class.activo]="vista === 'categorias'"
+      (click)="cambiarVista('categorias')">
+
+      Categorías
+
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- ================================================
+       VISTA PRODUCTOS
+       ================================================ -->
+
+  <div *ngIf="vista === 'productos'">
+
+    <div class="barra-busqueda">
+
+      <input
+        type="text"
+        [(ngModel)]="buscar"
+        placeholder="Buscar por nombre o código..."
+        (keyup.enter)="cargarProductos()">
+
+      <button
+        class="btn-buscar"
+        (click)="cargarProductos()">
+
+        Buscar
+
+      </button>
+
+      <button
+        class="btn-nuevo"
+        (click)="nueva()">
+
+        + Nuevo Producto
+
+      </button>
+
+    </div>
+
+
+    <!-- FORMULARIO PRODUCTO -->
+
+    <div
+      class="formulario"
+      *ngIf="mostrarFormulario">
+
+      <h3>
+        {{ editando ? 'Editar Producto' : 'Nuevo Producto' }}
+      </h3>
+
+
+      <div class="form-grid">
+
+        <div class="campo">
+
+          <label>Código *</label>
+
+          <input
+            type="text"
+            [(ngModel)]="producto.CodigoProducto"
+            maxlength="50"
+            placeholder="Código del producto">
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Código de Barras</label>
+
+          <input
+            type="text"
+            [(ngModel)]="producto.CodigoBarras"
+            maxlength="50"
+            placeholder="Código de barras">
+
+        </div>
+
+
+        <div class="campo campo-completo">
+
+          <label>Nombre *</label>
+
+          <input
+            type="text"
+            [(ngModel)]="producto.NombreProducto"
+            maxlength="150"
+            placeholder="Nombre del producto">
+
+        </div>
+
+
+        <div class="campo campo-completo">
+
+          <label>Descripción</label>
+
+          <textarea
+            [(ngModel)]="producto.Descripcion"
+            maxlength="500"
+            rows="2"
+            placeholder="Descripción del producto">
+          </textarea>
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Categoría *</label>
+
+          <select [(ngModel)]="producto.IdCategoriaProducto">
+
+            <option
+              [ngValue]="0"
+              disabled>
+              Seleccione una categoría
+            </option>
+
+            <option
+              *ngFor="let categoria of categorias"
+              [ngValue]="categoria.IdCategoriaProducto">
+
+              {{ categoria.Nombre }}
+
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Unidad de Medida</label>
+
+          <select [(ngModel)]="producto.IdUnidadMedida">
+
+            <option
+              [ngValue]="0"
+              disabled>
+              Seleccione una unidad
+            </option>
+
+            <option
+              *ngFor="let unidad of unidadesMedida"
+              [ngValue]="unidad.Id">
+
+              {{ unidad.Unidad }}
+
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Marca</label>
+
+          <select [(ngModel)]="producto.IdMarca">
+
+            <option
+              [ngValue]="0"
+              disabled>
+              Seleccione una marca
+            </option>
+
+            <option
+              *ngFor="let marca of marcas"
+              [ngValue]="marca.Id">
+
+              {{ marca.Nombre }}
+
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Referencia</label>
+
+          <input
+            type="text"
+            [(ngModel)]="producto.Referencia"
+            maxlength="100"
+            placeholder="Referencia">
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Precio Venta</label>
+
+          <input
+            type="number"
+            step="0.0001"
+            min="0"
+            [(ngModel)]="producto.PrecioVenta"
+            placeholder="0">
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Costo Actual</label>
+
+          <input
+            type="number"
+            step="0.0001"
+            min="0"
+            [(ngModel)]="producto.CostoActual"
+            placeholder="0">
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Stock Mínimo</label>
+
+          <input
+            type="number"
+            step="0.0001"
+            min="0"
+            [(ngModel)]="producto.StockMinimo"
+            placeholder="0">
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Stock Máximo</label>
+
+          <input
+            type="number"
+            step="0.0001"
+            min="0"
+            [(ngModel)]="producto.StockMaximo"
+            placeholder="0">
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Maneja Inventario</label>
+
+          <select [(ngModel)]="producto.ManejaInventario">
+
+            <option [ngValue]="1">Sí</option>
+            <option [ngValue]="0">No</option>
+
+          </select>
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Permite Venta</label>
+
+          <select [(ngModel)]="producto.PermiteVenta">
+
+            <option [ngValue]="1">Sí</option>
+            <option [ngValue]="0">No</option>
+
+          </select>
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Estado</label>
+
+          <select [(ngModel)]="producto.Activo">
+
+            <option [ngValue]="1">Activo</option>
+            <option [ngValue]="0">Inactivo</option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <!-- BOTONES -->
+
+      <div class="acciones-formulario">
+
+        <button
+          class="btn-guardar"
+          (click)="guardarProducto()">
+
+          {{ editando ? 'Actualizar' : 'Guardar' }}
+
+        </button>
+
+
+        <button
+          class="btn-cancelar"
+          (click)="cancelarProducto()">
+
+          Cancelar
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- TABLA PRODUCTOS -->
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>ID</th>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Unidad</th>
+            <th>Marca</th>
+            <th>Precio Venta</th>
+            <th>Costo Actual</th>
+            <th>Stock Mín</th>
+            <th>Stock Máx</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let item of productos">
+
+            <td>
+              {{ item.IdProducto }}
+            </td>
+
+            <td>
+              {{ item.CodigoProducto }}
+            </td>
+
+            <td>
+              {{ item.NombreProducto }}
+            </td>
+
+            <td>
+              {{ item.Categoria || '-' }}
+            </td>
+
+            <td>
+              {{ item.UnidadMedida || '-' }}
+            </td>
+
+            <td>
+              {{ item.NombreMarca || '-' }}
+            </td>
+
+            <td>
+              {{ item.PrecioVenta | currency }}
+            </td>
+
+            <td>
+              {{ item.CostoActual | currency }}
+            </td>
+
+            <td>
+              {{ item.StockMinimo }}
+            </td>
+
+            <td>
+              {{ item.StockMaximo }}
+            </td>
+
+            <td>
+
+              <span
+                class="estado"
+                [class.inactivo]="item.Activo === 0">
+
+                {{ item.Activo === 1 ? 'Activo' : 'Inactivo' }}
+
+              </span>
+
+            </td>
+
+            <td class="acciones">
+
+              <button
+                class="btn-editar"
+                (click)="editar(item)">
+
+                Editar
+
+              </button>
+
+              <button
+                class="btn-eliminar"
+                (click)="eliminarProducto(item)">
+
+                Eliminar
+
+              </button>
+
+            </td>
+
+          </tr>
+
+
+          <!-- SIN REGISTROS -->
+
+          <tr *ngIf="productos.length === 0">
+
+            <td
+              colspan="12"
+              class="sin-registros">
+
+              No existen productos registrados.
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- ================================================
+       VISTA CATEGORÍAS
+       ================================================ -->
+
+  <div *ngIf="vista === 'categorias'">
+
+    <div class="barra-busqueda">
+
+      <button
+        class="btn-nuevo"
+        (click)="nuevaCategoriaForm()">
+
+        + Nueva Categoría
+
+      </button>
+
+    </div>
+
+
+    <!-- FORMULARIO CATEGORÍA -->
+
+    <div
+      class="formulario"
+      *ngIf="mostrarFormularioCategoria">
+
+      <h3>
+        {{ editandoCategoria ? 'Editar Categoría' : 'Nueva Categoría' }}
+      </h3>
+
+
+      <div class="form-grid">
+
+        <div class="campo">
+
+          <label>Nombre *</label>
+
+          <input
+            type="text"
+            [(ngModel)]="categoria.Nombre"
+            maxlength="100"
+            placeholder="Nombre de la categoría">
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Estado</label>
+
+          <select [(ngModel)]="categoria.Activo">
+
+            <option [ngValue]="1">Activo</option>
+            <option [ngValue]="0">Inactivo</option>
+
+          </select>
+
+        </div>
+
+
+        <div class="campo campo-completo">
+
+          <label>Descripción</label>
+
+          <textarea
+            [(ngModel)]="categoria.Descripcion"
+            maxlength="300"
+            rows="2"
+            placeholder="Descripción de la categoría">
+          </textarea>
+
+        </div>
+
+      </div>
+
+
+      <!-- BOTONES -->
+
+      <div class="acciones-formulario">
+
+        <button
+          class="btn-guardar"
+          (click)="guardarCategoria()">
+
+          {{ editandoCategoria ? 'Actualizar' : 'Guardar' }}
+
+        </button>
+
+
+        <button
+          class="btn-cancelar"
+          (click)="cancelarCategoria()">
+
+          Cancelar
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- TABLA CATEGORÍAS -->
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let item of categorias">
+
+            <td>
+              {{ item.IdCategoriaProducto }}
+            </td>
+
+            <td>
+              {{ item.Nombre }}
+            </td>
+
+            <td>
+              {{ item.Descripcion || '-' }}
+            </td>
+
+            <td>
+
+              <span
+                class="estado"
+                [class.inactivo]="item.Activo === 0">
+
+                {{ item.Activo === 1 ? 'Activo' : 'Inactivo' }}
+
+              </span>
+
+            </td>
+
+            <td class="acciones">
+
+              <button
+                class="btn-editar"
+                (click)="editarCategoria(item)">
+
+                Editar
+
+              </button>
+
+              <button
+                class="btn-eliminar"
+                (click)="eliminarCategoria(item)">
+
+                Eliminar
+
+              </button>
+
+            </td>
+
+          </tr>
+
+
+          <!-- SIN REGISTROS -->
+
+          <tr *ngIf="categorias.length === 0">
+
+            <td
+              colspan="5"
+              class="sin-registros">
+
+              No existen categorías registradas.
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>

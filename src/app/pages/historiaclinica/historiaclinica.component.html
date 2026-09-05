@@ -1,0 +1,782 @@
+<div class="pagina">
+  <!-- =========================================== -->
+  <!-- MENSAJES -->
+  <!-- =========================================== -->
+  <div *ngIf="mensaje" class="mensaje exito">{{ mensaje }}</div>
+  <div *ngIf="error" class="mensaje error">{{ error }}</div>
+
+  <!-- =========================================== -->
+  <!-- ENCABEZADO -->
+  <!-- =========================================== -->
+  <div class="encabezado">
+    <div class="encabezado-texto">
+      <h1>Historia Clínica Veterinaria</h1>
+      <p>Consulta y registro completo de las atenciones clínicas del paciente</p>
+    </div>
+    <button *ngIf="mascotaSeleccionada" class="btn-secundario" (click)="mascotaSeleccionada = null; textoBusqueda = ''">
+      Cambiar Mascota
+    </button>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- 1. SELECTOR DE MASCOTA -->
+  <!-- =========================================== -->
+  <div class="formulario-card">
+    <div class="formulario-header">
+      <h2><span class="paso">1</span> Seleccionar Mascota</h2>
+      <p>Busque al paciente para iniciar o consultar su historia clínica</p>
+    </div>
+    <div class="formulario-body">
+      <div class="campo">
+        <label>Buscar mascota</label>
+        <input
+          type="text"
+          placeholder="Buscar por nombre, especie o raza..."
+          [(ngModel)]="textoBusqueda"
+          (input)="buscar()"
+        />
+      </div>
+
+      <div *ngIf="!mascotaSeleccionada" class="tabla-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Especie</th>
+              <th>Raza</th>
+              <th>Sexo</th>
+              <th>Cliente</th>
+              <th class="col-acciones"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let m of mascotasFiltradas">
+              <td>
+                <div class="celda-principal">{{ m.Nombre }}</div>
+              </td>
+              <td>{{ m.Especie }}</td>
+              <td>{{ m.Raza }}</td>
+              <td>{{ m.Sexo }}</td>
+              <td>{{ m.NombreCliente || m.ClienteId }}</td>
+              <td class="col-acciones">
+                <button class="btn-seleccionar" (click)="seleccionarMascota(m)">Seleccionar</button>
+              </td>
+            </tr>
+            <tr *ngIf="mascotasFiltradas.length === 0">
+              <td colspan="6" class="sin-datos">No se encontraron mascotas</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="mascotaSeleccionada" class="mascota-info">
+        <div class="mascota-info-top">
+          <div class="mascota-nombre">
+            <span class="mascota-icono">🐾</span>
+            <div>
+              <strong>{{ mascotaSeleccionada.Nombre }}</strong>
+              <small>{{ mascotaSeleccionada.Especie }} · {{ mascotaSeleccionada.Raza }}</small>
+            </div>
+          </div>
+          <span class="estado confirmado">Paciente activo</span>
+        </div>
+        <div class="mascota-info-grid">
+          <div class="info-item">
+            <span>Sexo</span>
+            <strong>{{ mascotaSeleccionada.Sexo }}</strong>
+          </div>
+          <div class="info-item">
+            <span>Edad</span>
+            <strong>{{ calcularEdad(mascotaSeleccionada) }}</strong>
+          </div>
+          <div class="info-item">
+            <span>Peso</span>
+            <strong>{{ mascotaSeleccionada.Peso }} kg</strong>
+          </div>
+          <div class="info-item">
+            <span>Propietario</span>
+            <strong>{{ mascotaSeleccionada.NombreCliente || '—' }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================== -->
+  <!-- PESTAÑAS -->
+  <!-- =========================================== -->
+  <div class="pestanas" *ngIf="mascotaSeleccionada">
+    <button class="pestana" [class.activa]="seccionActiva === 'informacion'" (click)="seleccionarSeccion('informacion')">Información</button>
+    <button class="pestana" [class.activa]="seccionActiva === 'consulta'" (click)="seleccionarSeccion('consulta')">Consulta</button>
+    <button class="pestana" [class.activa]="seccionActiva === 'examen'" (click)="seleccionarSeccion('examen')">Examen</button>
+    <button class="pestana" [class.activa]="seccionActiva === 'diagnostico'" (click)="seleccionarSeccion('diagnostico')">Diagnóstico</button>
+    <button class="pestana" [class.activa]="seccionActiva === 'tratamiento'" (click)="seleccionarSeccion('tratamiento')">Tratamiento</button>
+    <button class="pestana" [class.activa]="seccionActiva === 'receta'" (click)="seleccionarSeccion('receta')">Receta</button>
+    <button class="pestana" [class.activa]="seccionActiva === 'procedimientos'" (click)="seleccionarSeccion('procedimientos')">Procedimientos</button>
+    <button class="pestana" [class.activa]="seccionActiva === 'cirugia'" (click)="seleccionarSeccion('cirugia')">Cirugía</button>
+    <button class="pestana" [class.activa]="seccionActiva === 'controles'" (click)="seleccionarSeccion('controles')">Controles</button>
+    <button class="pestana" [class.activa]="seccionActiva === 'antecedentes'" (click)="seleccionarSeccion('antecedentes')">Antecedentes</button>
+    <button class="pestana" [class.activa]="seccionActiva === 'historia'" (click)="seleccionarSeccion('historia')">Historia</button>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION INFORMACION -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'informacion'" class="seccion">
+    <div class="seccion-titulo">
+      <h3>Información de la Mascota</h3>
+      <p>Datos generales del paciente</p>
+    </div>
+    <div class="formulario-card">
+      <div class="formulario-body">
+        <div class="info-grupo">
+          <div class="info-grupo-titulo">Paciente</div>
+          <div class="mascota-info-grid">
+            <div class="info-item"><span>Nombre</span><strong>{{ mascotaSeleccionada.Nombre }}</strong></div>
+            <div class="info-item"><span>Especie</span><strong>{{ mascotaSeleccionada.Especie }}</strong></div>
+            <div class="info-item"><span>Raza</span><strong>{{ mascotaSeleccionada.Raza }}</strong></div>
+            <div class="info-item"><span>Sexo</span><strong>{{ mascotaSeleccionada.Sexo }}</strong></div>
+            <div class="info-item"><span>Edad</span><strong>{{ calcularEdad(mascotaSeleccionada) }}</strong></div>
+            <div class="info-item"><span>Peso</span><strong>{{ mascotaSeleccionada.Peso }} kg</strong></div>
+            <div class="info-item"><span>Color</span><strong>{{ mascotaSeleccionada.Color }}</strong></div>
+            <div class="info-item"><span>Microchip</span><strong>{{ mascotaSeleccionada.Microchip }}</strong></div>
+          </div>
+        </div>
+        <hr class="divisor" />
+        <div class="info-grupo">
+          <div class="info-grupo-titulo">Propietario</div>
+          <div class="mascota-info-grid">
+            <div class="info-item"><span>Nombre</span><strong>{{ mascotaSeleccionada.NombreCliente }}</strong></div>
+            <div class="info-item"><span>Teléfono</span><strong>{{ mascotaSeleccionada.TelefonoCliente || '—' }}</strong></div>
+            <div class="info-item"><span>Correo</span><strong>{{ mascotaSeleccionada.CorreoCliente || '—' }}</strong></div>
+            <div class="info-item"><span>Dirección</span><strong>{{ mascotaSeleccionada.DireccionCliente || '—' }}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION CONSULTA -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'consulta'" class="seccion">
+    <div class="seccion-titulo">
+      <h3>Nueva Atención Clínica</h3>
+      <p>Registre una nueva consulta para el paciente</p>
+    </div>
+    <div class="formulario-card">
+      <div class="formulario-body">
+        <div class="formulario-grid">
+          <div class="campo">
+            <label>Veterinario</label>
+            <select [(ngModel)]="nuevaHistoria.IdVeterinario">
+              <option [ngValue]="0">-- Seleccionar --</option>
+              <option *ngFor="let v of veterinarios" [ngValue]="v.IdVeterinario">
+                {{ nombreCompletoVeterinario(v) }}
+              </option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Fecha de Atención</label>
+            <input type="datetime-local" [(ngModel)]="nuevaHistoria.FechaAtencion" />
+          </div>
+          <div class="campo campo-completo">
+            <label>Motivo de Consulta *</label>
+            <textarea [(ngModel)]="nuevaHistoria.MotivoConsulta" rows="3"
+              placeholder="Ej: El perro presenta vómito y falta de apetito desde ayer."></textarea>
+          </div>
+          <div class="campo campo-completo">
+            <label>Enfermedad Actual</label>
+            <textarea [(ngModel)]="nuevaHistoria.EnfermedadActual" rows="3"></textarea>
+          </div>
+          <div class="campo campo-completo">
+            <label>Observaciones</label>
+            <textarea [(ngModel)]="nuevaHistoria.Observaciones" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="formulario-botones">
+        <button class="btn-guardar" (click)="crearHistoria()">Guardar Atención</button>
+      </div>
+    </div>
+
+    <div class="seccion-titulo mt-30">
+      <h3>Atenciones Anteriores</h3>
+      <p>Historial de consultas registradas</p>
+    </div>
+    <div class="tabla-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Veterinario</th>
+            <th>Motivo</th>
+            <th>Estado</th>
+            <th class="col-acciones"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let h of historias">
+            <td>{{ h.FechaAtencion | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ h.NombreVeterinario }}</td>
+            <td>{{ h.MotivoConsulta }}</td>
+            <td>
+              <span class="estado" [ngClass]="{
+                'confirmado': h.Estado === 'Abierta',
+                'pendiente': h.Estado === 'En atención',
+                'cancelado': h.Estado === 'Cerrada'
+              }">{{ h.Estado }}</span>
+            </td>
+            <td class="col-acciones">
+              <button class="btn-editar" title="Abrir historia" (click)="abrirHistoria(h)">Abrir</button>
+            </td>
+          </tr>
+          <tr *ngIf="historias.length === 0">
+            <td colspan="5" class="sin-datos">No hay atenciones registradas para esta mascota</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION EXAMEN -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'examen'" class="seccion">
+    <div class="formulario-card">
+      <div class="formulario-header">
+        <h2>Signos Vitales</h2>
+        <p>Parámetros clínicos medidos durante la atención</p>
+      </div>
+      <div class="formulario-body">
+        <div class="formulario-grid">
+          <div class="campo">
+            <label>Peso (kg)</label>
+            <input type="number" [(ngModel)]="signosVitales.Peso" step="0.1" />
+          </div>
+          <div class="campo">
+            <label>Temperatura (°C)</label>
+            <input type="number" [(ngModel)]="signosVitales.Temperatura" step="0.1" />
+          </div>
+          <div class="campo">
+            <label>Frec. Cardíaca</label>
+            <input type="number" [(ngModel)]="signosVitales.FrecuenciaCardiaca" />
+          </div>
+          <div class="campo">
+            <label>Frec. Respiratoria</label>
+            <input type="number" [(ngModel)]="signosVitales.FrecuenciaRespiratoria" />
+          </div>
+          <div class="campo">
+            <label>Hidratación</label>
+            <input type="text" [(ngModel)]="signosVitales.EstadoHidratacion" />
+          </div>
+          <div class="campo">
+            <label>Condición Corporal</label>
+            <input type="text" [(ngModel)]="signosVitales.CondicionCorporal" />
+          </div>
+          <div class="campo">
+            <label>Mucosas</label>
+            <input type="text" [(ngModel)]="signosVitales.Mucosas" />
+          </div>
+          <div class="campo">
+            <label>T. Llenado Capilar (seg)</label>
+            <input type="number" [(ngModel)]="signosVitales.TiempoLlenadoCapilar" />
+          </div>
+          <div class="campo campo-completo">
+            <label>Observaciones</label>
+            <textarea [(ngModel)]="signosVitales.Observaciones" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="formulario-botones">
+        <button class="btn-guardar" (click)="guardarSignosVitales()">Guardar Signos Vitales</button>
+      </div>
+    </div>
+
+    <div class="formulario-card mt-25">
+      <div class="formulario-header">
+        <h2>Examen Físico</h2>
+        <p>Evaluación por sistemas del paciente</p>
+      </div>
+      <div class="formulario-body">
+        <div class="formulario-grid">
+          <div class="campo"><label>Estado General</label><input type="text" [(ngModel)]="examenFisico.EstadoGeneral" /></div>
+          <div class="campo"><label>Cabeza</label><input type="text" [(ngModel)]="examenFisico.Cabeza" /></div>
+          <div class="campo"><label>Ojos</label><input type="text" [(ngModel)]="examenFisico.Ojos" /></div>
+          <div class="campo"><label>Oídos</label><input type="text" [(ngModel)]="examenFisico.Oidos" /></div>
+          <div class="campo"><label>Nariz</label><input type="text" [(ngModel)]="examenFisico.Nariz" /></div>
+          <div class="campo"><label>Boca</label><input type="text" [(ngModel)]="examenFisico.Boca" /></div>
+          <div class="campo"><label>Cuello</label><input type="text" [(ngModel)]="examenFisico.Cuello" /></div>
+          <div class="campo"><label>Abdomen</label><input type="text" [(ngModel)]="examenFisico.Abdomen" /></div>
+          <div class="campo"><label>Sistema Respiratorio</label><input type="text" [(ngModel)]="examenFisico.SistemaRespiratorio" /></div>
+          <div class="campo"><label>Sistema Cardiovascular</label><input type="text" [(ngModel)]="examenFisico.SistemaCardiovascular" /></div>
+          <div class="campo"><label>Sistema Digestivo</label><input type="text" [(ngModel)]="examenFisico.SistemaDigestivo" /></div>
+          <div class="campo"><label>Sistema Urinario</label><input type="text" [(ngModel)]="examenFisico.SistemaUrinario" /></div>
+          <div class="campo"><label>Sistema Reproductivo</label><input type="text" [(ngModel)]="examenFisico.SistemaReproductivo" /></div>
+          <div class="campo"><label>Musculoesquelético</label><input type="text" [(ngModel)]="examenFisico.SistemaMusculoesqueletico" /></div>
+          <div class="campo"><label>Piel y Pelaje</label><input type="text" [(ngModel)]="examenFisico.PielYPelaje" /></div>
+          <div class="campo"><label>Sistema Neurológico</label><input type="text" [(ngModel)]="examenFisico.SistemaNeurologico" /></div>
+          <div class="campo"><label>Ganglios</label><input type="text" [(ngModel)]="examenFisico.Ganglios" /></div>
+          <div class="campo"><label>Otros Hallazgos</label><input type="text" [(ngModel)]="examenFisico.OtrosHallazgos" /></div>
+          <div class="campo campo-completo"><label>Observaciones Generales</label><input type="text" [(ngModel)]="examenFisico.ObservacionesGenerales" /></div>
+        </div>
+      </div>
+      <div class="formulario-botones">
+        <button class="btn-guardar" (click)="guardarExamenFisico()">Guardar Examen Físico</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION DIAGNOSTICO -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'diagnostico'" class="seccion">
+    <div class="formulario-card">
+      <div class="formulario-header">
+        <h2>Nuevo Diagnóstico</h2>
+        <p>Registre el diagnóstico de la atención actual</p>
+      </div>
+      <div class="formulario-body">
+        <div class="formulario-grid">
+          <div class="campo">
+            <label>Tipo</label>
+            <select [(ngModel)]="nuevoDiagnostico.TipoDiagnostico">
+              <option value="Presuntivo">Presuntivo</option>
+              <option value="Definitivo">Definitivo</option>
+              <option value="Diferencial">Diferencial</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Código</label>
+            <input type="text" [(ngModel)]="nuevoDiagnostico.CodigoDiagnostico" placeholder="Ej: A05.1" />
+          </div>
+          <div class="campo campo-completo">
+            <label>Diagnóstico *</label>
+            <input type="text" [(ngModel)]="nuevoDiagnostico.Diagnostico" />
+          </div>
+          <div class="campo campo-completo">
+            <label>Observaciones</label>
+            <input type="text" [(ngModel)]="nuevoDiagnostico.Observaciones" />
+          </div>
+        </div>
+      </div>
+      <div class="formulario-botones">
+        <button class="btn-guardar" (click)="agregarDiagnostico()">Agregar Diagnóstico</button>
+      </div>
+    </div>
+
+    <div class="tabla-card mt-25">
+      <table>
+        <thead>
+          <tr><th>Tipo</th><th>Código</th><th>Diagnóstico</th><th>Observaciones</th><th class="col-acciones"></th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of diagnosticos">
+            <td>
+              <span class="estado pendiente">{{ d.TipoDiagnostico }}</span>
+            </td>
+            <td>{{ d.CodigoDiagnostico }}</td>
+            <td>{{ d.Diagnostico }}</td>
+            <td>{{ d.Observaciones }}</td>
+            <td class="col-acciones">
+              <button class="btn-eliminar" title="Eliminar" (click)="eliminarDiagnostico(d.IdDiagnostico)">✕</button>
+            </td>
+          </tr>
+          <tr *ngIf="diagnosticos.length === 0">
+            <td colspan="5" class="sin-datos">No se han registrado diagnósticos</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION TRATAMIENTO -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'tratamiento'" class="seccion">
+    <div class="formulario-card">
+      <div class="formulario-header">
+        <h2>Nuevo Tratamiento</h2>
+        <p>Registre el tratamiento indicado al paciente</p>
+      </div>
+      <div class="formulario-body">
+        <div class="formulario-grid">
+          <div class="campo campo-completo">
+            <label>Nombre *</label>
+            <input type="text" [(ngModel)]="nuevoTratamiento.NombreTratamiento" placeholder="Ej: Antibiótico terapia" />
+          </div>
+          <div class="campo"><label>Fecha Inicio</label><input type="date" [(ngModel)]="nuevoTratamiento.FechaInicio" /></div>
+          <div class="campo"><label>Fecha Fin</label><input type="date" [(ngModel)]="nuevoTratamiento.FechaFin" /></div>
+          <div class="campo campo-completo"><label>Descripción</label><textarea [(ngModel)]="nuevoTratamiento.Descripcion" rows="2"></textarea></div>
+          <div class="campo campo-completo"><label>Indicaciones</label><textarea [(ngModel)]="nuevoTratamiento.Indicaciones" rows="2"></textarea></div>
+        </div>
+      </div>
+      <div class="formulario-botones">
+        <button class="btn-guardar" (click)="agregarTratamiento()">Agregar Tratamiento</button>
+      </div>
+    </div>
+
+    <div class="tabla-card mt-25">
+      <table>
+        <thead>
+          <tr><th>Nombre</th><th>Fecha Inicio</th><th>Fecha Fin</th><th>Estado</th><th class="col-acciones"></th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of tratamientos">
+            <td>{{ t.NombreTratamiento }}</td>
+            <td>{{ t.FechaInicio | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ t.FechaFin | date: 'dd/MM/yyyy' }}</td>
+            <td>
+              <span class="estado" [ngClass]="t.Estado === 'Activo' ? 'confirmado' : 'cancelado'">{{ t.Estado }}</span>
+            </td>
+            <td class="col-acciones">
+              <button *ngIf="t.Estado === 'Activo'" class="btn-guardar btn-pequeno" (click)="finalizarTratamiento(t)">Finalizar</button>
+            </td>
+          </tr>
+          <tr *ngIf="tratamientos.length === 0">
+            <td colspan="5" class="sin-datos">No se han registrado tratamientos</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION RECETA -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'receta'" class="seccion">
+    <div class="seccion-titulo">
+      <h3>Recetas</h3>
+      <p>Prescripciones médicas emitidas</p>
+    </div>
+
+    <div class="tabla-card">
+      <div class="tabla-head-right">
+        <button class="btn-nueva" (click)="abrirFormularioReceta()">+ Nueva Receta</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Fecha</th><th>Veterinario</th><th>Medicamentos</th><th>Estado</th><th class="col-acciones"></th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of recetas">
+            <td>{{ r.Fecha | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ r.NombreVeterinario }}</td>
+            <td>{{ r.TotalMedicamentos || 0 }}</td>
+            <td>
+              <span class="estado" [ngClass]="r.Estado === 'Activa' ? 'confirmado' : 'cancelado'">{{ r.Estado }}</span>
+            </td>
+            <td class="col-acciones">
+              <button *ngIf="r.Estado === 'Activa'" class="btn-eliminar btn-pequeno" (click)="cancelarReceta(r)">Cancelar</button>
+            </td>
+          </tr>
+          <tr *ngIf="recetas.length === 0">
+            <td colspan="5" class="sin-datos">No se han registrado recetas</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="mostrarFormularioReceta" class="formulario-card mt-25">
+      <div class="formulario-header">
+        <h2>Nueva Receta</h2>
+        <p>Registre la prescripción y sus medicamentos</p>
+      </div>
+      <div class="formulario-body">
+        <div class="formulario-grid">
+          <div class="campo">
+            <label>Veterinario</label>
+            <select [(ngModel)]="nuevaReceta.IdVeterinario">
+              <option [ngValue]="0">-- Seleccionar --</option>
+              <option *ngFor="let v of veterinarios" [ngValue]="v.IdVeterinario">{{ nombreCompletoVeterinario(v) }}</option>
+            </select>
+          </div>
+          <div class="campo"><label>Indicaciones Generales</label><input type="text" [(ngModel)]="nuevaReceta.IndicacionesGenerales" /></div>
+          <div class="campo campo-completo"><label>Observaciones</label><input type="text" [(ngModel)]="nuevaReceta.Observaciones" /></div>
+        </div>
+
+        <div class="sub-seccion">
+          <h4>Medicamentos</h4>
+        </div>
+        <div class="formulario-grid">
+          <div class="campo"><label>Medicamento *</label><input type="text" [(ngModel)]="medicamentoActual.Medicamento" /></div>
+          <div class="campo"><label>Concentración</label><input type="text" [(ngModel)]="medicamentoActual.Concentracion" /></div>
+          <div class="campo"><label>Forma</label><input type="text" [(ngModel)]="medicamentoActual.FormaFarmaceutica" /></div>
+          <div class="campo"><label>Dosis</label><input type="text" [(ngModel)]="medicamentoActual.Dosis" /></div>
+          <div class="campo"><label>Frecuencia</label><input type="text" [(ngModel)]="medicamentoActual.Frecuencia" /></div>
+          <div class="campo"><label>Vía</label><input type="text" [(ngModel)]="medicamentoActual.ViaAdministracion" /></div>
+          <div class="campo"><label>Duración</label><input type="text" [(ngModel)]="medicamentoActual.Duracion" /></div>
+          <div class="campo"><label>Cantidad</label><input type="number" [(ngModel)]="medicamentoActual.Cantidad" /></div>
+          <div class="campo"><label>Indicaciones</label><input type="text" [(ngModel)]="medicamentoActual.Indicaciones" /></div>
+        </div>
+        <button class="btn-secundario mt-15" (click)="agregarMedicamento()">+ Agregar Medicamento</button>
+
+        <div class="tabla-card mt-15">
+          <table>
+            <thead>
+              <tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Vía</th><th>Cantidad</th><th class="col-acciones"></th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of nuevaReceta.detalle; let i = index">
+                <td>{{ m.Medicamento }} {{ m.Concentracion }}</td>
+                <td>{{ m.Dosis }}</td>
+                <td>{{ m.Frecuencia }}</td>
+                <td>{{ m.ViaAdministracion }}</td>
+                <td>{{ m.Cantidad }}</td>
+                <td class="col-acciones">
+                  <button class="btn-eliminar btn-pequeno" (click)="eliminarMedicamento(i)">✕</button>
+                </td>
+              </tr>
+              <tr *ngIf="nuevaReceta.detalle.length === 0">
+                <td colspan="6" class="sin-datos">Aún no ha agregado medicamentos</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="formulario-botones">
+        <button class="btn-cancelar" (click)="cerrarFormularioReceta()">Cancelar</button>
+        <button class="btn-guardar" (click)="guardarReceta()">Guardar Receta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION PROCEDIMIENTOS -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'procedimientos'" class="seccion">
+    <div class="seccion-titulo">
+      <h3>Procedimientos</h3>
+      <p>Intervenciones y procedimientos realizados</p>
+    </div>
+
+    <div class="tabla-card">
+      <div class="tabla-head-right">
+        <button class="btn-nueva" (click)="mostrarFormularioNuevoProcedimiento()">+ Nuevo Procedimiento</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Fecha</th><th>Procedimiento</th><th>Descripción</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of procedimientos">
+            <td>{{ p.Fecha | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ p.NombreProcedimiento }}</td>
+            <td>{{ p.Descripcion }}</td>
+            <td>{{ p.Resultado }}</td>
+          </tr>
+          <tr *ngIf="procedimientos.length === 0">
+            <td colspan="4" class="sin-datos">No se han registrado procedimientos</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="mostrarFormularioProcedimiento" class="formulario-card mt-25">
+      <div class="formulario-header">
+        <h2>Nuevo Procedimiento</h2>
+        <p>Registre el procedimiento realizado</p>
+      </div>
+      <div class="formulario-body">
+        <div class="formulario-grid">
+          <div class="campo"><label>Procedimiento *</label><input type="text" [(ngModel)]="nuevoProcedimiento.NombreProcedimiento" /></div>
+          <div class="campo"><label>Fecha</label><input type="datetime-local" [(ngModel)]="nuevoProcedimiento.Fecha" /></div>
+          <div class="campo"><label>Descripción</label><textarea [(ngModel)]="nuevoProcedimiento.Descripcion" rows="2"></textarea></div>
+          <div class="campo"><label>Resultado</label><textarea [(ngModel)]="nuevoProcedimiento.Resultado" rows="2"></textarea></div>
+        </div>
+      </div>
+      <div class="formulario-botones">
+        <button class="btn-guardar" (click)="guardarProcedimiento()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION CIRUGIA -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'cirugia'" class="seccion">
+    <div class="seccion-titulo">
+      <h3>Cirugías</h3>
+      <p>Intervenciones quirúrgicas del paciente</p>
+    </div>
+
+    <div class="tabla-card">
+      <div class="tabla-head-right">
+        <button class="btn-nueva" (click)="mostrarFormularioNuevaCirugia()">+ Nueva Cirugía</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Cirugía</th><th>Fecha Programada</th><th>Fecha Realizada</th><th>Veterinario</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of cirugias">
+            <td>{{ c.TipoCirugia }}</td>
+            <td>{{ c.FechaProgramacion | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ c.FechaCirugia | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ c.NombreVeterinario }}</td>
+            <td>
+              <span class="estado pendiente">{{ c.Estado }}</span>
+            </td>
+          </tr>
+          <tr *ngIf="cirugias.length === 0">
+            <td colspan="5" class="sin-datos">No se han registrado cirugías</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="mostrarFormularioCirugia" class="formulario-card mt-25">
+      <div class="formulario-header">
+        <h2>Nueva Cirugía</h2>
+        <p>Programe o registre una intervención quirúrgica</p>
+      </div>
+      <div class="formulario-body">
+        <div class="formulario-grid">
+          <div class="campo"><label>Tipo de Cirugía *</label><input type="text" [(ngModel)]="nuevaCirugia.TipoCirugia" /></div>
+          <div class="campo">
+            <label>Veterinario</label>
+            <select [(ngModel)]="nuevaCirugia.IdVeterinario">
+              <option [ngValue]="0">-- Seleccionar --</option>
+              <option *ngFor="let v of veterinarios" [ngValue]="v.IdVeterinario">{{ nombreCompletoVeterinario(v) }}</option>
+            </select>
+          </div>
+          <div class="campo"><label>Fecha Programación</label><input type="date" [(ngModel)]="nuevaCirugia.FechaProgramacion" /></div>
+          <div class="campo"><label>Motivo</label><textarea [(ngModel)]="nuevaCirugia.Motivo" rows="2"></textarea></div>
+          <div class="campo"><label>Diagnóstico Preoperatorio</label><textarea [(ngModel)]="nuevaCirugia.DiagnosticoPreoperatorio" rows="2"></textarea></div>
+        </div>
+      </div>
+      <div class="formulario-botones">
+        <button class="btn-guardar" (click)="guardarCirugia()">Guardar Cirugía</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION CONTROLES -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'controles'" class="seccion">
+    <div class="seccion-titulo">
+      <h3>Controles</h3>
+      <p>Seguimiento y evolución del paciente</p>
+    </div>
+
+    <div class="tabla-card">
+      <div class="tabla-head-right">
+        <button class="btn-nueva" (click)="mostrarFormularioNuevoControl()">+ Nuevo Control</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Fecha</th><th>Motivo</th><th>Evolución</th><th>Peso</th><th>Próximo Control</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of controles">
+            <td>{{ c.FechaControl | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ c.Motivo }}</td>
+            <td>{{ c.Evolucion }}</td>
+            <td>{{ c.Peso }}</td>
+            <td>{{ c.ProximoControl | date: 'dd/MM/yyyy' }}</td>
+          </tr>
+          <tr *ngIf="controles.length === 0">
+            <td colspan="5" class="sin-datos">No se han registrado controles</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="mostrarFormularioControl" class="formulario-card mt-25">
+      <div class="formulario-header">
+        <h2>Nuevo Control</h2>
+        <p>Registre el seguimiento del paciente</p>
+      </div>
+      <div class="formulario-body">
+        <div class="formulario-grid">
+          <div class="campo"><label>Fecha Control</label><input type="datetime-local" [(ngModel)]="nuevoControl.FechaControl" /></div>
+          <div class="campo">
+            <label>Veterinario</label>
+            <select [(ngModel)]="nuevoControl.IdVeterinario">
+              <option [ngValue]="0">-- Seleccionar --</option>
+              <option *ngFor="let v of veterinarios" [ngValue]="v.IdVeterinario">{{ nombreCompletoVeterinario(v) }}</option>
+            </select>
+          </div>
+          <div class="campo"><label>Peso (kg)</label><input type="number" [(ngModel)]="nuevoControl.Peso" step="0.1" /></div>
+          <div class="campo"><label>Próximo Control</label><input type="date" [(ngModel)]="nuevoControl.ProximoControl" /></div>
+          <div class="campo"><label>Motivo</label><input type="text" [(ngModel)]="nuevoControl.Motivo" /></div>
+          <div class="campo"><label>Evolución</label><textarea [(ngModel)]="nuevoControl.Evolucion" rows="2"></textarea></div>
+          <div class="campo"><label>Recomendaciones</label><textarea [(ngModel)]="nuevoControl.Recomendaciones" rows="2"></textarea></div>
+          <div class="campo"><label>Observaciones</label><textarea [(ngModel)]="nuevoControl.Observaciones" rows="2"></textarea></div>
+        </div>
+      </div>
+      <div class="formulario-botones">
+        <button class="btn-guardar" (click)="guardarControl()">Guardar Control</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION ANTECEDENTES -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'antecedentes'" class="seccion">
+    <div class="formulario-card">
+      <div class="formulario-header">
+        <h2>Antecedentes de la Mascota</h2>
+        <p>Historia médica previa del paciente</p>
+      </div>
+      <div class="formulario-body">
+        <div class="formulario-grid">
+          <div class="campo"><label>Enfermedades Anteriores</label><textarea [(ngModel)]="antecedentes.EnfermedadesAnteriores" rows="2"></textarea></div>
+          <div class="campo"><label>Cirugías Anteriores</label><textarea [(ngModel)]="antecedentes.CirugiasAnteriores" rows="2"></textarea></div>
+          <div class="campo"><label>Alergias</label><textarea [(ngModel)]="antecedentes.Alergias" rows="2"></textarea></div>
+          <div class="campo"><label>Vacunación</label><textarea [(ngModel)]="antecedentes.Vacunacion" rows="2"></textarea></div>
+          <div class="campo"><label>Desparasitación</label><textarea [(ngModel)]="antecedentes.Desparasitacion" rows="2"></textarea></div>
+          <div class="campo"><label>Medicamentos Actuales</label><textarea [(ngModel)]="antecedentes.MedicamentosActuales" rows="2"></textarea></div>
+          <div class="campo"><label>Tratamientos Anteriores</label><textarea [(ngModel)]="antecedentes.TratamientosAnteriores" rows="2"></textarea></div>
+          <div class="campo"><label>Antecedentes Hereditarios</label><textarea [(ngModel)]="antecedentes.AntecedentesHereditarios" rows="2"></textarea></div>
+          <div class="campo"><label>Alimentación</label><textarea [(ngModel)]="antecedentes.Alimentacion" rows="2"></textarea></div>
+          <div class="campo"><label>Hábitos</label><textarea [(ngModel)]="antecedentes.Habitos" rows="2"></textarea></div>
+          <div class="campo campo-completo"><label>Observaciones</label><textarea [(ngModel)]="antecedentes.Observaciones" rows="2"></textarea></div>
+        </div>
+      </div>
+      <div class="formulario-botones">
+        <button class="btn-guardar" (click)="guardarAntecedentes()">Guardar Antecedentes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION HISTORIA (CRONOLOGICA) -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'historia'" class="seccion">
+    <div class="seccion-titulo">
+      <h3>Historia Clínica Cronológica</h3>
+      <p>Línea de tiempo de todas las atenciones del paciente</p>
+    </div>
+
+    <div *ngIf="historias.length === 0" class="sin-datos-caja">
+      No hay atenciones registradas para esta mascota.
+    </div>
+
+    <div class="timeline" *ngIf="historias.length > 0">
+      <div *ngFor="let h of historias" class="historia-evento">
+        <div class="timeline-marcador"></div>
+        <div class="historia-evento-card">
+          <div class="historia-evento-top">
+            <strong class="historia-fecha">{{ h.FechaAtencion | date: 'dd/MM/yyyy HH:mm' }}</strong>
+            <span class="estado confirmado">{{ h.Estado }}</span>
+          </div>
+          <div class="historia-detalles">
+            <div><span>Veterinario:</span> {{ h.NombreVeterinario }}</div>
+            <div *ngIf="h.MotivoConsulta"><span>Motivo:</span> {{ h.MotivoConsulta }}</div>
+            <div *ngIf="h.EnfermedadActual"><span>Enfermedad Actual:</span> {{ h.EnfermedadActual }}</div>
+          </div>
+          <div class="historia-diagnosticos" *ngIf="diagnosticos.length > 0">
+            <span>Diagnósticos: </span>
+            <span *ngFor="let d of diagnosticos; let last = last">
+              <em>{{ d.Diagnostico }}</em><span *ngIf="!last">; </span>
+            </span>
+          </div>
+          <button class="btn-editar mt-15" (click)="abrirHistoria(h)">Abrir Detalle</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

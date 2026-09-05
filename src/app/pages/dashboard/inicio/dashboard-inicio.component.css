@@ -1,0 +1,14 @@
+.inicio-container {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.saludo h2 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.saludo p {
+  margin: 6px 0 20px;
+  color: #666;
+}

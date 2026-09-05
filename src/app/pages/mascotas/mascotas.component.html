@@ -1,0 +1,471 @@
+<div class="mascotas-container">
+
+  <!-- ENCABEZADO -->
+
+  <div class="encabezado">
+
+    <div>
+
+      <h1>🐾 Mascotas</h1>
+
+      <p>
+        Administración de mascotas registradas
+      </p>
+
+    </div>
+
+
+    <button
+      class="btn-nuevo"
+      (click)="nueva()">
+
+      + Nueva mascota
+
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- BUSCADOR -->
+
+  <div class="barra-herramientas">
+
+    <input
+      type="text"
+      placeholder="Buscar mascota, especie o raza..."
+      [(ngModel)]="textoBusqueda"
+      (input)="buscar()">
+
+  </div>
+
+
+  <!-- FORMULARIO -->
+
+  <div
+    class="formulario-card"
+    *ngIf="mostrarFormulario">
+
+    <div class="formulario-header">
+
+      <h2>
+
+        {{ modoEdicion
+          ? 'Editar mascota'
+          : 'Nueva mascota' }}
+
+      </h2>
+
+    </div>
+
+
+    <div class="formulario-grid">
+
+<div class="campo campo-cliente">
+
+  <label>Cliente *</label>
+
+  <input
+    type="text"
+    [(ngModel)]="textoCliente"
+    name="textoCliente"
+    (input)="buscarClientes()"
+    (focus)="buscarClientes()"
+    autocomplete="off"
+    placeholder="Buscar cliente por nombre, documento o teléfono">
+
+  <div
+    class="lista-clientes"
+    *ngIf="mostrarClientes">
+
+    <div
+      class="cliente-opcion"
+      *ngFor="let cliente of clientesFiltrados"
+      (click)="seleccionarCliente(cliente)">
+
+      <div>
+        <strong>
+          {{ nombreCompleto(cliente) }}
+        </strong>
+      </div>
+
+      <div>
+        {{ cliente.TipoDocumento }}
+        {{ cliente.NumeroDocumento }}
+      </div>
+
+      <div *ngIf="cliente.Telefono">
+        Tel: {{ cliente.Telefono }}
+      </div>
+
+    </div>
+
+    <div
+      class="sin-clientes"
+      *ngIf="clientesFiltrados.length === 0">
+
+      No se encontraron clientes.
+
+    </div>
+
+  </div>
+
+</div>
+
+      <!-- NOMBRE -->
+
+      <div class="campo">
+
+        <label>Nombre *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="mascota.Nombre"
+          placeholder="Nombre de la mascota">
+
+      </div>
+
+
+      <!-- ESPECIE -->
+
+      <div class="campo">
+
+        <label>Especie *</label>
+
+        <select
+          [(ngModel)]="mascota.Especie">
+
+          <option value="">
+            Seleccione
+          </option>
+
+          <option value="Perro">
+            Perro
+          </option>
+
+          <option value="Gato">
+            Gato
+          </option>
+
+          <option value="Ave">
+            Ave
+          </option>
+
+          <option value="Conejo">
+            Conejo
+          </option>
+
+          <option value="Otro">
+            Otro
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- RAZA -->
+
+      <div class="campo">
+
+        <label>Raza</label>
+
+        <input
+          type="text"
+          [(ngModel)]="mascota.Raza">
+
+      </div>
+
+
+      <!-- SEXO -->
+
+      <div class="campo">
+
+        <label>Sexo</label>
+
+        <select
+          [(ngModel)]="mascota.Sexo">
+
+          <option value="">
+            Seleccione
+          </option>
+
+          <option value="Macho">
+            Macho
+          </option>
+
+          <option value="Hembra">
+            Hembra
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- FECHA NACIMIENTO -->
+
+      <div class="campo">
+
+        <label>Fecha nacimiento</label>
+
+        <input
+          type="date"
+          [(ngModel)]="mascota.FechaNacimiento">
+
+      </div>
+
+
+      <!-- COLOR -->
+
+      <div class="campo">
+
+        <label>Color</label>
+
+        <input
+          type="text"
+          [(ngModel)]="mascota.Color">
+
+      </div>
+
+
+      <!-- PESO -->
+
+      <div class="campo">
+
+        <label>Peso (Kg)</label>
+
+        <input
+          type="number"
+          step="0.01"
+          [(ngModel)]="mascota.Peso">
+
+      </div>
+
+
+      <!-- MICROCHIP -->
+
+      <div class="campo">
+
+        <label>Microchip</label>
+
+        <input
+          type="text"
+          [(ngModel)]="mascota.Microchip">
+
+      </div>
+
+
+      <!-- ESTERILIZADO -->
+
+      <div class="campo checkbox">
+
+        <label>
+
+          <input
+            type="checkbox"
+            [(ngModel)]="mascota.Esterilizado">
+
+          Esterilizado
+
+        </label>
+
+      </div>
+
+
+      <!-- OBSERVACIONES -->
+
+      <div class="campo campo-completo">
+
+        <label>Observaciones</label>
+
+        <textarea
+          rows="4"
+          [(ngModel)]="mascota.Observaciones">
+        </textarea>
+
+      </div>
+
+    </div>
+
+
+    <!-- BOTONES -->
+
+    <div class="formulario-botones">
+
+      <button
+        class="btn-cancelar"
+        (click)="cancelar()">
+
+        Cancelar
+
+      </button>
+
+
+      <button
+        class="btn-guardar"
+        (click)="guardar()">
+
+        {{ modoEdicion
+          ? 'Actualizar'
+          : 'Guardar' }}
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- TABLA -->
+
+  <div
+    class="tabla-card"
+    *ngIf="!mostrarFormulario">
+
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+
+          <th>Nombre</th>
+
+          <th>Especie</th>
+
+          <th>Raza</th>
+
+          <th>Sexo</th>
+
+          <th>Peso</th>
+
+          <th>Microchip</th>
+
+          <th>Esterilizado</th>
+
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr
+          *ngFor="let mascota of mascotasFiltradas">
+
+          <td>
+            {{ mascota.IdMascota }}
+          </td>
+
+          <td>
+            <strong>
+              {{ mascota.Nombre }}
+            </strong>
+          </td>
+
+          <td>
+            {{ mascota.Especie }}
+          </td>
+
+          <td>
+            {{ mascota.Raza || '-' }}
+          </td>
+
+          <td>
+            {{ mascota.Sexo || '-' }}
+          </td>
+
+          <td>
+            {{ mascota.Peso || '-' }}
+            <span *ngIf="mascota.Peso">
+              Kg
+            </span>
+          </td>
+
+          <td>
+            {{ mascota.Microchip || '-' }}
+          </td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.si]="mascota.Esterilizado"
+              [class.no]="!mascota.Esterilizado">
+
+              {{ mascota.Esterilizado
+                ? 'Sí'
+                : 'No' }}
+
+            </span>
+
+          </td>
+
+          <td class="acciones">
+
+            <button
+              class="btn-editar"
+              (click)="editar(mascota)">
+
+              ✏️
+
+            </button>
+
+
+            <button
+              class="btn-eliminar"
+              (click)="eliminar(mascota)">
+
+              🗑️
+
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <tr
+          *ngIf="mascotasFiltradas.length === 0">
+
+          <td
+            colspan="9"
+            class="sin-datos">
+
+            No hay mascotas registradas.
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>
