@@ -18,63 +18,25 @@
         🏠 Inicio
       </a>
 
-      <a routerLink="/dashboard/clientes">
-        👥 Clientes
+      <a
+        *ngFor="let mod of modulos"
+        [routerLink]="mod.Ruta || ''"
+        [class.activo-seguridad]="mod.Codigo === 'SEGURIDAD'">
+        <ng-container *ngIf="mod.Icono; else sinIcono">
+          {{ mod.Icono }} {{ mod.NombreModulo }}
+        </ng-container>
+        <ng-template #sinIcono>
+          {{ mod.NombreModulo }}
+        </ng-template>
       </a>
 
-      <a routerLink="/dashboard/mascotas">
-        🐾 Mascotas
-      </a>
-      <a routerLink="/dashboard/veterinarios">
-          👨‍⚕️ Veterinarios
-        </a>
-      <a routerLink="/dashboard/citas">
-        📅 Citas
-      </a>
-      <a routerLink="/dashboard/bodegas">
-        🏢 Bodegas
-      </a>
-
-      <a routerLink="/dashboard/empresas">
-        🏬 Empresa
-      </a>
-
-      <a routerLink="/dashboard/productos">
-        📦 Productos
-      </a>
-
-      <a routerLink="/dashboard/proveedores">
-        🏭 Proveedores
-      </a>
-
-      <a routerLink="/dashboard/inventario">
-        📊 Inventario
-      </a>
-
-      <a routerLink="/dashboard/kardex">
-        📒 Kardex
-      </a>
-
-      <a routerLink="/dashboard/compras">
-        🛒 Compras
-      </a>
-
-      <a routerLink="/dashboard/ventas">
-        🧾 Ventas
-      </a>
-
-      <a routerLink="/dashboard/traslados">
-        🚚 Traslados
-      </a>
-
-      <a routerLink="/dashboard/ajustes">
-        ⚖️ Ajustes
-      </a>
-
-      <a routerLink="/dashboard/historiaclinica">
-        📋 Historia Clínica
-      </a>
     </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" (click)="salir()">
+        Salir
+      </button>
+    </div>
 
   </aside>
 

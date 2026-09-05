@@ -191,6 +191,51 @@
 
 
 /* =====================================================
+   PIE DEL MENÚ LATERAL (LOGOUT)
+   ===================================================== */
+
+.sidebar-footer {
+  padding: 12px;
+
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.btn-logout {
+  width: 100%;
+
+  padding: 11px 14px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: rgba(255,255,255,0.08);
+
+  color: #dceae6;
+
+  font-size: 14px;
+
+  font-family: inherit;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.btn-logout:hover {
+  background: #c0392b;
+
+  color: white;
+}
+
+.activo-seguridad {
+  background: rgba(255,255,255,0.06);
+}
+
+
+/* =====================================================
    RESPONSIVE
    ===================================================== */
 

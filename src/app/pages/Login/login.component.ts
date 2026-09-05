@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { UsuarioService } from '../../Services/usuario.service';
 import { EmpresaService } from '../../Services/empresas.service';
+import { SeguridadService } from '../../Services/seguridad.service';
 import { Empresa } from '../../Models/empresa';
-import { Console } from 'node:console';
 
 @Component({
   selector: 'app-login',
@@ -31,6 +31,7 @@ export class LoginComponent implements OnInit {
   constructor(
     private usuarioService: UsuarioService,
     private empresaService: EmpresaService,
+    private seguridadService: SeguridadService,
     private router: Router
   ) { }
 
@@ -125,7 +126,9 @@ export class LoginComponent implements OnInit {
           console.log('UsuarioId recibido:', respuesta.usuario.UsuarioId);
           console.log('IdEmpresa recibido:', respuesta.usuario.IdEmpresa);
 
-          // Contexto de seguridad: usuario, empresa e IdEmpresa
+          // Contexto de seguridad: usuario, empresa, token e IdEmpresa
+          localStorage.clear();
+          localStorage.setItem('token', respuesta.token);
           localStorage.setItem(
             'UsuarioId',
             JSON.stringify(respuesta.usuario.UsuarioId)
@@ -142,10 +145,29 @@ export class LoginComponent implements OnInit {
             'empresa',
             JSON.stringify(respuesta.empresa)
           );
+          localStorage.setItem(
+            'IdSesion',
+            JSON.stringify(respuesta.usuario.IdSesion)
+          );
 
+          this.seguridadService.limpiarCache();
+
+          this.seguridadService.obtenerMenu().subscribe({
+            next: (menu) => {
+              localStorage.setItem('menu', JSON.stringify(menu.datos || []));
+            },
+            error: () => {}
+          });
+
+          this.seguridadService.obtenerMisPermisos().subscribe({
+            next: (resPermisos) => {
+              localStorage.setItem('permisos', JSON.stringify(resPermisos.datos || []));
+            },
+            error: () => {}
+          });
 
           // Ir a la página principal
-            this.router.navigate(['/dashboard']);
+          this.router.navigate(['/dashboard']);
 
         },
 

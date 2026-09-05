@@ -1,0 +1,174 @@
+const pool = require('../database/mysql');
+
+// =============================================================================
+// esSuperAdmin: ¿el usuario tiene rol SUPERADMIN global o perfil SUPERADMIN?
+// (RF-022). Aplica acceso total sin necesidad de rolpermisos.
+// =============================================================================
+async function esSuperAdmin(UsuarioId) {
+    const [rows] = await pool.query(
+        `SELECT (
+            EXISTS(
+                SELECT 1 FROM usuarioroles ur
+                INNER JOIN roles r ON ur.IdRol = r.IdRol AND r.Activo = 1
+                WHERE ur.UsuarioId = ?
+                  AND r.Nombre = 'SUPERADMIN'
+                  AND r.IdEmpresa IS NULL
+            )
+            OR EXISTS(
+                SELECT 1 FROM Usuarios u
+                INNER JOIN perfiles pf ON u.IdPerfil = pf.IdPerfil
+                WHERE u.UsuarioId = ? AND pf.Nombre = 'SUPERADMIN'
+            )
+        ) AS es`,
+        [UsuarioId, UsuarioId]
+    );
+    return !!rows[0].es;
+}
+
+// =============================================================================
+// obtenerPermisosUsuario: devuelve el conjunto de permisos efectivos del
+// usuario. Fuentes: perfil (perfilpermisos, configuración inicial RF-004),
+// roles (vía usuarioroles + rolpermisos) y permisos directos
+// (usuariopermisos, RF-010). Precedencia: DENEGAR gana sobre PERMITIR.
+// Devuelve un Map<Codigo, true|false>  (true = permitido).
+// =============================================================================
+async function obtenerPermisosUsuario(UsuarioId, IdPerfil = null) {
+    const [rows] = await pool.query(
+        `SELECT p.Codigo,
+                MAX(CASE WHEN t.Tipo = 'DENEGAR' THEN 1
+                         WHEN t.Tipo = 'PERMITIR' THEN 2
+                         ELSE 0 END) AS nivel
+         FROM permisos p
+         INNER JOIN (
+             SELECT pp.IdPermiso, pp.TipoAcceso AS Tipo
+             FROM perfilpermisos pp
+             WHERE pp.IdPerfil = ?
+             UNION ALL
+             SELECT rp.IdPermiso, rp.TipoAcceso AS Tipo
+             FROM usuarioroles ur
+             INNER JOIN roles r         ON ur.IdRol = r.IdRol AND r.Activo = 1
+             INNER JOIN rolpermisos rp  ON rp.IdRol = r.IdRol
+             WHERE ur.UsuarioId = ?
+             UNION ALL
+             SELECT up.IdPermiso, up.TipoAcceso AS Tipo
+             FROM usuariopermisos up
+             WHERE up.UsuarioId = ?
+         ) t ON t.IdPermiso = p.IdPermiso
+         WHERE p.Activo = 1
+         GROUP BY p.Codigo`,
+        [IdPerfil, UsuarioId, UsuarioId]
+    );
+
+    const permisos = new Map();
+    for (const r of rows) {
+        permisos.set(r.Codigo, r.nivel === 2);
+    }
+    return permisos;
+}
+
+// =============================================================================
+// authorize(codigoPermiso): valida que el usuario autenticado tenga el permiso
+// MODULO.ACCION. Retorna 403 si no lo tiene (RN-009, RN-010, RF-012).
+// Uso: router.post('/ajuste', authenticate, authorize('INVENTARIO.AJUSTAR'), ...)
+// =============================================================================
+function authorize(codigoPermiso) {
+    return async (req, res, next) => {
+        if (!req.auth) {
+            return res.status(401).json({
+                ok: false,
+                mensaje: 'No autorizado: debe autenticarse primero'
+            });
+        }
+
+        try {
+            if (await esSuperAdmin(req.auth.UsuarioId)) {
+                return next();
+            }
+
+            const permisos = await obtenerPermisosUsuario(
+                req.auth.UsuarioId,
+                req.auth.IdPerfil
+            );
+
+            if (permisos.get(codigoPermiso) === true) {
+                return next();
+            }
+
+            return res.status(403).json({
+                ok: false,
+                mensaje: `No autorizado: se requiere el permiso ${codigoPermiso}`
+            });
+        } catch (error) {
+            console.error('Error authorize:', error);
+            return res.status(500).json({
+                ok: false,
+                mensaje: 'Error interno del servidor',
+                error: error.message
+            });
+        }
+    };
+}
+
+// =============================================================================
+// authorizeAny(moduloCodigo): permite pasar si el usuario tiene CUALQUIER
+// permiso PERMITIDO dentro de un módulo (útil para endpoints de listado
+// ligero del propio módulo). Complementa a authorize().
+// =============================================================================
+function authorizeAny(moduloCodigo) {
+    return async (req, res, next) => {
+        if (!req.auth) {
+            return res.status(401).json({
+                ok: false,
+                mensaje: 'No autorizado: debe autenticarse primero'
+            });
+        }
+
+        try {
+            if (await esSuperAdmin(req.auth.UsuarioId)) {
+                return next();
+            }
+
+            const permisos = await obtenerPermisosUsuario(
+                req.auth.UsuarioId,
+                req.auth.IdPerfil
+            );
+
+            const [rows] = await pool.query(
+                `SELECT idModulos FROM modulos WHERE Codigo = ? AND Activo = 1`,
+                [moduloCodigo]
+            );
+
+            if (rows.length === 0) {
+                return res.status(404).json({
+                    ok: false,
+                    mensaje: `Módulo ${moduloCodigo} no existe`
+                });
+            }
+
+            const [permisosModulo] = await pool.query(
+                `SELECT Codigo FROM permisos WHERE IdModulo = ? AND Activo = 1`,
+                [rows[0].idModulos]
+            );
+
+            const tieneAlguno = permisosModulo.some(p => permisos.get(p.Codigo) === true);
+
+            if (tieneAlguno) {
+                return next();
+            }
+
+            return res.status(403).json({
+                ok: false,
+                mensaje: `No autorizado: no tiene permisos sobre ${moduloCodigo}`
+            });
+        } catch (error) {
+            console.error('Error authorizeAny:', error);
+            return res.status(500).json({
+                ok: false,
+                mensaje: 'Error interno del servidor',
+                error: error.message
+            });
+        }
+    };
+}
+
+module.exports = { authorize, authorizeAny, esSuperAdmin, obtenerPermisosUsuario };

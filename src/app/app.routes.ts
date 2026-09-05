@@ -212,6 +212,70 @@ export const routes: Routes = [
         loadComponent: () =>
           import('../app/pages/historiaclinica/historiaclinica.component')
             .then(m => m.HistoriaClinicaComponent)
+      },
+
+      // -------------------------------------------------
+      // INICIO (RAÍZ DEL DASHBOARD)
+      // -------------------------------------------------
+
+      {
+        path: '',
+        loadComponent: () =>
+          import('./Shared/enconstruccion.component')
+            .then(m => m.EnConstruccionComponent),
+        data: { titulo: 'Inicio' }
+      },
+
+      // -------------------------------------------------
+      // SEGURIDAD Y ADMINISTRACIÓN (FASE 6)
+      // -------------------------------------------------
+
+      {
+        path: 'seguridad',
+        loadComponent: () =>
+          import('./Shared/enconstruccion.component')
+            .then(m => m.EnConstruccionComponent),
+        data: { titulo: 'Seguridad' }
+      },
+
+      {
+        path: 'usuarios',
+        loadComponent: () =>
+          import('./Shared/enconstruccion.component')
+            .then(m => m.EnConstruccionComponent),
+        data: { titulo: 'Usuarios' }
+      },
+
+      {
+        path: 'caja',
+        loadComponent: () =>
+          import('./Shared/enconstruccion.component')
+            .then(m => m.EnConstruccionComponent),
+        data: { titulo: 'Caja' }
+      },
+
+      {
+        path: 'reportes',
+        loadComponent: () =>
+          import('./Shared/enconstruccion.component')
+            .then(m => m.EnConstruccionComponent),
+        data: { titulo: 'Reportes' }
+      },
+
+      {
+        path: 'auditoria',
+        loadComponent: () =>
+          import('./Shared/enconstruccion.component')
+            .then(m => m.EnConstruccionComponent),
+        data: { titulo: 'Auditoría' }
+      },
+
+      {
+        path: 'servicios',
+        loadComponent: () =>
+          import('./Shared/enconstruccion.component')
+            .then(m => m.EnConstruccionComponent),
+        data: { titulo: 'Servicios' }
       }
 
     ]
