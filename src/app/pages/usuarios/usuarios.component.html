@@ -1,0 +1,545 @@
+<div class="usuarios-container">
+
+  <!-- ENCABEZADO -->
+
+  <div class="encabezado">
+
+    <div>
+
+      <h1>👤 Usuarios</h1>
+
+      <p>
+        Administración de usuarios del sistema
+      </p>
+
+    </div>
+
+
+    <button
+      class="btn-nuevo"
+      *ngIf="puedeCrear"
+      (click)="nueva()">
+
+      + Nuevo usuario
+
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- BUSCADOR -->
+
+  <div class="barra-herramientas">
+
+    <input
+      type="text"
+      placeholder="Buscar por usuario, nombre, documento, correo o perfil..."
+      [(ngModel)]="textoBusqueda"
+      (input)="buscar()">
+
+    <span
+      class="contador"
+      *ngIf="!cargando">
+
+      {{ usuariosFiltrados.length }}
+      usuario(s)
+
+    </span>
+
+  </div>
+
+
+  <!-- FORMULARIO -->
+
+  <div
+    class="formulario-card"
+    *ngIf="mostrarFormulario">
+
+    <div class="formulario-header">
+
+      <h2>
+
+        {{ modoEdicion
+          ? 'Editar usuario'
+          : 'Nuevo usuario' }}
+
+      </h2>
+
+    </div>
+
+
+    <div class="formulario-grid">
+
+      <!-- USUARIO -->
+
+      <div class="campo">
+
+        <label>Usuario *</label>
+
+        <input
+          type="text"
+          [readonly]="modoEdicion"
+          [(ngModel)]="usuario.Username"
+          placeholder="Nombre de usuario">
+
+      </div>
+
+
+      <!-- CONTRASEÑA (SOLO AL CREAR) -->
+
+      <div
+        class="campo"
+        *ngIf="!modoEdicion">
+
+        <label>Contraseña *</label>
+
+        <input
+          type="password"
+          [(ngModel)]="usuario.Password"
+          placeholder="Mínimo 6 caracteres">
+
+      </div>
+
+
+      <!-- PERFIL -->
+
+      <div class="campo">
+
+        <label>Perfil *</label>
+
+        <select [(ngModel)]="usuario.IdPerfil">
+
+          <option [ngValue]="0">
+            Seleccione
+          </option>
+
+          <option
+            *ngFor="let perfil of perfiles"
+            [ngValue]="perfil.IdPerfil">
+
+            {{ perfil.Nombre }}
+
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- TIPO DOCUMENTO -->
+
+      <div class="campo">
+
+        <label>Tipo documento</label>
+
+        <select [(ngModel)]="usuario.TipoDocumento">
+
+          <option value="">
+            Seleccione
+          </option>
+
+          <option value="CC">CC</option>
+
+          <option value="CE">CE</option>
+
+          <option value="NIT">NIT</option>
+
+          <option value="Pasaporte">Pasaporte</option>
+
+        </select>
+
+      </div>
+
+
+      <!-- NÚMERO DOCUMENTO -->
+
+      <div class="campo">
+
+        <label>Número documento</label>
+
+        <input
+          type="text"
+          [(ngModel)]="usuario.NumeroDocumento">
+
+      </div>
+
+
+      <!-- PRIMER NOMBRE -->
+
+      <div class="campo">
+
+        <label>Primer nombre</label>
+
+        <input
+          type="text"
+          [(ngModel)]="usuario.PrimerNombre">
+
+      </div>
+
+
+      <!-- SEGUNDO NOMBRE -->
+
+      <div class="campo">
+
+        <label>Segundo nombre</label>
+
+        <input
+          type="text"
+          [(ngModel)]="usuario.SegundoNombre">
+
+      </div>
+
+
+      <!-- PRIMER APELLIDO -->
+
+      <div class="campo">
+
+        <label>Primer apellido</label>
+
+        <input
+          type="text"
+          [(ngModel)]="usuario.PrimerApellido">
+
+      </div>
+
+
+      <!-- SEGUNDO APELLIDO -->
+
+      <div class="campo">
+
+        <label>Segundo apellido</label>
+
+        <input
+          type="text"
+          [(ngModel)]="usuario.SegundoApellido">
+
+      </div>
+
+
+      <!-- CORREO -->
+
+      <div class="campo">
+
+        <label>Correo</label>
+
+        <input
+          type="email"
+          [(ngModel)]="usuario.Correo">
+
+      </div>
+
+
+      <!-- TELÉFONO -->
+
+      <div class="campo">
+
+        <label>Teléfono</label>
+
+        <input
+          type="text"
+          [(ngModel)]="usuario.Telefono">
+
+      </div>
+
+
+      <!-- ESTADO -->
+
+      <div
+        class="campo checkbox"
+        *ngIf="modoEdicion">
+
+        <label>
+
+          <input
+            type="checkbox"
+            [(ngModel)]="usuario.Activo">
+
+          Activo
+
+        </label>
+
+      </div>
+
+    </div>
+
+
+    <!-- BOTONES -->
+
+    <div class="formulario-botones">
+
+      <button
+        class="btn-cancelar"
+        (click)="cancelar()">
+
+        Cancelar
+
+      </button>
+
+
+      <button
+        class="btn-guardar"
+        (click)="guardar()">
+
+        {{ modoEdicion
+          ? 'Actualizar'
+          : 'Guardar' }}
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- TABLA -->
+
+  <div
+    class="tabla-card"
+    *ngIf="!mostrarFormulario">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+
+          <th>Usuario</th>
+
+          <th>Nombre</th>
+
+          <th>Perfil</th>
+
+          <th>Documento</th>
+
+          <th>Correo</th>
+
+          <th>Estado</th>
+
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr
+          *ngFor="let u of usuariosFiltrados">
+
+          <td>
+            {{ u.UsuarioId }}
+          </td>
+
+          <td>
+            <strong>
+              {{ u.Username }}
+            </strong>
+          </td>
+
+          <td>
+            {{ nombreCompleto(u) }}
+          </td>
+
+          <td>
+            {{ u.Perfil || obtenerPerfil(u.IdPerfil) }}
+          </td>
+
+          <td>
+            <span *ngIf="u.NumeroDocumento">
+              {{ u.TipoDocumento }} {{ u.NumeroDocumento }}
+            </span>
+            <span *ngIf="!u.NumeroDocumento">-</span>
+          </td>
+
+          <td>
+            {{ u.Correo || '-' }}
+          </td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.bloqueado]="u.Bloqueado"
+              [class.inactivo]="!u.Activo"
+              [class.activo]="u.Activo && !u.Bloqueado">
+
+              {{ u.Bloqueado
+                ? 'Bloqueado'
+                : (u.Activo
+                    ? 'Activo'
+                    : 'Inactivo') }}
+
+            </span>
+
+          </td>
+
+          <td class="acciones">
+
+            <button
+              *ngIf="puedeEditar"
+              class="btn-icono"
+              title="Editar"
+              (click)="editar(u)">
+
+              ✏️
+
+            </button>
+
+            <button
+              *ngIf="puedeCambiarClave"
+              class="btn-icono"
+              title="Cambiar contraseña"
+              (click)="abrirModalClave(u)">
+
+              🔑
+
+            </button>
+
+            <button
+              *ngIf="puedeBloquear"
+              class="btn-icono"
+              [title]="u.Bloqueado ? 'Desbloquear' : 'Bloquear'"
+              (click)="bloquear(u)">
+
+              {{ u.Bloqueado ? '🔓' : '🔒' }}
+
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <tr
+          *ngIf="usuariosFiltrados.length === 0">
+
+          <td
+            colspan="8"
+            class="sin-datos">
+
+            <span *ngIf="cargando">
+              Cargando usuarios...
+            </span>
+
+            <span *ngIf="!cargando">
+              No hay usuarios registrados.
+            </span>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+
+  <!-- MODAL CAMBIAR CONTRASEÑA -->
+
+  <div
+    class="modal-overlay"
+    *ngIf="mostrarModalClave">
+
+    <div class="modal-card">
+
+      <div class="modal-header">
+
+        <h2>Cambiar contraseña</h2>
+
+        <button
+          class="btn-cerrar"
+          (click)="cerrarModalClave()">
+
+          ✕
+
+        </button>
+
+      </div>
+
+      <p class="modal-subtitulo">
+        Usuario:
+        <strong>
+          {{ usuarioSeleccionado?.Username }}
+        </strong>
+      </p>
+
+      <div class="campo">
+
+        <label>Nueva contraseña *</label>
+
+        <input
+          type="password"
+          [(ngModel)]="nuevaClave"
+          placeholder="Mínimo 6 caracteres">
+
+      </div>
+
+      <div class="campo">
+
+        <label>Confirmar contraseña *</label>
+
+        <input
+          type="password"
+          [(ngModel)]="confirmarClave"
+          placeholder="Repita la contraseña">
+
+      </div>
+
+      <div
+        class="mensaje error"
+        *ngIf="error">
+
+        {{ error }}
+
+      </div>
+
+      <div class="modal-botones">
+
+        <button
+          class="btn-cancelar"
+          (click)="cerrarModalClave()">
+
+          Cancelar
+
+        </button>
+
+        <button
+          class="btn-guardar"
+          (click)="cambiarClave()">
+
+          Cambiar
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

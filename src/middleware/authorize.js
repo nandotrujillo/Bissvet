@@ -171,4 +171,189 @@ function authorizeAny(moduloCodigo) {
     };
 }
 
-module.exports = { authorize, authorizeAny, esSuperAdmin, obtenerPermisosUsuario };
+// =============================================================================
+// REGLAS_MODULOS: matriz de permisos por verbo HTTP para los módulos de negocio.
+// GET  -> CONSULTAR,  POST -> CREAR,  PUT/PATCH -> EDITAR,  DELETE -> ELIMINAR/ANULAR
+// RUTAS: sub-rutas específicas que exigen su propio permiso (más específico que
+// el verbo genérico; si coincide alguna, se exige cualquiera de las coincidentes).
+// =============================================================================
+const REGLAS_MODULOS = {
+    CLIENTES: {
+        GET: 'CLIENTES.CONSULTAR',
+        POST: 'CLIENTES.CREAR',
+        PUT: 'CLIENTES.EDITAR',
+        DELETE: 'CLIENTES.ELIMINAR'
+    },
+    MASCOTAS: {
+        GET: 'MASCOTAS.CONSULTAR',
+        POST: 'MASCOTAS.CREAR',
+        PUT: 'MASCOTAS.EDITAR',
+        DELETE: 'MASCOTAS.ELIMINAR'
+    },
+    VETERINARIOS: {
+        GET: 'VETERINARIOS.CONSULTAR',
+        POST: 'VETERINARIOS.CREAR',
+        PUT: 'VETERINARIOS.EDITAR',
+        DELETE: 'VETERINARIOS.ELIMINAR'
+    },
+    CITAS: {
+        GET: 'CITAS.CONSULTAR',
+        POST: 'CITAS.CREAR',
+        PUT: 'CITAS.EDITAR',
+        DELETE: 'CITAS.ANULAR',
+        RUTAS: { '/aprobar': 'CITAS.APROBAR', '/anular': 'CITAS.ANULAR' }
+    },
+    HISTORIA_CLINICA: {
+        GET: 'HISTORIA.CONSULTAR',
+        POST: 'HISTORIA.CREAR',
+        PUT: 'HISTORIA.EDITAR',
+        DELETE: 'HISTORIA.ANULAR',
+        RUTAS: {
+            '/cerrar': 'HISTORIA.CERRAR',
+            '/cancelar': 'HISTORIA.ANULAR',
+            '/export': 'HISTORIA.EXPORTAR',
+            '/imprimir': 'HISTORIA.IMPRIMIR'
+        }
+    },
+    SERVICIOS: {
+        GET: 'SERVICIOS.CONSULTAR',
+        POST: 'SERVICIOS.CREAR',
+        PUT: 'SERVICIOS.EDITAR',
+        DELETE: 'SERVICIOS.ELIMINAR'
+    },
+    PRODUCTOS: {
+        GET: 'PRODUCTOS.CONSULTAR',
+        POST: 'PRODUCTOS.CREAR',
+        PUT: 'PRODUCTOS.EDITAR',
+        DELETE: 'PRODUCTOS.ELIMINAR'
+    },
+    BODEGAS: {
+        GET: 'BODEGAS.CONSULTAR',
+        POST: 'BODEGAS.CREAR',
+        PUT: 'BODEGAS.EDITAR',
+        DELETE: 'BODEGAS.ELIMINAR'
+    },
+    EMPRESAS: {
+        GET: 'EMPRESAS.CONSULTAR',
+        POST: 'EMPRESAS.CREAR',
+        PUT: 'EMPRESAS.EDITAR',
+        DELETE: 'EMPRESAS.ELIMINAR'
+    },
+    INVENTARIOS: {
+        GET: 'INVENTARIO.CONSULTAR',
+        POST: 'INVENTARIO.ENTRADA',
+        PUT: 'INVENTARIO.AJUSTAR',
+        DELETE: 'INVENTARIO.SALIDA',
+        RUTAS: {
+            '/entrada': 'INVENTARIO.ENTRADA',
+            '/salida': 'INVENTARIO.SALIDA',
+            '/ajuste': 'INVENTARIO.AJUSTAR',
+            '/ajustar': 'INVENTARIO.AJUSTAR',
+            '/traslado': 'INVENTARIO.TRASLADAR',
+            '/costo': 'INVENTARIO.COSTO'
+        }
+    },
+    COMPRAS: {
+        GET: 'COMPRAS.CONSULTAR',
+        POST: 'COMPRAS.CREAR',
+        PUT: 'COMPRAS.APROBAR',
+        DELETE: 'COMPRAS.ANULAR',
+        RUTAS: {
+            '/confirmar': 'COMPRAS.APROBAR',
+            '/aprobar': 'COMPRAS.APROBAR',
+            '/anular': 'COMPRAS.ANULAR',
+            '/imprimir': 'COMPRAS.IMPRIMIR'
+        }
+    },
+    VENTAS: {
+        GET: 'VENTAS.CONSULTAR',
+        POST: 'VENTAS.CREAR',
+        PUT: 'VENTAS.EDITAR',
+        DELETE: 'VENTAS.ANULAR',
+        RUTAS: {
+            '/confirmar': 'VENTAS.CONFIRMAR',
+            '/anular': 'VENTAS.ANULAR',
+            '/devolver': 'VENTAS.DEVOLVER',
+            '/imprimir': 'VENTAS.IMPRIMIR',
+            '/exportar': 'VENTAS.EXPORTAR'
+        }
+    },
+    REPORTES: {
+        GET: 'REPORTES.CONSULTAR',
+        RUTAS: { '/imprimir': 'REPORTES.IMPRIMIR', '/exportar': 'REPORTES.EXPORTAR' }
+    }
+};
+
+// =============================================================================
+// autorizarModulo(codigoModulo): protege todo un router de negocio según el
+// verbo HTTP (y sub-rutas especiales). Uso en server.js:
+//   app.use('/api/clientes', autorizarModulo('CLIENTES'), clientesRoutes);
+// Mismo contrato que authorize(): 401 sin auth, 403 sin permiso, 500 en error.
+// =============================================================================
+function autorizarModulo(codigoModulo) {
+    const reglas = REGLAS_MODULOS[codigoModulo];
+    if (!reglas) {
+        throw new Error(`Módulo ${codigoModulo} sin reglas de autorización definidas`);
+    }
+
+    return async (req, res, next) => {
+        if (!req.auth) {
+            return res.status(401).json({
+                ok: false,
+                mensaje: 'No autorizado: debe autenticarse primero'
+            });
+        }
+
+        try {
+            if (await esSuperAdmin(req.auth.UsuarioId)) {
+                return next();
+            }
+
+            const permisos = await obtenerPermisosUsuario(
+                req.auth.UsuarioId,
+                req.auth.IdPerfil
+            );
+
+            const ruta = req.originalUrl || req.url;
+            const verbo = req.method.toUpperCase();
+
+            // 1) Regla genérica del verbo HTTP
+            const reglaVerbo = verbo === 'PATCH' ? reglas.PUT : reglas[verbo];
+
+            // 2) Reglas de sub-ruta específicas (tienen prioridad: si coinciden,
+            //    se exige CUALQUIERA de las coincidentes en lugar del verbo genérico)
+            const coincidentes = reglas.RUTAS
+                ? Object.entries(reglas.RUTAS)
+                      .filter(([sufijo]) => ruta.includes(sufijo))
+                      .map(([, codigo]) => codigo)
+                : [];
+
+            const requeridos = coincidentes.length > 0 ? coincidentes
+                : (reglaVerbo ? [reglaVerbo] : []);
+
+            if (requeridos.length === 0) {
+                return next();
+            }
+
+            const tieneAlguno = requeridos.some(c => permisos.get(c) === true);
+
+            if (tieneAlguno) {
+                return next();
+            }
+
+            return res.status(403).json({
+                ok: false,
+                mensaje: `No autorizado: se requiere uno de ${requeridos.join(', ')}`
+            });
+        } catch (error) {
+            console.error('Error autorizarModulo:', error);
+            return res.status(500).json({
+                ok: false,
+                mensaje: 'Error interno del servidor',
+                error: error.message
+            });
+        }
+    };
+}
+
+module.exports = { authorize, authorizeAny, autorizarModulo, esSuperAdmin, obtenerPermisosUsuario };

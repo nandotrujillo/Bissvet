@@ -1,0 +1,384 @@
+<div class="roles-container">
+
+  <!-- ENCABEZADO -->
+
+  <div class="encabezado">
+
+    <div>
+
+      <h1>🎭 Roles</h1>
+
+      <p>
+        Creación de roles y administración de la matriz de permisos
+      </p>
+
+    </div>
+
+
+    <button
+      class="btn-nuevo"
+      *ngIf="puedeCrear"
+      (click)="nuevoRol()">
+
+      + Nuevo rol
+
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- FORMULARIO -->
+
+  <div
+    class="formulario-card"
+    *ngIf="mostrarFormulario">
+
+    <div class="formulario-header">
+
+      <h2>
+
+        {{ modoEdicion
+          ? 'Editar rol'
+          : 'Nuevo rol' }}
+
+      </h2>
+
+    </div>
+
+
+    <div class="formulario-grid">
+
+      <div class="campo">
+
+        <label>Nombre *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="rol.Nombre"
+          placeholder="Ej: VENDEDOR, CAJERO, ADMINISTRADOR...">
+
+      </div>
+
+
+      <div class="campo campo-completo">
+
+        <label>Descripción</label>
+
+        <input
+          type="text"
+          [(ngModel)]="rol.Descripcion"
+          placeholder="Descripción breve del rol">
+
+      </div>
+
+
+      <div
+        class="campo checkbox"
+        *ngIf="modoEdicion">
+
+        <label>
+
+          <input
+            type="checkbox"
+            [(ngModel)]="rol.Activo">
+
+          Activo
+
+        </label>
+
+      </div>
+
+    </div>
+
+
+    <div class="formulario-botones">
+
+      <button
+        class="btn-cancelar"
+        (click)="cancelar()">
+
+        Cancelar
+
+      </button>
+
+
+      <button
+        class="btn-guardar"
+        (click)="guardar()">
+
+        {{ modoEdicion
+          ? 'Actualizar'
+          : 'Guardar' }}
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- TABLA -->
+
+  <div
+    class="tabla-card"
+    *ngIf="!mostrarFormulario">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+
+          <th>Nombre</th>
+
+          <th>Descripción</th>
+
+          <th>Alcance</th>
+
+          <th>Estado</th>
+
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr
+          *ngFor="let r of roles">
+
+          <td>
+            {{ r.IdRol }}
+          </td>
+
+          <td>
+            <strong>
+              {{ r.Nombre }}
+            </strong>
+          </td>
+
+          <td>
+            {{ r.Descripcion || '-' }}
+          </td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.global]="esGlobal(r)"
+              [class.empresa]="!esGlobal(r)">
+
+              {{ esGlobal(r)
+                ? 'Global'
+                : 'Empresa' }}
+
+            </span>
+
+          </td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.activo]="r.Activo"
+              [class.inactivo]="!r.Activo">
+
+              {{ r.Activo ? 'Activo' : 'Inactivo' }}
+
+            </span>
+
+          </td>
+
+          <td class="acciones">
+
+            <button
+              *ngIf="puedeAsignar"
+              class="btn-icono"
+              title="Matriz de permisos"
+              (click)="abrirMatriz(r)">
+
+              🔑 Permisos
+
+            </button>
+
+            <button
+              *ngIf="puedeEditar"
+              class="btn-icono"
+              title="Editar"
+              (click)="editarRol(r)">
+
+              ✏️
+
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <tr
+          *ngIf="roles.length === 0">
+
+          <td
+            colspan="6"
+            class="sin-datos">
+
+            <span *ngIf="cargando">
+              Cargando roles...
+            </span>
+
+            <span *ngIf="!cargando">
+              No hay roles registrados.
+            </span>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+
+  <!-- MODAL MATRIZ DE PERMISOS -->
+
+  <div
+    class="modal-overlay"
+    *ngIf="mostrarModal">
+
+    <div class="modal-card modal-grande">
+
+      <div class="modal-header">
+
+        <h2>
+          Permisos del rol:
+          <strong>
+            {{ rolSeleccionado?.Nombre }}
+          </strong>
+        </h2>
+
+        <button
+          class="btn-cerrar"
+          (click)="cerrarMatriz()">
+
+          ✕
+
+        </button>
+
+      </div>
+
+      <p class="modal-nota">
+        Clic sobre el estado para cambiar: ninguno → permitir → denegar
+      </p>
+
+
+      <div
+        class="matriz"
+        *ngFor="let modulo of modulos">
+
+        <div class="matriz-modulo">
+
+          <span>
+            {{ modulo.NombreModulo }}
+          </span>
+
+          <span class="matriz-conteo">
+            {{ contarPorModulo(modulo.Codigo) }}
+          </span>
+
+        </div>
+
+        <table class="tabla-matriz">
+
+          <tbody>
+
+            <tr
+              *ngFor="let fila of filasPermisosModulo(modulo.Codigo)">
+
+              <td>
+                {{ fila.Nombre }}
+              </td>
+
+              <td class="celda-codigo">
+                {{ fila.Codigo }}
+              </td>
+
+              <td class="celda-estado">
+
+                <span
+                  class="chips estado-chip"
+                  [class.chip-permitir]="fila.Estado === 'PERMITIR'"
+                  [class.chip-denegar]="fila.Estado === 'DENEGAR'"
+                  [class.chip-ninguno]="fila.Estado === 'NINGUNO'"
+                  (click)="cicloEstado(fila)">
+
+                  {{ fila.Estado === 'PERMITIR'
+                    ? 'Permitir'
+                    : (fila.Estado === 'DENEGAR'
+                        ? 'Denegar'
+                        : 'Ninguno') }}
+
+                </span>
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+
+      <div class="modal-botones">
+
+        <button
+          class="btn-cancelar"
+          (click)="cerrarMatriz()">
+
+          Cancelar
+
+        </button>
+
+        <button
+          class="btn-guardar"
+          (click)="guardarMatriz()">
+
+          Guardar permisos
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

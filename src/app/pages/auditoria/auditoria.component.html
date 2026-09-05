@@ -1,0 +1,185 @@
+<div class="auditoria-container">
+
+  <!-- ENCABEZADO -->
+
+  <div class="encabezado">
+
+    <div>
+
+      <h1>📜 Auditoría</h1>
+
+      <p>
+        Registro de acciones realizadas en el sistema
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- FILTROS -->
+
+  <div class="barra-herramientas">
+
+    <input
+      type="text"
+      placeholder="Buscar por usuario, acción, módulo, tabla o descripción..."
+      [(ngModel)]="textoBusqueda"
+      (input)="aplicarFiltros()">
+
+    <select
+      [(ngModel)]="filtroAccion"
+      (change)="aplicarFiltros()">
+
+      <option value="TODAS">Todas las acciones</option>
+
+      <option
+        *ngFor="let accion of acciones"
+        [value]="accion">
+
+        {{ accion }}
+
+      </option>
+
+    </select>
+
+    <span
+      class="contador">
+
+      {{ registrosFiltrados.length }}
+      registro(s)
+
+    </span>
+
+  </div>
+
+
+  <!-- TABLA -->
+
+  <div class="tabla-card">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+
+          <th>Fecha</th>
+
+          <th>Usuario</th>
+
+          <th>Acción</th>
+
+          <th>Módulo</th>
+
+          <th>Tabla / Registro</th>
+
+          <th>Descripción</th>
+
+          <th>IP</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr
+          *ngFor="let r of registrosFiltrados">
+
+          <td>
+            {{ r.IdAuditoria }}
+          </td>
+
+          <td>
+            {{ formatearFecha(r.Fecha) }}
+          </td>
+
+          <td>
+            <strong>
+              {{ r.Username }}
+            </strong>
+          </td>
+
+          <td>
+
+            <span
+              class="accion"
+              [class.crear]="r.Accion === 'CREAR'"
+              [class.editar]="r.Accion === 'EDITAR'"
+              [class.login]="r.Accion === 'LOGIN' || r.Accion === 'LOGOUT' || r.Accion === 'CAMBIAR_CLAVE'">
+
+              {{ r.Accion }}
+
+            </span>
+
+          </td>
+
+          <td>
+            {{ r.ModuloCodigo || '-' }}
+          </td>
+
+          <td>
+
+            <span *ngIf="r.Tabla">
+              {{ r.Tabla }}
+              <span *ngIf="r.RegistroId">
+                #{{ r.RegistroId }}
+              </span>
+            </span>
+
+            <span *ngIf="!r.Tabla">-</span>
+
+          </td>
+
+          <td>
+            {{ r.Descripcion || '-' }}
+          </td>
+
+          <td>
+            {{ r.DireccionIP || '-' }}
+          </td>
+
+        </tr>
+
+
+        <tr
+          *ngIf="registrosFiltrados.length === 0">
+
+          <td
+            colspan="8"
+            class="sin-datos">
+
+            <span *ngIf="cargando">
+              Cargando auditoría...
+            </span>
+
+            <span *ngIf="!cargando">
+              No se encontraron registros.
+            </span>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

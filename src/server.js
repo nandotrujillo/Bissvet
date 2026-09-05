@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const pool = require('./database/mysql');
 const { authenticate } = require('./middleware/auth');
+const { autorizarModulo } = require('./middleware/authorize');
 
 const app = express();
 const PORT = 3000;
@@ -36,22 +37,23 @@ app.use('/api/empresas', empresasRoutes);
 app.use('/api', authenticate);
 
 const citasRoutes = require('./app/routes/citas.routes');
-app.use('/api/citas', citasRoutes);
+app.use('/api/citas', autorizarModulo('CITAS'), citasRoutes);
 
 const mascotasRoutes = require('./app/routes/mascotas.routes');
-app.use('/api/mascotas', mascotasRoutes);
+app.use('/api/mascotas', autorizarModulo('MASCOTAS'), mascotasRoutes);
 
 const clientesRoutes = require('./app/routes/clientes.routes');
-app.use('/api/clientes', clientesRoutes);
+app.use('/api/clientes', autorizarModulo('CLIENTES'), clientesRoutes);
 
 const serviciosRoutes = require('./app/routes/servicios.routes');
-app.use('/api/servicios', serviciosRoutes);
+app.use('/api/servicios', autorizarModulo('SERVICIOS'), serviciosRoutes);
 
 const categoriasServicioRoutes =
     require('./app/routes/categorias-servicio.routes');
 
 app.use(
     '/api/categorias-servicio',
+    autorizarModulo('SERVICIOS'),
     categoriasServicioRoutes
 );
 
@@ -68,6 +70,7 @@ const veterinariosRoutes =
 
 app.use(
     '/api/veterinarios',
+    autorizarModulo('VETERINARIOS'),
     veterinariosRoutes
 );
 
@@ -75,6 +78,7 @@ const bodegaRoutes = require('./app/routes/bodega.routes');
 
 app.use(
     '/api/bodegas',
+    autorizarModulo('BODEGAS'),
     bodegaRoutes
 );
 
@@ -90,77 +94,77 @@ app.use(
 // ============================================
 
 const historiasclinicasRoutes = require('./app/routes/historiasclinicas.routes');
-app.use('/api/historiasclinicas', historiasclinicasRoutes);
+app.use('/api/historiasclinicas', autorizarModulo('HISTORIA_CLINICA'), historiasclinicasRoutes);
 
 const antecedentesRoutes = require('./app/routes/antecedentes.routes');
-app.use('/api/antecedentes', antecedentesRoutes);
+app.use('/api/antecedentes', autorizarModulo('HISTORIA_CLINICA'), antecedentesRoutes);
 
 const signosvitalesRoutes = require('./app/routes/signosvitales.routes');
-app.use('/api/signosvitales', signosvitalesRoutes);
+app.use('/api/signosvitales', autorizarModulo('HISTORIA_CLINICA'), signosvitalesRoutes);
 
 const examenfisicoRoutes = require('./app/routes/examenfisico.routes');
-app.use('/api/examenfisico', examenfisicoRoutes);
+app.use('/api/examenfisico', autorizarModulo('HISTORIA_CLINICA'), examenfisicoRoutes);
 
 const diagnosticosRoutes = require('./app/routes/diagnosticos.routes');
-app.use('/api/diagnosticos', diagnosticosRoutes);
+app.use('/api/diagnosticos', autorizarModulo('HISTORIA_CLINICA'), diagnosticosRoutes);
 
 const tratamientosRoutes = require('./app/routes/tratamientos.routes');
-app.use('/api/tratamientos', tratamientosRoutes);
+app.use('/api/tratamientos', autorizarModulo('HISTORIA_CLINICA'), tratamientosRoutes);
 
 const recetasRoutes = require('./app/routes/recetas.routes');
-app.use('/api/recetas', recetasRoutes);
+app.use('/api/recetas', autorizarModulo('HISTORIA_CLINICA'), recetasRoutes);
 
 const detallerecetasRoutes = require('./app/routes/detallerecetas.routes');
-app.use('/api/detallerecetas', detallerecetasRoutes);
+app.use('/api/detallerecetas', autorizarModulo('HISTORIA_CLINICA'), detallerecetasRoutes);
 
 const procedimientosRoutes = require('./app/routes/procedimientos.routes');
-app.use('/api/procedimientos', procedimientosRoutes);
+app.use('/api/procedimientos', autorizarModulo('HISTORIA_CLINICA'), procedimientosRoutes);
 
 const cirugiasRoutes = require('./app/routes/cirugias.routes');
-app.use('/api/cirugias', cirugiasRoutes);
+app.use('/api/cirugias', autorizarModulo('HISTORIA_CLINICA'), cirugiasRoutes);
 
 const controlesRoutes = require('./app/routes/controles.routes');
-app.use('/api/controles', controlesRoutes);
+app.use('/api/controles', autorizarModulo('HISTORIA_CLINICA'), controlesRoutes);
 
 const archivosRoutes = require('./app/routes/archivoshistoriaclinica.routes');
-app.use('/api/archivos', archivosRoutes);
+app.use('/api/archivos', autorizarModulo('HISTORIA_CLINICA'), archivosRoutes);
 
 // ============================================
 // RUTAS MÓDULO INVENTARIO Y VENTAS
 // ============================================
 
 const categoriasProductoRoutes = require('./app/routes/categoriasproducto.routes');
-app.use('/api/categorias-producto', categoriasProductoRoutes);
+app.use('/api/categorias-producto', autorizarModulo('PRODUCTOS'), categoriasProductoRoutes);
 
 const marcasRoutes = require('./app/routes/marcas.routes');
-app.use('/api/marcas', marcasRoutes);
+app.use('/api/marcas', autorizarModulo('PRODUCTOS'), marcasRoutes);
 
 const unidadesMedidaRoutes = require('./app/routes/unidadesmedida.routes');
-app.use('/api/unidades-medida', unidadesMedidaRoutes);
+app.use('/api/unidades-medida', autorizarModulo('PRODUCTOS'), unidadesMedidaRoutes);
 
 const productosRoutes = require('./app/routes/productos.routes');
-app.use('/api/productos', productosRoutes);
+app.use('/api/productos', autorizarModulo('PRODUCTOS'), productosRoutes);
 
 const proveedoresRoutes = require('./app/routes/proveedores.routes');
-app.use('/api/proveedores', proveedoresRoutes);
+app.use('/api/proveedores', autorizarModulo('COMPRAS'), proveedoresRoutes);
 
 const inventarioRoutes = require('./app/routes/inventario.routes');
-app.use('/api/inventario', inventarioRoutes);
+app.use('/api/inventario', autorizarModulo('INVENTARIOS'), inventarioRoutes);
 
 const kardexRoutes = require('./app/routes/kardex.routes');
-app.use('/api/kardex', kardexRoutes);
+app.use('/api/kardex', autorizarModulo('INVENTARIOS'), kardexRoutes);
 
 const comprasRoutes = require('./app/routes/compras.routes');
-app.use('/api/compras', comprasRoutes);
+app.use('/api/compras', autorizarModulo('COMPRAS'), comprasRoutes);
 
 const ventasRoutes = require('./app/routes/ventas.routes');
-app.use('/api/ventas', ventasRoutes);
+app.use('/api/ventas', autorizarModulo('VENTAS'), ventasRoutes);
 
 const trasladosRoutes = require('./app/routes/traslados.routes');
-app.use('/api/traslados', trasladosRoutes);
+app.use('/api/traslados', autorizarModulo('INVENTARIOS'), trasladosRoutes);
 
 const ajustesRoutes = require('./app/routes/ajustes.routes');
-app.use('/api/ajustes', ajustesRoutes);
+app.use('/api/ajustes', autorizarModulo('INVENTARIOS'), ajustesRoutes);
 
 console.log('5. Ruta /api/usuarios registrada');
 console.log('6. Rutas módulo Historia Clínica registradas');

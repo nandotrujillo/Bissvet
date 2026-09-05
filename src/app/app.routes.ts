@@ -233,17 +233,43 @@ export const routes: Routes = [
       {
         path: 'seguridad',
         loadComponent: () =>
-          import('./Shared/enconstruccion.component')
-            .then(m => m.EnConstruccionComponent),
-        data: { titulo: 'Seguridad' }
+          import('./pages/seguridad/seguridad.component')
+            .then(m => m.SeguridadComponent)
+      },
+
+      {
+        path: 'perfiles',
+        loadComponent: () =>
+          import('./pages/perfiles/perfiles.component')
+            .then(m => m.PerfilesComponent)
+      },
+
+      {
+        path: 'roles',
+        loadComponent: () =>
+          import('./pages/roles/roles.component')
+            .then(m => m.RolesComponent)
+      },
+
+      {
+        path: 'sesiones',
+        loadComponent: () =>
+          import('./pages/sesiones/sesiones.component')
+            .then(m => m.SesionesComponent)
+      },
+
+      {
+        path: 'auditoria',
+        loadComponent: () =>
+          import('./pages/auditoria/auditoria.component')
+            .then(m => m.AuditoriaComponent)
       },
 
       {
         path: 'usuarios',
         loadComponent: () =>
-          import('./Shared/enconstruccion.component')
-            .then(m => m.EnConstruccionComponent),
-        data: { titulo: 'Usuarios' }
+          import('./pages/usuarios/usuarios.component')
+            .then(m => m.UsuariosComponent)
       },
 
       {
@@ -260,14 +286,6 @@ export const routes: Routes = [
           import('./Shared/enconstruccion.component')
             .then(m => m.EnConstruccionComponent),
         data: { titulo: 'Reportes' }
-      },
-
-      {
-        path: 'auditoria',
-        loadComponent: () =>
-          import('./Shared/enconstruccion.component')
-            .then(m => m.EnConstruccionComponent),
-        data: { titulo: 'Auditoría' }
       },
 
       {

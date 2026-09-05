@@ -160,6 +160,188 @@ router.get('/perfiles', authenticate, authorize('SEGURIDAD.CONSULTAR'), async (r
 });
 
 // =============================================================================
+// POST /api/seguridad/perfiles   (PROTEGIDO - SEGURIDAD.CREAR, RF-004)
+// =============================================================================
+router.post('/perfiles', authenticate, authorize('SEGURIDAD.CREAR'), async (req, res) => {
+    const conn = await pool.getConnection();
+    try {
+        const { Nombre, Descripcion } = req.body;
+        if (!Nombre) {
+            return res.status(400).json({ ok: false, mensaje: 'Nombre del perfil es obligatorio' });
+        }
+
+        const [existe] = await pool.query(
+            `SELECT IdPerfil FROM perfiles WHERE LOWER(Nombre) = LOWER(?)`,
+            [Nombre]
+        );
+        if (existe.length > 0) {
+            return res.status(409).json({ ok: false, mensaje: 'El perfil ya existe' });
+        }
+
+        await conn.beginTransaction();
+
+        const [result] = await conn.query(
+            `INSERT INTO perfiles (Nombre, Descripcion, UsuarioIdCreacion)
+             VALUES (?, ?, ?)`,
+            [Nombre, Descripcion || null, req.auth.UsuarioId]
+        );
+
+        await registrarAuditoria({
+            IdEmpresa: req.auth.IdEmpresa,
+            UsuarioId: req.auth.UsuarioId,
+            Tabla: 'perfiles',
+            RegistroId: result.insertId,
+            Accion: 'CREAR',
+            DireccionIP: obtenerIP(req),
+            DatosNuevos: { Nombre, Descripcion },
+            Descripcion: `Creación del perfil ${Nombre}`
+        }, conn);
+
+        await conn.commit();
+        res.status(201).json({ ok: true, mensaje: 'Perfil creado', IdPerfil: result.insertId });
+    } catch (error) {
+        await conn.rollback();
+        console.error('Error creando perfil:', error);
+        res.status(500).json({ ok: false, mensaje: 'Error creando perfil', error: error.message });
+    } finally {
+        conn.release();
+    }
+});
+
+// =============================================================================
+// PUT /api/seguridad/perfiles/:id   (PROTEGIDO - SEGURIDAD.EDITAR, RF-004)
+// =============================================================================
+router.put('/perfiles/:id', authenticate, authorize('SEGURIDAD.EDITAR'), async (req, res) => {
+    const conn = await pool.getConnection();
+    try {
+        const id = Number(req.params.id);
+        const { Nombre, Descripcion, Activo } = req.body;
+
+        const [actual] = await pool.query(
+            `SELECT * FROM perfiles WHERE IdPerfil = ?`,
+            [id]
+        );
+        if (actual.length === 0) {
+            return res.status(404).json({ ok: false, mensaje: 'Perfil no encontrado' });
+        }
+
+        await conn.beginTransaction();
+
+        await conn.query(
+            `UPDATE perfiles
+             SET Nombre = COALESCE(?, Nombre),
+                 Descripcion = COALESCE(?, Descripcion),
+                 Activo = COALESCE(?, Activo),
+                 FechaModificacion = NOW(),
+                 UsuarioIdModificacion = ?
+             WHERE IdPerfil = ?`,
+            [
+                Nombre || null,
+                Descripcion !== undefined ? Descripcion : null,
+                Activo !== undefined ? (Activo ? 1 : 0) : null,
+                req.auth.UsuarioId,
+                id
+            ]
+        );
+
+        await registrarAuditoria({
+            IdEmpresa: req.auth.IdEmpresa,
+            UsuarioId: req.auth.UsuarioId,
+            Tabla: 'perfiles',
+            RegistroId: id,
+            Accion: 'EDITAR',
+            DireccionIP: obtenerIP(req),
+            DatosAnteriores: actual[0],
+            DatosNuevos: req.body,
+            Descripcion: `Modificación del perfil ${actual[0].Nombre}`
+        }, conn);
+
+        await conn.commit();
+        res.json({ ok: true, mensaje: 'Perfil actualizado correctamente' });
+    } catch (error) {
+        await conn.rollback();
+        console.error('Error actualizando perfil:', error);
+        res.status(500).json({ ok: false, mensaje: 'Error actualizando perfil', error: error.message });
+    } finally {
+        conn.release();
+    }
+});
+
+// =============================================================================
+// GET /api/seguridad/perfilpermisos/:idPerfil   (PROTEGIDO - RF-004)
+// Permisos asignados al perfil (configuración inicial).
+// =============================================================================
+router.get('/perfilpermisos/:idPerfil', authenticate, authorize('SEGURIDAD.CONSULTAR'), async (req, res) => {
+    try {
+        const idPerfil = Number(req.params.idPerfil);
+
+        const [rows] = await pool.query(
+            `SELECT IdPermiso, TipoAcceso FROM perfilpermisos WHERE IdPerfil = ?`,
+            [idPerfil]
+        );
+
+        res.json({ ok: true, datos: rows });
+    } catch (error) {
+        console.error('Error perfilpermisos:', error);
+        res.status(500).json({ ok: false, mensaje: 'Error obteniendo perfilpermisos', error: error.message });
+    }
+});
+
+// =============================================================================
+// POST /api/seguridad/perfilpermisos/:idPerfil   (PROTEGIDO - SEGURIDAD.ASIGNAR_PERMISOS)
+// Reemplaza los permisos del perfil (RF-004, RF-028).
+// =============================================================================
+router.post('/perfilpermisos/:idPerfil', authenticate, authorize('SEGURIDAD.ASIGNAR_PERMISOS'), async (req, res) => {
+    const conn = await pool.getConnection();
+    try {
+        const idPerfil = Number(req.params.idPerfil);
+        const { permisos } = req.body; // [{ IdPermiso, TipoAcceso }]
+
+        if (!Array.isArray(permisos)) {
+            return res.status(400).json({ ok: false, mensaje: 'Se esperaba una lista de permisos' });
+        }
+
+        await conn.beginTransaction();
+
+        const [actual] = await conn.query(
+            `SELECT IdPermiso, TipoAcceso FROM perfilpermisos WHERE IdPerfil = ?`,
+            [idPerfil]
+        );
+
+        await conn.query(`DELETE FROM perfilpermisos WHERE IdPerfil = ?`, [idPerfil]);
+
+        for (const p of permisos) {
+            await conn.query(
+                `INSERT INTO perfilpermisos (IdPerfil, IdPermiso, TipoAcceso, AsignadoPor)
+                 VALUES (?, ?, ?, ?)`,
+                [idPerfil, p.IdPermiso, p.TipoAcceso === 'DENEGAR' ? 'DENEGAR' : 'PERMITIR', req.auth.UsuarioId]
+            );
+        }
+
+        await registrarAuditoria({
+            IdEmpresa: req.auth.IdEmpresa,
+            UsuarioId: req.auth.UsuarioId,
+            Tabla: 'perfilpermisos',
+            RegistroId: idPerfil,
+            Accion: 'EDITAR',
+            DireccionIP: obtenerIP(req),
+            DatosAnteriores: { permisos: actual },
+            DatosNuevos: { permisos: permisos.length },
+            Descripcion: `Actualización de permisos del perfil #${idPerfil}`
+        }, conn);
+
+        await conn.commit();
+        res.json({ ok: true, mensaje: 'Permisos del perfil actualizados' });
+    } catch (error) {
+        await conn.rollback();
+        console.error('Error asignando permisos al perfil:', error);
+        res.status(500).json({ ok: false, mensaje: 'Error asignando permisos', error: error.message });
+    } finally {
+        conn.release();
+    }
+});
+
+// =============================================================================
 // GET /api/seguridad/roles   (PROTEGIDO - RF-005)
 // Roles de la empresa del token (+ roles globales del sistema).
 // =============================================================================
@@ -215,6 +397,83 @@ router.post('/roles', authenticate, authorize('SEGURIDAD.CREAR'), async (req, re
         await conn.rollback();
         console.error('Error creando rol:', error);
         res.status(500).json({ ok: false, mensaje: 'Error creando rol', error: error.message });
+    } finally {
+        conn.release();
+    }
+});
+
+// =============================================================================
+// PUT /api/seguridad/roles/:id   (PROTEGIDO - SEGURIDAD.EDITAR, RF-005)
+// =============================================================================
+router.put('/roles/:id', authenticate, authorize('SEGURIDAD.EDITAR'), async (req, res) => {
+    const conn = await pool.getConnection();
+    try {
+        const id = Number(req.params.id);
+        const { Nombre, Descripcion, Activo } = req.body;
+
+        const [actual] = await pool.query(
+            `SELECT * FROM roles WHERE IdRol = ?`,
+            [id]
+        );
+        if (actual.length === 0) {
+            return res.status(404).json({ ok: false, mensaje: 'Rol no encontrado' });
+        }
+
+        // El SUPERADMIN es global: solo puede gestionarlo quien es SUPERADMIN
+        if (
+            (actual[0].Nombre === 'SUPERADMIN' || actual[0].IdEmpresa === null) &&
+            req.auth.IdPerfil !== 8
+        ) {
+            // Permitimos ver, pero no modificar roles globales de otro rol
+            const [esSuper] = await pool.query(
+                `SELECT EXISTS(
+                    SELECT 1 FROM usuarioroles ur
+                    INNER JOIN roles r ON ur.IdRol = r.IdRol AND r.Nombre = 'SUPERADMIN' AND r.Activo = 1
+                    WHERE ur.UsuarioId = ?) AS es`,
+                [req.auth.UsuarioId]
+            );
+            if (!esSuper[0].es) {
+                return res.status(403).json({ ok: false, mensaje: 'No autorizado para modificar roles globales' });
+            }
+        }
+
+        await conn.beginTransaction();
+
+        await conn.query(
+            `UPDATE roles
+             SET Nombre = COALESCE(?, Nombre),
+                 Descripcion = COALESCE(?, Descripcion),
+                 Activo = COALESCE(?, Activo),
+                 FechaModificacion = NOW(),
+                 UsuarioIdModificacion = ?
+             WHERE IdRol = ?`,
+            [
+                Nombre || null,
+                Descripcion !== undefined ? Descripcion : null,
+                Activo !== undefined ? (Activo ? 1 : 0) : null,
+                req.auth.UsuarioId,
+                id
+            ]
+        );
+
+        await registrarAuditoria({
+            IdEmpresa: req.auth.IdEmpresa,
+            UsuarioId: req.auth.UsuarioId,
+            Tabla: 'roles',
+            RegistroId: id,
+            Accion: 'EDITAR',
+            DireccionIP: obtenerIP(req),
+            DatosAnteriores: actual[0],
+            DatosNuevos: req.body,
+            Descripcion: `Modificación del rol ${actual[0].Nombre}`
+        }, conn);
+
+        await conn.commit();
+        res.json({ ok: true, mensaje: 'Rol actualizado correctamente' });
+    } catch (error) {
+        await conn.rollback();
+        console.error('Error actualizando rol:', error);
+        res.status(500).json({ ok: false, mensaje: 'Error actualizando rol', error: error.message });
     } finally {
         conn.release();
     }

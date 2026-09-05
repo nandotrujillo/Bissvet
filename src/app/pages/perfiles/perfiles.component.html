@@ -1,0 +1,367 @@
+<div class="perfiles-container">
+
+  <!-- ENCABEZADO -->
+
+  <div class="encabezado">
+
+    <div>
+
+      <h1>🧑‍💻 Perfiles</h1>
+
+      <p>
+        Definición de perfiles y sus permisos iniciales
+      </p>
+
+    </div>
+
+
+    <button
+      class="btn-nuevo"
+      *ngIf="puedeCrear"
+      (click)="nuevaPerfil()">
+
+      + Nuevo perfil
+
+    </button>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- FORMULARIO -->
+
+  <div
+    class="formulario-card"
+    *ngIf="mostrarFormulario">
+
+    <div class="formulario-header">
+
+      <h2>
+
+        {{ modoEdicion
+          ? 'Editar perfil'
+          : 'Nuevo perfil' }}
+
+      </h2>
+
+    </div>
+
+
+    <div class="formulario-grid">
+
+      <div class="campo">
+
+        <label>Nombre *</label>
+
+        <input
+          type="text"
+          [(ngModel)]="perfil.Nombre"
+          placeholder="Ej: Administrador, Veterinario, Recepcionista...">
+
+      </div>
+
+
+      <div class="campo campo-completo">
+
+        <label>Descripción</label>
+
+        <input
+          type="text"
+          [(ngModel)]="perfil.Descripcion"
+          placeholder="Descripción breve del perfil">
+
+      </div>
+
+
+      <div
+        class="campo checkbox"
+        *ngIf="modoEdicion">
+
+        <label>
+
+          <input
+            type="checkbox"
+            [(ngModel)]="perfil.Activo">
+
+          Activo
+
+        </label>
+
+      </div>
+
+    </div>
+
+
+    <div class="formulario-botones">
+
+      <button
+        class="btn-cancelar"
+        (click)="cancelar()">
+
+        Cancelar
+
+      </button>
+
+
+      <button
+        class="btn-guardar"
+        (click)="guardar()">
+
+        {{ modoEdicion
+          ? 'Actualizar'
+          : 'Guardar' }}
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- TABLA -->
+
+  <div
+    class="tabla-card"
+    *ngIf="!mostrarFormulario">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+
+          <th>Nombre</th>
+
+          <th>Descripción</th>
+
+          <th>Estado</th>
+
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr
+          *ngFor="let p of perfiles">
+
+          <td>
+            {{ p.IdPerfil }}
+          </td>
+
+          <td>
+            <strong>
+              {{ p.Nombre }}
+            </strong>
+          </td>
+
+          <td>
+            {{ p.Descripcion || '-' }}
+          </td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.activo]="p.Activo"
+              [class.inactivo]="!p.Activo">
+
+              {{ p.Activo ? 'Activo' : 'Inactivo' }}
+
+            </span>
+
+          </td>
+
+          <td class="acciones">
+
+            <button
+              *ngIf="puedeAsignar"
+              class="btn-icono"
+              title="Matriz de permisos"
+              (click)="abrirMatriz(p)">
+
+              🔑 Permisos
+
+            </button>
+
+            <button
+              *ngIf="puedeEditar"
+              class="btn-icono"
+              title="Editar"
+              (click)="editarPerfil(p)">
+
+              ✏️
+
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <tr
+          *ngIf="perfiles.length === 0">
+
+          <td
+            colspan="5"
+            class="sin-datos">
+
+            <span *ngIf="cargando">
+              Cargando perfiles...
+            </span>
+
+            <span *ngIf="!cargando">
+              No hay perfiles registrados.
+            </span>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+
+  <!-- MODAL MATRIZ DE PERMISOS -->
+
+  <div
+    class="modal-overlay"
+    *ngIf="mostrarModal">
+
+    <div class="modal-card modal-grande">
+
+      <div class="modal-header">
+
+        <h2>
+          Permisos del perfil:
+          <strong>
+            {{ perfilSeleccionado?.Nombre }}
+          </strong>
+        </h2>
+
+        <button
+          class="btn-cerrar"
+          (click)="cerrarMatriz()">
+
+          ✕
+
+        </button>
+
+      </div>
+
+      <p class="modal-nota">
+        Clic sobre el estado para cambiar: ninguno → permitir → denegar
+      </p>
+
+
+      <div
+        class="matriz"
+        *ngFor="let modulo of modulos">
+
+        <div class="matriz-modulo">
+
+          <span>
+            {{ modulo.NombreModulo }}
+          </span>
+
+          <span class="matriz-conteo">
+            {{ contarPorModulo(modulo.Codigo) }}
+          </span>
+
+        </div>
+
+        <table class="tabla-matriz">
+
+          <tbody>
+
+            <tr
+              *ngFor="let fila of filasPermisosPermitidosModulo(modulo.Codigo)">
+
+              <td>
+                {{ fila.Nombre }}
+              </td>
+
+              <td class="celda-codigo">
+                {{ fila.Codigo }}
+              </td>
+
+              <td class="celda-estado">
+
+                <span
+                  class="chips estado-chip"
+                  [class.chip-permitir]="fila.Estado === 'PERMITIR'"
+                  [class.chip-denegar]="fila.Estado === 'DENEGAR'"
+                  [class.chip-ninguno]="fila.Estado === 'NINGUNO'"
+                  (click)="cicloEstado(fila)">
+
+                  {{ fila.Estado === 'PERMITIR'
+                    ? 'Permitir'
+                    : (fila.Estado === 'DENEGAR'
+                        ? 'Denegar'
+                        : 'Ninguno') }}
+
+                </span>
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+
+      <div class="modal-botones">
+
+        <button
+          class="btn-cancelar"
+          (click)="cerrarMatriz()">
+
+          Cancelar
+
+        </button>
+
+        <button
+          class="btn-guardar"
+          (click)="guardarMatriz()">
+
+          Guardar permisos
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

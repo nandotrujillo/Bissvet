@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 
 const pool = require('../../database/mysql.js');
+const { authenticate } = require('../../middleware/auth.js');
+const { authorize } = require('../../middleware/authorize');
 
 
 // =====================================================
@@ -57,7 +59,7 @@ router.get('/', async (req, res) => {
 // GET /api/empresas/:id
 // =====================================================
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticate, authorize('EMPRESAS.CONSULTAR'), async (req, res) => {
 
     try {
 
@@ -125,7 +127,7 @@ router.get('/:id', async (req, res) => {
 // PUT /api/empresas/:id
 // =====================================================
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticate, authorize('EMPRESAS.EDITAR'), async (req, res) => {
 
     try {
 

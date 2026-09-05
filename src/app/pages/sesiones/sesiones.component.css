@@ -1,0 +1,153 @@
+.sesiones-container {
+  padding: 25px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 70px);
+}
+
+
+/* ENCABEZADO */
+
+.encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.encabezado h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #1f2937;
+}
+
+.encabezado p {
+  margin: 5px 0 0;
+  color: #6b7280;
+}
+
+
+/* MENSAJES */
+
+.mensaje {
+  padding: 12px 15px;
+  border-radius: 7px;
+  margin-bottom: 15px;
+}
+
+.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+
+/* FILTROS */
+
+.barra-herramientas {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.barra-herramientas input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  font-size: 15px;
+}
+
+.barra-herramientas select {
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  font-size: 14px;
+  background: white;
+}
+
+.contador {
+  white-space: nowrap;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+
+/* TABLA */
+
+.tabla-card {
+  background: white;
+  border-radius: 12px;
+  overflow-x: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #f3f4f6;
+}
+
+th {
+  text-align: left;
+  padding: 14px;
+  color: #374151;
+  font-size: 13px;
+}
+
+td {
+  padding: 13px 14px;
+  border-top: 1px solid #e5e7eb;
+  color: #4b5563;
+}
+
+tbody tr:hover {
+  background: #f9fafb;
+}
+
+
+/* ESTADO */
+
+.estado {
+  padding: 5px 9px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.estado.activa {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.estado.cerrada {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+
+/* SIN DATOS */
+
+.sin-datos {
+  text-align: center;
+  padding: 40px;
+  color: #9ca3af;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 600px) {
+
+  .barra-herramientas {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+}

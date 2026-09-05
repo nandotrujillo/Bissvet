@@ -70,6 +70,22 @@ export class SeguridadService {
     );
   }
 
+  crearPerfil(payload: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/perfiles`, payload);
+  }
+
+  actualizarPerfil(id: number, payload: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/perfiles/${id}`, payload);
+  }
+
+  obtenerPerfilPermisos(idPerfil: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/perfilpermisos/${idPerfil}`);
+  }
+
+  asignarPerfilPermisos(idPerfil: number, permisos: any[]): Observable<any> {
+    return this.http.post(`${this.apiUrl}/perfilpermisos/${idPerfil}`, { permisos });
+  }
+
   obtenerRoles(): Observable<{ ok: boolean; datos: RolSistema[] }> {
     return this.http.get<{ ok: boolean; datos: RolSistema[] }>(
       `${this.apiUrl}/roles`
@@ -78,6 +94,10 @@ export class SeguridadService {
 
   crearRol(payload: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/roles`, payload);
+  }
+
+  actualizarRol(id: number, payload: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/roles/${id}`, payload);
   }
 
   obtenerModulos(): Observable<{ ok: boolean; datos: any[] }> {

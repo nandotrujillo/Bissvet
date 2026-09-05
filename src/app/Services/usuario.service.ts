@@ -1,19 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export interface Usuario {
-  UsuarioId: number;
-  Username: string;
-  PasswordHash?: string;
-}
+import { Usuario } from '../Models/usuario';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UsuarioService {
 
-  
   private apiUrl = 'http://localhost:3000/api/usuarios';
 
   constructor(private http: HttpClient) {}
@@ -23,47 +17,52 @@ export class UsuarioService {
     PasswordHash: string,
     IdEmpresa: number
   ): Observable<any> {
-    console.log("Desde el servicio");
-   console.log(Username);
-   console.log(IdEmpresa);
-   console.log(`${this.apiUrl}/login`);
     return this.http.post<any>(
       `${this.apiUrl}/login`,
       {
-        Username, 
+        Username,
         PasswordHash,
         IdEmpresa
       }
     );
   }
 
-  obtenerUsuarios(): Observable<Usuario[]> {
-
-    return this.http.get<Usuario[]>(this.apiUrl);
-
+  cerrarSesion(IdSesion: number): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/logout`,
+      { IdSesion }
+    );
   }
 
-  obtenerUsuarioPorId(id: number): Observable<Usuario> {
+  obtenerUsuarios(): Observable<{ ok: boolean; datos: Usuario[] }> {
+    return this.http.get<{ ok: boolean; datos: Usuario[] }>(this.apiUrl);
+  }
 
-    return this.http.get<Usuario>(
+  obtenerUsuarioPorId(id: number): Observable<{ ok: boolean; datos: Usuario }> {
+    return this.http.get<{ ok: boolean; datos: Usuario }>(
       `${this.apiUrl}/${id}`
     );
-
   }
 
-crearUsuario(
-    usuario: string,
-    contraseña: string
-  ): Observable<any> {
+  crearUsuario(payload: Usuario): Observable<any> {
+    return this.http.post<any>(this.apiUrl, payload);
+  }
 
-    return this.http.post<any>(
-      this.apiUrl,
-      {
-        usuario,
-        contraseña
-      }
+  actualizarUsuario(id: number, payload: Usuario): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${id}`, payload);
+  }
+
+  cambiarClave(id: number, Password: string): Observable<any> {
+    return this.http.put<any>(
+      `${this.apiUrl}/${id}/cambiar-password`,
+      { Password }
     );
-
   }
 
+  desbloquear(id: number): Observable<any> {
+    return this.http.put<any>(
+      `${this.apiUrl}/${id}`,
+      { Bloqueado: false }
+    );
+  }
 }

@@ -1,0 +1,165 @@
+<div class="sesiones-container">
+
+  <!-- ENCABEZADO -->
+
+  <div class="encabezado">
+
+    <div>
+
+      <h1>🖥️ Sesiones</h1>
+
+      <p>
+        Registro de inicios de sesión en la empresa
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- FILTROS -->
+
+  <div class="barra-herramientas">
+
+    <input
+      type="text"
+      placeholder="Buscar por usuario o IP..."
+      [(ngModel)]="textoBusqueda"
+      (input)="aplicarFiltros()">
+
+    <select
+      [(ngModel)]="filtroEstado"
+      (change)="aplicarFiltros()">
+
+      <option value="TODAS">Todas</option>
+
+      <option value="ACTIVA">Activas</option>
+
+      <option value="CERRADA">Cerradas</option>
+
+    </select>
+
+    <span
+      class="contador">
+
+      {{ sesionesFiltradas.length }}
+      sesión(es)
+
+    </span>
+
+  </div>
+
+
+  <!-- TABLA -->
+
+  <div class="tabla-card">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+
+          <th>Usuario</th>
+
+          <th>Ingreso</th>
+
+          <th>Último acceso</th>
+
+          <th>Salida</th>
+
+          <th>Dirección IP</th>
+
+          <th>Estado</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr
+          *ngFor="let s of sesionesFiltradas">
+
+          <td>
+            {{ s.IdSesion }}
+          </td>
+
+          <td>
+            <strong>
+              {{ s.Username }}
+            </strong>
+          </td>
+
+          <td>
+            {{ formatearFecha(s.FechaIngreso) }}
+          </td>
+
+          <td>
+            {{ formatearFecha(s.UltimoAcceso) }}
+          </td>
+
+          <td>
+            {{ formatearFecha(s.FechaSalida) }}
+          </td>
+
+          <td>
+            {{ s.DireccionIP || '-' }}
+          </td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.activa]="s.EstadoSesion === 'ACTIVA'"
+              [class.cerrada]="s.EstadoSesion !== 'ACTIVA'">
+
+              {{ s.EstadoSesion }}
+
+            </span>
+
+          </td>
+
+        </tr>
+
+
+        <tr
+          *ngIf="sesionesFiltradas.length === 0">
+
+          <td
+            colspan="7"
+            class="sin-datos">
+
+            <span *ngIf="cargando">
+              Cargando sesiones...
+            </span>
+
+            <span *ngIf="!cargando">
+              No se encontraron sesiones.
+            </span>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>
