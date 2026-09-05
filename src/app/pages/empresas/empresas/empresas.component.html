@@ -114,6 +114,11 @@
         <span>{{ nombreCiudad || '-' }}</span>
       </div>
 
+      <div class="dato">
+        <span class="label">Apertura y control de caja</span>
+        <span>{{ empresa.UsaControlCaja === 1 ? 'Sí' : 'No' }}</span>
+      </div>
+
     </div>
 
   </div>
@@ -314,6 +319,22 @@
           <option [ngValue]="0">Inactiva</option>
 
         </select>
+
+      </div>
+
+
+      <!-- APERTURA Y CONTROL DE CAJA -->
+
+      <div class="campo">
+
+        <label>Apertura y control de caja</label>
+
+        <label class="control-linea">
+          <input
+            type="checkbox"
+            [(ngModel)]="controlCaja">
+          <span>Habilitar módulo de caja</span>
+        </label>
 
       </div>
 

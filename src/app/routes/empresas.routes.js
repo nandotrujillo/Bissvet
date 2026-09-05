@@ -28,7 +28,8 @@ router.get('/', async (req, res) => {
                 Correo,
                 Contacto,
                 TelefonoContacto,
-                IdCiudad
+                IdCiudad,
+                UsaControlCaja
             FROM BissVet.empresas
             WHERE Activo = 1
             ORDER BY NombreComercial
@@ -88,7 +89,8 @@ router.get('/:id', authenticate, authorize('EMPRESAS.CONSULTAR'), async (req, re
                 Contacto,
                 TelefonoContacto,
                 IdCiudad,
-                Activo
+                Activo,
+                UsaControlCaja
             FROM BissVet.empresas
             WHERE IdEmpresa = ?
         `, [id]);
@@ -156,6 +158,7 @@ router.put('/:id', authenticate, authorize('EMPRESAS.EDITAR'), async (req, res) 
             TelefonoContacto,
             IdCiudad,
             Activo,
+            UsaControlCaja,
             UsuarioIdModificacion
 
         } = req.body;
@@ -223,6 +226,7 @@ router.put('/:id', authenticate, authorize('EMPRESAS.EDITAR'), async (req, res) 
                 TelefonoContacto = ?,
                 IdCiudad = COALESCE(?, IdCiudad),
                 Activo = COALESCE(?, Activo),
+                UsaControlCaja = COALESCE(?, UsaControlCaja),
                 FechaModificacion = NOW(),
                 UsuarioIdModificacion = ?
             WHERE IdEmpresa = ?
@@ -239,9 +243,10 @@ router.put('/:id', authenticate, authorize('EMPRESAS.EDITAR'), async (req, res) 
             Correo || null,
             Contacto || null,
             TelefonoContacto || null,
-            IdCiudad !== undefined && IdCiudad !== null && IdCiudad !== '' ? IdCiudad : null,
-            Activo !== undefined ? (Activo ? 1 : 0) : null,
-            usuarioId,
+IdCiudad !== undefined && IdCiudad !== null && IdCiudad !== '' ? IdCiudad : null,
+Activo !== undefined ? (Activo ? 1 : 0) : null,
+UsaControlCaja !== undefined ? (UsaControlCaja ? 1 : 0) : null,
+usuarioId,
             id
 
         ]);

@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS empresas (
   IdCiudad             INT           NULL,
   Logo                 VARCHAR(500)  NULL COMMENT 'Ruta/URL del logo',
   Activo               TINYINT(1)    NOT NULL DEFAULT 1,
+  UsaControlCaja       TINYINT(1)    NOT NULL DEFAULT 0 COMMENT 'Apertura y control de caja',
   FechaCreacion        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UsuarioIdCreacion    INT           NULL,
   FechaModificacion    DATETIME      NULL,
@@ -202,6 +203,7 @@ CREATE TABLE IF NOT EXISTS Usuarios (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='RF-003: usuarios de la empresa';
 
 -- Completa la estructura si la tabla Ya existía (idempotente)
+CALL bissvet_add_column('empresas', 'UsaControlCaja', 'UsaControlCaja TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''Apertura y control de caja''');
 CALL bissvet_add_column('Usuarios', 'IdEmpresa',   'IdEmpresa INT NULL');
 CALL bissvet_add_column('Usuarios', 'IdPerfil',    'IdPerfil INT NULL');
 CALL bissvet_add_column('Usuarios', 'TipoDocumento',   'TipoDocumento VARCHAR(20) NULL');

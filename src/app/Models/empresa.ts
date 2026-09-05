@@ -26,4 +26,6 @@ export interface Empresa {
 
   Activo?: number;
 
+  UsaControlCaja?: number;
+
 }

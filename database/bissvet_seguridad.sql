@@ -62,6 +62,7 @@ CREATE TABLE empresas (
   IdCiudad             INT           NULL,
   Logo                 VARCHAR(500)  NULL COMMENT 'Ruta/URL del logo',
   Activo               TINYINT(1)    NOT NULL DEFAULT 1,
+  UsaControlCaja       TINYINT(1)    NOT NULL DEFAULT 0 COMMENT 'Apertura y control de caja',
   FechaCreacion        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UsuarioIdCreacion    INT           NULL,
   FechaModificacion    DATETIME      NULL,

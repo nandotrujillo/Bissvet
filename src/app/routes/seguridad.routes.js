@@ -71,6 +71,17 @@ router.get('/mi-menu', authenticate, async (req, res) => {
         } else {
             const contratados = await modulosContratados(req.auth.IdEmpresa);
             modulos = rows.filter((m) => contratados.has(m.Codigo));
+
+            // El módulo CAJA sólo se muestra si la empresa tiene activado
+            // "Apertura y control de caja" en sus datos (RFC-030 / RF-MON-008).
+            const [empresa] = await pool.query(
+                `SELECT UsaControlCaja FROM empresas WHERE IdEmpresa = ?`,
+                [req.auth.IdEmpresa]
+            );
+            const controlCaja = empresa[0]?.UsaControlCaja === 1;
+            if (!controlCaja) {
+                modulos = modulos.filter((m) => m.Codigo !== 'CAJA');
+            }
         }
 
         res.json({ ok: true, datos: modulos });

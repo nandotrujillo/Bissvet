@@ -70,7 +70,8 @@ export class EmpresasComponent implements OnInit {
       Contacto: '',
       TelefonoContacto: '',
       IdCiudad: 0,
-      Activo: 1
+      Activo: 1,
+      UsaControlCaja: 0
     };
   }
 
@@ -112,6 +113,14 @@ export class EmpresasComponent implements OnInit {
     const ciudad = this.ciudades.find(c => c.Id === this.empresa.IdCiudad);
 
     return ciudad ? ciudad.Ciudad : '';
+  }
+
+  get controlCaja(): boolean {
+    return this.empresa.UsaControlCaja === 1;
+  }
+
+  set controlCaja(valor: boolean) {
+    this.empresa.UsaControlCaja = valor ? 1 : 0;
   }
 
   cargarEmpresa(): void {
