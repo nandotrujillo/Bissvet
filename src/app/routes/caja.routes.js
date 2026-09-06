@@ -344,6 +344,10 @@ router.post('/cierre', async (req, res) => {
 
         const entregado = Number(valorEntregado);
 
+        if (!Number.isFinite(entregado)) {
+            return res.status(400).json({ ok: false, mensaje: 'El valor entregado es obligatorio y debe ser un número' });
+        }
+
         if (entregado < 0) {
             return res.status(400).json({ ok: false, mensaje: 'El valor entregado no puede ser negativo' });
         }

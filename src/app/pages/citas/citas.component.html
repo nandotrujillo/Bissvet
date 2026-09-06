@@ -154,6 +154,16 @@
 
             <button
               type="button"
+              class="btn-facturar"
+              *ngIf="puedeFacturar(item)"
+              (click)="facturarServicio(item)">
+
+              🧾 Facturar
+
+            </button>
+
+            <button
+              type="button"
               class="btn-historia"
               *ngIf="puedeCrearHistoria(item)"
               (click)="crearHistoriaClinica(item)">

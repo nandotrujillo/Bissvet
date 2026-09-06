@@ -11,8 +11,9 @@ router.get('/', async (req, res) => {
             SELECT sv.*, hc.IdMascota
             FROM signosvitales sv
             INNER JOIN historiasclinicas hc ON sv.IdHistoriaClinica = hc.IdHistoriaClinica
+            WHERE sv.IdEmpresa = ?
             ORDER BY sv.IdSignosVitales DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar signos vitales:', error);
@@ -28,8 +29,8 @@ router.get('/historia/:idHistoriaClinica', async (req, res) => {
         const idHistoriaClinica = Number(req.params.idHistoriaClinica);
         const [rows] = await pool.query(`
             SELECT * FROM signosvitales
-            WHERE IdHistoriaClinica = ?
-        `, [idHistoriaClinica]);
+            WHERE IdHistoriaClinica = ? AND IdEmpresa = ?
+        `, [idHistoriaClinica, req.auth.IdEmpresa]);
 
         res.json({ ok: true, datos: rows[0] || null });
     } catch (error) {
@@ -45,8 +46,8 @@ router.get('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [rows] = await pool.query(`
-            SELECT * FROM signosvitales WHERE IdSignosVitales = ?
-        `, [id]);
+            SELECT * FROM signosvitales WHERE IdSignosVitales = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Signos vitales no encontrados' });
@@ -84,8 +85,9 @@ router.post('/', async (req, res) => {
             INSERT INTO signosvitales (
                 IdHistoriaClinica, Peso, Temperatura, FrecuenciaCardiaca,
                 FrecuenciaRespiratoria, EstadoHidratacion, CondicionCorporal,
-                Mucosas, TiempoLlenadoCapilar, Observaciones, FechaCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                Mucosas, TiempoLlenadoCapilar, Observaciones, FechaCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
         `, [
             IdHistoriaClinica,
             Peso || null,
@@ -96,7 +98,8 @@ router.post('/', async (req, res) => {
             CondicionCorporal || null,
             Mucosas || null,
             TiempoLlenadoCapilar || null,
-            Observaciones || null
+            Observaciones || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({ ok: true, mensaje: 'Signos vitales registrados correctamente', IdSignosVitales: result.insertId });
@@ -135,7 +138,7 @@ router.put('/:id', async (req, res) => {
                 Mucosas = ?,
                 TiempoLlenadoCapilar = ?,
                 Observaciones = ?
-            WHERE IdSignosVitales = ?
+            WHERE IdSignosVitales = ? AND IdEmpresa = ?
         `, [
             Peso || null,
             Temperatura || null,
@@ -146,7 +149,8 @@ router.put('/:id', async (req, res) => {
             Mucosas || null,
             TiempoLlenadoCapilar || null,
             Observaciones || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {

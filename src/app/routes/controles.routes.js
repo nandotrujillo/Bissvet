@@ -19,8 +19,9 @@ router.get('/', async (req, res) => {
             INNER JOIN mascotas m ON con.IdMascota = m.IdMascota
             INNER JOIN veterinarios v ON con.IdVeterinario = v.IdVeterinario
             INNER JOIN clientes cl ON m.ClienteId = cl.ClienteId
+            WHERE con.IdEmpresa = ?
             ORDER BY con.FechaControl DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar controles:', error);
@@ -40,9 +41,9 @@ router.get('/mascota/:idMascota', async (req, res) => {
                 CONCAT(v.PrimerNombre, ' ', v.PrimerApellido) AS NombreVeterinario
             FROM controles con
             INNER JOIN veterinarios v ON con.IdVeterinario = v.IdVeterinario
-            WHERE con.IdMascota = ?
+            WHERE con.IdMascota = ? AND con.IdEmpresa = ?
             ORDER BY con.FechaControl DESC
-        `, [idMascota]);
+        `, [idMascota, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar controles por mascota:', error);
@@ -62,9 +63,9 @@ router.get('/historia/:idHistoriaClinica', async (req, res) => {
                 CONCAT(v.PrimerNombre, ' ', v.PrimerApellido) AS NombreVeterinario
             FROM controles con
             INNER JOIN veterinarios v ON con.IdVeterinario = v.IdVeterinario
-            WHERE con.IdHistoriaClinica = ?
+            WHERE con.IdHistoriaClinica = ? AND con.IdEmpresa = ?
             ORDER BY con.FechaControl DESC
-        `, [idHistoriaClinica]);
+        `, [idHistoriaClinica, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar controles por historia:', error);
@@ -95,8 +96,9 @@ router.get('/proximos', async (req, res) => {
             INNER JOIN veterinarios v ON con.IdVeterinario = v.IdVeterinario
             WHERE con.ProximoControl IS NOT NULL
               AND con.ProximoControl >= CURDATE()
+              AND con.IdEmpresa = ?
             ORDER BY con.ProximoControl ASC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar próximos controles:', error);
@@ -119,8 +121,8 @@ router.get('/:id', async (req, res) => {
             FROM controles con
             INNER JOIN mascotas m ON con.IdMascota = m.IdMascota
             INNER JOIN veterinarios v ON con.IdVeterinario = v.IdVeterinario
-            WHERE con.IdControl = ?
-        `, [id]);
+            WHERE con.IdControl = ? AND con.IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Control no encontrado' });
@@ -159,8 +161,9 @@ router.post('/', async (req, res) => {
                 IdHistoriaClinica, IdMascota, IdVeterinario, IdCirugia,
                 FechaControl, Motivo, Evolucion, Peso, SignosVitales,
                 Observaciones, Recomendaciones, ProximoControl,
-                FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             IdHistoriaClinica || null,
             IdMascota,
@@ -174,7 +177,8 @@ router.post('/', async (req, res) => {
             Observaciones || null,
             Recomendaciones || null,
             ProximoControl || null,
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         const IdControl = result.insertId;
@@ -184,15 +188,17 @@ router.post('/', async (req, res) => {
                 INSERT INTO alertascontroles (
                     IdMascota, IdHistoriaClinica, IdControl,
                     TipoAlerta, FechaAlerta, Descripcion, Estado,
-                    FechaCreacion, UsuarioIdCreacion
-                ) VALUES (?, ?, ?, 'Control', ?, ?, 'Pendiente', NOW(), ?)
+                    FechaCreacion, UsuarioIdCreacion,
+                    IdEmpresa
+                ) VALUES (?, ?, ?, 'Control', ?, ?, 'Pendiente', NOW(), ?, ?)
             `, [
                 IdMascota,
                 IdHistoriaClinica || null,
                 IdControl,
                 ProximoControl,
                 Motivo || 'Control programado',
-                UsuarioIdCreacion || null
+                UsuarioIdCreacion || null,
+                req.auth.IdEmpresa
             ]);
         }
 
@@ -228,7 +234,7 @@ router.put('/:id', async (req, res) => {
                 Observaciones = ?,
                 Recomendaciones = ?,
                 ProximoControl = ?
-            WHERE IdControl = ?
+            WHERE IdControl = ? AND IdEmpresa = ?
         `, [
             FechaControl,
             Motivo || null,
@@ -238,7 +244,8 @@ router.put('/:id', async (req, res) => {
             Observaciones || null,
             Recomendaciones || null,
             ProximoControl || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {

@@ -8,8 +8,8 @@ const pool = require('../../database/mysql');
 // =====================================================
 router.get('/', async (req, res) => {
     try {
-        const condiciones = [];
-        const params = [];
+        const condiciones = ['pr.IdEmpresa = ?'];
+        const params = [req.auth.IdEmpresa];
         if (req.query.activo !== undefined) { condiciones.push('pr.Activo = ?'); params.push(Number(req.query.activo)); }
         if (req.query.buscar) {
             condiciones.push('(pr.Nombre LIKE ? OR pr.Nit LIKE ?)');
@@ -43,8 +43,8 @@ router.get('/:id', async (req, res) => {
             SELECT pr.*, c.Ciudad AS NombreCiudad
             FROM proveedores pr
             LEFT JOIN ciudades c ON c.Id = pr.IdCiudad
-            WHERE pr.IdProveedor = ?
-        `, [req.params.id]);
+            WHERE pr.IdProveedor = ? AND pr.IdEmpresa = ?
+        `, [req.params.id, req.auth.IdEmpresa]);
         if (rows.length === 0)
             return res.status(404).json({ ok: false, mensaje: 'Proveedor no encontrado' });
         res.json({ ok: true, datos: rows[0] });
@@ -70,13 +70,13 @@ router.post('/', async (req, res) => {
         const [resultado] = await pool.query(
             `INSERT INTO proveedores (
                 TipoDocumento, NumeroDocumento, Nit, Nombre, Telefono, Email,
-                Direccion, IdCiudad, Contacto, Activo, UsuarioIdCreacion
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+                Direccion, IdCiudad, Contacto, Activo, UsuarioIdCreacion, IdEmpresa
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
                 TipoDocumento || null, NumeroDocumento || null, Nit || null,
                 Nombre.trim(), Telefono || null, Email || null,
                 Direccion || null, IdCiudad || null, Contacto || null,
-                Activo ?? 1, UsuarioIdCreacion || null
+                Activo ?? 1, UsuarioIdCreacion || null, req.auth.IdEmpresa
             ]
         );
         res.status(201).json({ ok: true, mensaje: 'Proveedor creado', IdProveedor: resultado.insertId });
@@ -104,12 +104,12 @@ router.put('/:id', async (req, res) => {
                 TipoDocumento=?, NumeroDocumento=?, Nit=?, Nombre=?, Telefono=?, Email=?,
                 Direccion=?, IdCiudad=?, Contacto=?, Activo=?,
                 FechaModificacion=NOW(), UsuarioIdModificacion=?
-             WHERE IdProveedor=?`,
+             WHERE IdProveedor=? AND IdEmpresa=?`,
             [
                 TipoDocumento || null, NumeroDocumento || null, Nit || null,
                 Nombre.trim(), Telefono || null, Email || null,
                 Direccion || null, IdCiudad || null, Contacto || null,
-                Activo ?? 1, UsuarioIdModificacion || null, req.params.id
+                Activo ?? 1, UsuarioIdModificacion || null, req.params.id, req.auth.IdEmpresa
             ]
         );
         if (resultado.affectedRows === 0)
@@ -127,14 +127,14 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const [compras] = await pool.query(
-            `SELECT COUNT(*) AS total FROM compras WHERE IdProveedor = ? AND Estado != 'ANULADA'`,
-            [req.params.id]
+            `SELECT COUNT(*) AS total FROM compras WHERE IdProveedor = ? AND IdEmpresa = ? AND Estado != 'ANULADA'`,
+            [req.params.id, req.auth.IdEmpresa]
         );
         if (compras[0].total > 0)
             return res.status(409).json({ ok: false, mensaje: 'No se puede eliminar: tiene compras activas asociadas' });
 
         const [resultado] = await pool.query(
-            `DELETE FROM proveedores WHERE IdProveedor = ?`, [req.params.id]
+            `DELETE FROM proveedores WHERE IdProveedor = ? AND IdEmpresa = ?`, [req.params.id, req.auth.IdEmpresa]
         );
         if (resultado.affectedRows === 0)
             return res.status(404).json({ ok: false, mensaje: 'Proveedor no encontrado' });

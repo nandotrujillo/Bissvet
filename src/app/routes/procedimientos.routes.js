@@ -13,8 +13,9 @@ router.get('/', async (req, res) => {
             INNER JOIN historiasclinicas hc ON p.IdHistoriaClinica = hc.IdHistoriaClinica
             INNER JOIN mascotas m ON hc.IdMascota = m.IdMascota
             LEFT JOIN servicios s ON p.IdServicio = s.IdServicio
+            WHERE p.IdEmpresa = ?
             ORDER BY p.Fecha DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar procedimientos:', error);
@@ -32,9 +33,9 @@ router.get('/historia/:idHistoriaClinica', async (req, res) => {
             SELECT p.*, s.Nombre AS NombreServicio
             FROM procedimientos p
             LEFT JOIN servicios s ON p.IdServicio = s.IdServicio
-            WHERE p.IdHistoriaClinica = ?
+            WHERE p.IdHistoriaClinica = ? AND p.IdEmpresa = ?
             ORDER BY p.Fecha DESC
-        `, [idHistoriaClinica]);
+        `, [idHistoriaClinica, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar procedimientos:', error);
@@ -52,8 +53,8 @@ router.get('/:id', async (req, res) => {
             SELECT p.*, s.Nombre AS NombreServicio
             FROM procedimientos p
             LEFT JOIN servicios s ON p.IdServicio = s.IdServicio
-            WHERE p.IdProcedimiento = ?
-        `, [id]);
+            WHERE p.IdProcedimiento = ? AND p.IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Procedimiento no encontrado' });
@@ -92,8 +93,9 @@ router.post('/', async (req, res) => {
             INSERT INTO procedimientos (
                 IdHistoriaClinica, IdServicio, NombreProcedimiento, Fecha,
                 Descripcion, Resultado, Observaciones,
-                FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             IdHistoriaClinica,
             IdServicio || null,
@@ -102,7 +104,8 @@ router.post('/', async (req, res) => {
             Descripcion || null,
             Resultado || null,
             Observaciones || null,
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({ ok: true, mensaje: 'Procedimiento registrado correctamente', IdProcedimiento: result.insertId });
@@ -135,7 +138,7 @@ router.put('/:id', async (req, res) => {
                 Descripcion = ?,
                 Resultado = ?,
                 Observaciones = ?
-            WHERE IdProcedimiento = ?
+            WHERE IdProcedimiento = ? AND IdEmpresa = ?
         `, [
             IdServicio || null,
             NombreProcedimiento,
@@ -143,7 +146,8 @@ router.put('/:id', async (req, res) => {
             Descripcion || null,
             Resultado || null,
             Observaciones || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {

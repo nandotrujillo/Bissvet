@@ -10,6 +10,8 @@ import { ClientesService } from '../../Services/clientes.service';
 import { UsuarioService } from '../../Services/usuario.service';
 import { BodegaService } from '../../Services/Bodega.service';
 import { ProductosService } from '../../Services/productos.service';
+import { TipoPagoService } from '../../Services/tipo-pago.service';
+import { TipoImpuestoService } from '../../Services/tipo-impuesto.service';
 
 @Component({
   selector: 'app-ventas',
@@ -26,6 +28,7 @@ export class VentasComponent implements OnInit {
   ventas: any[] = [];
   clientes: any[] = [];
   vendedores: any[] = [];
+  tiposPago: any[] = [];
   bodegas: Bodega[] = [];
   productos: Producto[] = [];
 
@@ -40,6 +43,9 @@ export class VentasComponent implements OnInit {
   mostrarFormulario = false;
   IdVentaEdicion?: number;
 
+  // Parámetro global de impuesto a las ventas (leído automáticamente)
+  impuestoVentas = 0;
+
   // Ver detalle
   detalleVista: any = null;
 
@@ -51,15 +57,32 @@ export class VentasComponent implements OnInit {
     private clientesService: ClientesService,
     private usuarioService: UsuarioService,
     private bodegaService: BodegaService,
-    private productosService: ProductosService
+    private productosService: ProductosService,
+    private tipoPagoService: TipoPagoService,
+    private tipoImpuestoService: TipoImpuestoService
   ) {}
 
   ngOnInit(): void {
     this.cargarVentas();
     this.cargarClientes();
     this.cargarVendedores();
+    this.cargarTiposPago();
     this.cargarBodegas();
     this.cargarProductos();
+    this.cargarImpuestoVentas();
+  }
+
+  cargarImpuestoVentas(): void {
+    this.tipoImpuestoService.impuestoVentas().subscribe({
+      next: (r: any) => {
+        const pct = Number(r?.datos?.Porcentaje) || 0;
+        this.impuestoVentas = pct;
+        this.venta.PorcentajeImpuesto = pct;
+      },
+      error: (e: any) => {
+        console.error('Error cargando impuesto a las ventas:', e);
+      }
+    });
   }
 
   nuevaVenta(): any {
@@ -67,7 +90,7 @@ export class VentasComponent implements OnInit {
       IdCliente: 0,
       IdVendedor: 0,
       TipoPago: '',
-      PorcentajeImpuesto: 0,
+      PorcentajeImpuesto: this.impuestoVentas,
       IdBodega: 0,
       Fecha: new Date().toISOString().slice(0, 10),
       Observaciones: ''
@@ -116,11 +139,21 @@ export class VentasComponent implements OnInit {
   }
 
   cargarVendedores(): void {
-    this.usuarioService.obtenerUsuarios().subscribe({
+    this.usuarioService.obtenerVendedores().subscribe({
       next: (r: any) => { this.vendedores = r?.datos ?? []; },
       error: (e: any) => {
         console.error('Error cargando vendedores:', e);
         this.error = 'No fue posible cargar los vendedores.';
+      }
+    });
+  }
+
+  cargarTiposPago(): void {
+    this.tipoPagoService.listar(true).subscribe({
+      next: (r: any) => { this.tiposPago = r?.datos ?? []; },
+      error: (e: any) => {
+        console.error('Error cargando tipos de pago:', e);
+        this.error = 'No fue posible cargar los tipos de pago.';
       }
     });
   }

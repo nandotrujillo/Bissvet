@@ -1,0 +1,210 @@
+<div class="tipospago-container">
+
+  <div class="titulo">
+
+    <div>
+      <h2>💳 Tipos de Pago</h2>
+      <p>Administración de los medios de pago usados en las ventas</p>
+    </div>
+
+  </div>
+
+
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
+  <!-- BARRA DE ACCIONES -->
+
+  <div class="barra-acciones">
+
+    <button
+      class="btn-nuevo"
+      (click)="nueva()">
+
+      + Nuevo Tipo de Pago
+
+    </button>
+
+  </div>
+
+
+  <!-- FORMULARIO -->
+
+  <div
+    class="formulario"
+    *ngIf="mostrarFormulario">
+
+    <h3>
+      {{ editando ? 'Editar Tipo de Pago' : 'Nuevo Tipo de Pago' }}
+    </h3>
+
+
+    <div class="form-grid">
+
+      <div class="campo">
+
+        <label>Nombre *</label>
+
+        <input
+          type="text"
+          maxlength="50"
+          [(ngModel)]="tipoPago.Nombre"
+          placeholder="Ej. EFECTIVO, TARJETA, TRANSFERENCIA">
+
+        <small>Este valor es el que se registra en la venta.</small>
+
+      </div>
+
+
+      <div class="campo">
+
+        <label>Descripción</label>
+
+        <input
+          type="text"
+          maxlength="100"
+          [(ngModel)]="tipoPago.Descripcion"
+          placeholder="Ej. Pago en efectivo">
+
+      </div>
+
+
+      <div class="campo">
+
+        <label>Estado</label>
+
+        <select [(ngModel)]="tipoPago.Activo">
+
+          <option [ngValue]="1">Activo</option>
+          <option [ngValue]="0">Inactivo</option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+
+    <div class="acciones-formulario">
+
+      <button
+        class="btn-guardar"
+        (click)="guardar()">
+
+        {{ editando ? 'Guardar Cambios' : 'Guardar' }}
+
+      </button>
+
+
+      <button
+        class="btn-cancelar"
+        (click)="cancelar()">
+
+        Cancelar
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- LISTADO -->
+
+  <div class="tabla-container">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <tr *ngFor="let tipo of tipos">
+
+          <td>
+            {{ tipo.Nombre }}
+          </td>
+
+          <td>
+            {{ tipo.Descripcion || '-' }}
+          </td>
+
+          <td>
+
+            <span
+              class="estado"
+              [class.inactivo]="tipo.Activo !== 1">
+
+              {{ tipo.Activo === 1 ? 'Activo' : 'Inactivo' }}
+
+            </span>
+
+          </td>
+
+          <td class="acciones">
+
+            <button
+              class="btn-editar"
+              (click)="editar(tipo)"
+              title="Editar">
+              ✏️
+            </button>
+
+            <button
+              class="btn-eliminar"
+              (click)="eliminar(tipo)"
+              title="Eliminar">
+              🗑️
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <tr *ngIf="tipos.length === 0">
+
+          <td
+            colspan="4"
+            class="sin-registros">
+            No existen tipos de pago registrados.
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

@@ -6,6 +6,7 @@ import { Empresa } from '../../../Models/empresa';
 import { EmpresaService } from '../../../Services/empresas.service';
 import { Ciudad } from '../../../Models/ciudad';
 import { CiudadService } from '../../../Services/ciudad.service';
+import { TipoDocumentoService } from '../../../Services/tipo-documento.service';
 
 @Component({
   selector: 'app-empresas',
@@ -23,6 +24,8 @@ export class EmpresasComponent implements OnInit {
 
   ciudades: Ciudad[] = [];
 
+  tiposDocumento: any[] = [];
+
   editando = false;
 
   mensaje = '';
@@ -30,12 +33,25 @@ export class EmpresasComponent implements OnInit {
 
   constructor(
     private empresaService: EmpresaService,
-    private ciudadService: CiudadService
+    private ciudadService: CiudadService,
+    private tipoDocumentoService: TipoDocumentoService
   ) {}
 
   ngOnInit(): void {
     this.cargarCiudades();
+    this.cargarTiposDocumento();
     this.cargarEmpresa();
+  }
+
+  cargarTiposDocumento(): void {
+    this.tipoDocumentoService.listar(true).subscribe({
+      next: (respuesta: any) => {
+        this.tiposDocumento = respuesta?.datos ?? [];
+      },
+      error: (error: any) => {
+        console.error('Error cargando tipos de documento:', error);
+      }
+    });
   }
 
   get idEmpresaSesion(): number {
@@ -71,7 +87,8 @@ export class EmpresasComponent implements OnInit {
       TelefonoContacto: '',
       IdCiudad: 0,
       Activo: 1,
-      UsaControlCaja: 0
+      UsaControlCaja: 0,
+      ControlExistencias: 1
     };
   }
 
@@ -121,6 +138,14 @@ export class EmpresasComponent implements OnInit {
 
   set controlCaja(valor: boolean) {
     this.empresa.UsaControlCaja = valor ? 1 : 0;
+  }
+
+  get controlExistencias(): boolean {
+    return this.empresa.ControlExistencias === 1;
+  }
+
+  set controlExistencias(valor: boolean) {
+    this.empresa.ControlExistencias = valor ? 1 : 0;
   }
 
   cargarEmpresa(): void {

@@ -21,8 +21,9 @@ router.get('/', async (req, res) => {
                 Descripcion,
                 Activo,idModulos
             FROM categoriasservicio
+            WHERE IdEmpresa = ?
             ORDER BY Nombre
-        `);
+        `, [req.auth.IdEmpresa]);
 
         res.json({
             ok: true,

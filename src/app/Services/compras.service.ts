@@ -36,6 +36,10 @@ export class ComprasService {
     return this.http.post<any>(`${this.apiUrl}/${id}/anular`, body);
   }
 
+  abonar(id: number, body: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${id}/abono`, body);
+  }
+
   eliminar(id: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/${id}`);
   }

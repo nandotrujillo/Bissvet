@@ -284,10 +284,11 @@
             Seleccione tipo de pago
           </option>
 
-          <option value="EFECTIVO">Efectivo</option>
-          <option value="TARJETA">Tarjeta</option>
-          <option value="TRANSFERENCIA">Transferencia</option>
-          <option value="OTRO">Otro</option>
+          <option
+            *ngFor="let tipo of tiposPago"
+            [ngValue]="tipo.Nombre">
+            {{ tipo.Nombre }}<ng-container *ngIf="tipo.Descripcion"> — {{ tipo.Descripcion }}</ng-container>
+          </option>
 
         </select>
 
@@ -319,10 +320,10 @@
 
         <input
           type="number"
-          step="0.01"
-          min="0"
-          max="100"
+          readonly
           [(ngModel)]="venta.PorcentajeImpuesto">
+
+        <small>Configurado en los parámetros de la empresa (tipoimpuesto).</small>
 
       </div>
 

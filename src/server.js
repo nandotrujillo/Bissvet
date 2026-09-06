@@ -163,6 +163,17 @@ app.use('/api/compras', autorizarModulo('COMPRAS'), comprasRoutes);
 
 const ventasRoutes = require('./app/routes/ventas.routes');
 app.use('/api/ventas', autorizarModulo('VENTAS'), ventasRoutes);
+const tiposPagoRoutes = require('./app/routes/tipospago.routes');
+
+app.use('/api/tipos-pago', autorizarModulo('VENTAS'), tiposPagoRoutes);
+
+const tipoDocumentoRoutes = require('./app/routes/tipodocumento.routes');
+
+app.use('/api/tipos-documento', autorizarModulo('EMPRESAS'), tipoDocumentoRoutes);
+
+const tipoImpuestoRoutes = require('./app/routes/tipoimpuesto.routes');
+
+app.use('/api/tipos-impuesto', autorizarModulo('VENTAS'), tipoImpuestoRoutes);
 
 const trasladosRoutes = require('./app/routes/traslados.routes');
 app.use('/api/traslados', autorizarModulo('INVENTARIOS'), trasladosRoutes);

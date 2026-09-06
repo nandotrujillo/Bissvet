@@ -18,8 +18,9 @@ router.get('/', async (req, res) => {
             FROM historiasclinicas hc
             INNER JOIN mascotas m ON hc.IdMascota = m.IdMascota
             INNER JOIN veterinarios v ON hc.IdVeterinario = v.IdVeterinario
+            WHERE hc.IdEmpresa = ?
             ORDER BY hc.FechaAtencion DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar historias clínicas:', error);
@@ -45,9 +46,9 @@ router.get('/mascota/:idMascota', async (req, res) => {
             FROM historiasclinicas hc
             INNER JOIN mascotas m ON hc.IdMascota = m.IdMascota
             INNER JOIN veterinarios v ON hc.IdVeterinario = v.IdVeterinario
-            WHERE hc.IdMascota = ?
+            WHERE hc.IdMascota = ? AND hc.IdEmpresa = ?
             ORDER BY hc.FechaAtencion DESC
-        `, [idMascota]);
+        `, [idMascota, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar historias clínicas por mascota:', error);
@@ -82,8 +83,8 @@ router.get('/:id', async (req, res) => {
             INNER JOIN mascotas m ON hc.IdMascota = m.IdMascota
             INNER JOIN veterinarios v ON hc.IdVeterinario = v.IdVeterinario
             INNER JOIN clientes cl ON m.ClienteId = cl.ClienteId
-            WHERE hc.IdHistoriaClinica = ?
-        `, [id]);
+            WHERE hc.IdHistoriaClinica = ? AND hc.IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Historia clínica no encontrada' });
@@ -123,8 +124,9 @@ router.post('/', async (req, res) => {
             INSERT INTO historiasclinicas (
                 IdCita, IdMascota, IdVeterinario, FechaAtencion,
                 MotivoConsulta, EnfermedadActual, Observaciones, Estado,
-                FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             IdCita || null,
             IdMascota,
@@ -134,11 +136,12 @@ router.post('/', async (req, res) => {
             EnfermedadActual || null,
             Observaciones || null,
             Estado || 'Abierta',
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         if (IdCita) {
-            await pool.query(`UPDATE citas SET Estado = 'Atendida' WHERE IdCita = ?`, [IdCita]);
+            await pool.query(`UPDATE citas SET Estado = 'Atendida' WHERE IdCita = ? AND IdEmpresa = ?`, [IdCita, req.auth.IdEmpresa]);
         }
 
         res.status(201).json({
@@ -182,7 +185,7 @@ router.put('/:id', async (req, res) => {
                 Estado = ?,
                 FechaModificacion = NOW(),
                 UsuarioIdModificacion = ?
-            WHERE IdHistoriaClinica = ?
+            WHERE IdHistoriaClinica = ? AND IdEmpresa = ?
         `, [
             IdCita || null,
             IdMascota,
@@ -193,7 +196,8 @@ router.put('/:id', async (req, res) => {
             Observaciones || null,
             Estado,
             UsuarioIdModificacion || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {
@@ -219,8 +223,8 @@ router.put('/:id/cerrar', async (req, res) => {
                 Estado = 'Cerrada',
                 FechaModificacion = NOW(),
                 UsuarioIdModificacion = ?
-            WHERE IdHistoriaClinica = ?
-        `, [UsuarioIdModificacion || null, id]);
+            WHERE IdHistoriaClinica = ? AND IdEmpresa = ?
+        `, [UsuarioIdModificacion || null, id, req.auth.IdEmpresa]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Historia clínica no encontrada' });

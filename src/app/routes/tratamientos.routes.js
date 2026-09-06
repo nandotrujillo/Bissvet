@@ -12,8 +12,9 @@ router.get('/', async (req, res) => {
             FROM tratamientos t
             INNER JOIN historiasclinicas hc ON t.IdHistoriaClinica = hc.IdHistoriaClinica
             INNER JOIN mascotas m ON hc.IdMascota = m.IdMascota
+            WHERE t.IdEmpresa = ?
             ORDER BY t.FechaCreacion DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar tratamientos:', error);
@@ -29,9 +30,9 @@ router.get('/historia/:idHistoriaClinica', async (req, res) => {
         const idHistoriaClinica = Number(req.params.idHistoriaClinica);
         const [rows] = await pool.query(`
             SELECT * FROM tratamientos
-            WHERE IdHistoriaClinica = ?
+            WHERE IdHistoriaClinica = ? AND IdEmpresa = ?
             ORDER BY FechaInicio DESC
-        `, [idHistoriaClinica]);
+        `, [idHistoriaClinica, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar tratamientos:', error);
@@ -49,9 +50,9 @@ router.get('/mascota/:idMascota/activos', async (req, res) => {
             SELECT t.*, hc.FechaAtencion
             FROM tratamientos t
             INNER JOIN historiasclinicas hc ON t.IdHistoriaClinica = hc.IdHistoriaClinica
-            WHERE hc.IdMascota = ? AND t.Estado = 'Activo'
+            WHERE hc.IdMascota = ? AND t.Estado = 'Activo' AND t.IdEmpresa = ?
             ORDER BY t.FechaInicio DESC
-        `, [idMascota]);
+        `, [idMascota, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar tratamientos activos:', error);
@@ -66,8 +67,8 @@ router.get('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [rows] = await pool.query(`
-            SELECT * FROM tratamientos WHERE IdTratamiento = ?
-        `, [id]);
+            SELECT * FROM tratamientos WHERE IdTratamiento = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Tratamiento no encontrado' });
@@ -107,8 +108,9 @@ router.post('/', async (req, res) => {
             INSERT INTO tratamientos (
                 IdHistoriaClinica, NombreTratamiento, Descripcion,
                 FechaInicio, FechaFin, Indicaciones, Observaciones, Estado,
-                FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             IdHistoriaClinica,
             NombreTratamiento,
@@ -118,7 +120,8 @@ router.post('/', async (req, res) => {
             Indicaciones || null,
             Observaciones || null,
             Estado || 'Activo',
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({ ok: true, mensaje: 'Tratamiento creado correctamente', IdTratamiento: result.insertId });
@@ -156,7 +159,7 @@ router.put('/:id', async (req, res) => {
                 Estado = ?,
                 FechaModificacion = NOW(),
                 UsuarioIdModificacion = ?
-            WHERE IdTratamiento = ?
+            WHERE IdTratamiento = ? AND IdEmpresa = ?
         `, [
             NombreTratamiento,
             Descripcion || null,
@@ -166,7 +169,8 @@ router.put('/:id', async (req, res) => {
             Observaciones || null,
             Estado,
             UsuarioIdModificacion || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {
@@ -193,8 +197,8 @@ router.put('/:id/finalizar', async (req, res) => {
                 FechaFin = CURDATE(),
                 FechaModificacion = NOW(),
                 UsuarioIdModificacion = ?
-            WHERE IdTratamiento = ?
-        `, [UsuarioIdModificacion || null, id]);
+            WHERE IdTratamiento = ? AND IdEmpresa = ?
+        `, [UsuarioIdModificacion || null, id, req.auth.IdEmpresa]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Tratamiento no encontrado' });
@@ -213,8 +217,8 @@ router.delete('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [result] = await pool.query(`
-            DELETE FROM tratamientos WHERE IdTratamiento = ?
-        `, [id]);
+            DELETE FROM tratamientos WHERE IdTratamiento = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Tratamiento no encontrado' });

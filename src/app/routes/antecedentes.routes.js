@@ -10,8 +10,8 @@ router.get('/mascota/:idMascota', async (req, res) => {
         const idMascota = Number(req.params.idMascota);
         const [rows] = await pool.query(`
             SELECT * FROM antecedentes
-            WHERE IdMascota = ?
-        `, [idMascota]);
+            WHERE IdMascota = ? AND IdEmpresa = ?
+        `, [idMascota, req.auth.IdEmpresa]);
 
         res.json({ ok: true, datos: rows[0] || null });
     } catch (error) {
@@ -31,8 +31,9 @@ router.get('/', async (req, res) => {
                 m.Nombre AS NombreMascota
             FROM antecedentes a
             INNER JOIN mascotas m ON a.IdMascota = m.IdMascota
+            WHERE a.IdEmpresa = ?
             ORDER BY a.FechaModificacion DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar antecedentes:', error);
@@ -47,8 +48,8 @@ router.get('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [rows] = await pool.query(`
-            SELECT * FROM antecedentes WHERE IdAntecedente = ?
-        `, [id]);
+            SELECT * FROM antecedentes WHERE IdAntecedente = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Antecedentes no encontrados' });
@@ -86,8 +87,8 @@ router.post('/', async (req, res) => {
         }
 
         const [existing] = await pool.query(
-            `SELECT IdAntecedente FROM antecedentes WHERE IdMascota = ?`,
-            [IdMascota]
+            `SELECT IdAntecedente FROM antecedentes WHERE IdMascota = ? AND IdEmpresa = ?`,
+            [IdMascota, req.auth.IdEmpresa]
         );
 
         if (existing.length > 0) {
@@ -106,7 +107,7 @@ router.post('/', async (req, res) => {
                     Observaciones = ?,
                     FechaModificacion = NOW(),
                     UsuarioIdModificacion = ?
-                WHERE IdMascota = ?
+                WHERE IdMascota = ? AND IdEmpresa = ?
             `, [
                 EnfermedadesAnteriores || null,
                 CirugiasAnteriores || null,
@@ -120,7 +121,8 @@ router.post('/', async (req, res) => {
                 Habitos || null,
                 Observaciones || null,
                 UsuarioIdCreacion || null,
-                IdMascota
+                IdMascota,
+                req.auth.IdEmpresa
             ]);
             res.json({ ok: true, mensaje: 'Antecedentes actualizados correctamente', IdAntecedente: existing[0].IdAntecedente });
         } else {
@@ -130,8 +132,9 @@ router.post('/', async (req, res) => {
                     Vacunacion, Desparasitacion, MedicamentosActuales,
                     TratamientosAnteriores, AntecedentesHereditarios,
                     Alimentacion, Habitos, Observaciones,
-                    FechaCreacion, UsuarioIdCreacion
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                    FechaCreacion, UsuarioIdCreacion,
+                    IdEmpresa
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
             `, [
                 IdMascota,
                 EnfermedadesAnteriores || null,
@@ -145,7 +148,8 @@ router.post('/', async (req, res) => {
                 Alimentacion || null,
                 Habitos || null,
                 Observaciones || null,
-                UsuarioIdCreacion || null
+                UsuarioIdCreacion || null,
+                req.auth.IdEmpresa
             ]);
             res.status(201).json({ ok: true, mensaje: 'Antecedentes creados correctamente', IdAntecedente: result.insertId });
         }
@@ -191,7 +195,7 @@ router.put('/:id', async (req, res) => {
                 Observaciones = ?,
                 FechaModificacion = NOW(),
                 UsuarioIdModificacion = ?
-            WHERE IdAntecedente = ?
+            WHERE IdAntecedente = ? AND IdEmpresa = ?
         `, [
             EnfermedadesAnteriores || null,
             CirugiasAnteriores || null,
@@ -205,7 +209,8 @@ router.put('/:id', async (req, res) => {
             Habitos || null,
             Observaciones || null,
             UsuarioIdModificacion || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {

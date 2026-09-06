@@ -26,8 +26,9 @@ router.get('/', async (req, res) => {
                 Responsable,
                 Activo
             FROM bissvet.bodegas
+            WHERE IdEmpresa = ?
             ORDER BY NombreBodega
-        `);
+        `, [req.auth.IdEmpresa]);
 
         res.json({
             ok: true,
@@ -72,9 +73,9 @@ router.get('/:id', async (req, res) => {
                 Direccion,
                 Responsable,
                 Activo
-            FROM bissvet.bodegas
-            WHERE Id = ?
-        `, [id]);
+FROM bissvet.bodegas
+            WHERE Id = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
 
@@ -266,7 +267,7 @@ router.put('/:id', async (req, res) => {
                 Responsable = ?,
                 Activo = ?
 
-            WHERE Id = ?
+            WHERE Id = ? AND IdEmpresa = ?
 
         `, [
 
@@ -279,7 +280,8 @@ router.put('/:id', async (req, res) => {
             Direccion ?? null,
             Responsable ?? null,
             Activo ?? 1,
-            id
+            id,
+            req.auth.IdEmpresa
 
         ]);
 
@@ -335,8 +337,8 @@ router.delete('/:id', async (req, res) => {
 
         const [resultado] = await pool.query(`
             DELETE FROM bissvet.bodegas
-            WHERE Id = ?
-        `, [id]);
+            WHERE Id = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
 
         if (resultado.affectedRows === 0) {

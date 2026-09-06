@@ -201,6 +201,34 @@ tbody tr:hover {
   color: #174a32;
 }
 
+.btn-facturar {
+  border: none;
+
+  padding: 7px 14px;
+
+  margin-right: 5px;
+
+  border-radius: 7px;
+
+  cursor: pointer;
+
+  background: #e0ecff;
+
+  color: #1d4ed8;
+
+  font-weight: 600;
+
+  font-size: 12px;
+
+  transition: .2s;
+}
+
+.btn-facturar:hover {
+  background: #c9dcff;
+
+  color: #173f9e;
+}
+
 
 /* =====================================================
    FORMULARIO

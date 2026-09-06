@@ -42,6 +42,12 @@ export class ComprasComponent implements OnInit {
   // Ver detalle
   detalleVista: any = null;
 
+  // Confirmar compra (modal)
+  confirmandoCompra: any = null;
+
+  // Abonar (modal)
+  abonarCuota: any = null;
+
   mensaje = '';
   error = '';
 
@@ -65,7 +71,8 @@ export class ComprasComponent implements OnInit {
       IdProveedor: 0,
       IdBodega: 0,
       Fecha: new Date().toISOString().slice(0, 10),
-      Observaciones: ''
+      Observaciones: '',
+      MetodoPago: 'CONTADO'
     };
   }
 
@@ -170,7 +177,8 @@ export class ComprasComponent implements OnInit {
           IdProveedor: datos.IdProveedor,
           IdBodega: datos.IdBodega,
           Fecha: (datos.Fecha || '').slice(0, 10),
-          Observaciones: datos.Observaciones
+          Observaciones: datos.Observaciones,
+          MetodoPago: datos.MetodoPago || 'CONTADO'
         };
         this.detalle = (datos.Detalle || []).map((d: any) => ({
           IdProducto: d.IdProducto,
@@ -237,6 +245,7 @@ export class ComprasComponent implements OnInit {
       IdBodega: this.compra.IdBodega,
       Fecha: this.compra.Fecha,
       Observaciones: this.compra.Observaciones,
+      MetodoPago: this.compra.MetodoPago,
       UsuarioIdCreacion: null,
       Detalle: this.detalle
     };
@@ -296,23 +305,200 @@ export class ComprasComponent implements OnInit {
     this.detalleVista = null;
   }
 
-  confirmar(compra: any): void {
+  // ==================================================
+  // CONFIRMAR (modal de pago / egreso de caja)
+  // ==================================================
 
-    const confirmar = confirm(`¿Confirmar la compra #${compra.Numero}? Actualizará el inventario (CPP).`);
+  abrirConfirmar(compra: any): void {
+    this.comprasService.obtener(compra.IdCompra).subscribe({
+      next: (r: any) => {
+        const datos = r?.datos ?? {};
+        const totalCompra = Number(datos.Total) || 0;
+        const metodo = datos.MetodoPago || 'CONTADO';
+        this.confirmandoCompra = {
+          IdCompra: compra.IdCompra,
+          Numero: compra.Numero,
+          Total: totalCompra,
+          MetodoPago: metodo,
+          AfectaCaja: false,
+          PagoInicial: metodo === 'CONTADO' ? totalCompra : 0,
+          Cuotas: metodo === 'CONTADO'
+            ? []
+            : [{ ValorCuota: totalCompra, FechaVencimiento: '' }],
+          guardando: false,
+          EgresaCaja: true
+        };
+        this.mensaje = '';
+        this.error = '';
+        this.detalleVista = null;
+      },
+      error: (e: any) => {
+        console.error('Error obteniendo compra para confirmar:', e);
+        this.error = e?.error?.mensaje || 'No fue posible cargar la compra.';
+      }
+    });
+  }
 
-    if (!confirmar) { return; }
+  cerrarConfirmar(): void {
+    this.confirmandoCompra = null;
+  }
 
-    this.comprasService.confirmar(compra.IdCompra, { UsuarioIdConfirmacion: null }).subscribe({
+  // Redistribuir el saldo pendiente en N cuotas iguales (o repartir al pulsar).
+  agregarCuotaConfirmar(): void {
+    const c = this.confirmandoCompra;
+    const total = Number(c.Total) || 0;
+    const inicial = Number(c.PagoInicial) || 0;
+    const saldo = Math.max(0, total - inicial);
+    if (saldo <= 0) { return; }
+    c.Cuotas = c.Cuotas || [];
+    const n = c.Cuotas.length + 1;
+    // Repartir el saldo en n cuotas (la última absorbe el redondeo).
+    const partes = Math.floor((saldo * 100) / n) / 100;
+    const nuevas = [];
+    for (let i = 0; i < n; i++) {
+      const valor = (i === n - 1) ? saldo - partes * (n - 1) : partes;
+      nuevas.push({ ValorCuota: Math.round(valor * 100) / 100, FechaVencimiento: '' });
+    }
+    c.Cuotas = nuevas;
+  }
+
+  quitarCuotaConfirmar(i: number): void {
+    const c = this.confirmandoCompra;
+    if (c.Cuotas.length > 1) { c.Cuotas.splice(i, 1); }
+  }
+
+  calcularSaldoPendienteConfirmar(): number {
+    const c = this.confirmandoCompra;
+    if (!c) { return 0; }
+    const total = Number(c.Total) || 0;
+    const inicial = Number(c.PagoInicial) || 0;
+    const sumaCuotas = (c.Cuotas || []).reduce((s: number, q: any) => s + (Number(q.ValorCuota) || 0), 0);
+    return Math.max(0, total - inicial - sumaCuotas);
+  }
+
+  ejecutarConfirmar(): void {
+    const c = this.confirmandoCompra;
+    this.mensaje = '';
+    this.error = '';
+
+    const total = Number(c.Total) || 0;
+    const inicial = Number(c.PagoInicial) || 0;
+    if (inicial < 0 || inicial > total) {
+      this.error = 'El pago inicial no puede ser negativo ni superar el total.';
+      return;
+    }
+    const saldo = total - inicial;
+    if (c.MetodoPago === 'CREDITO' && saldo > 0) {
+      const cuotas = c.Cuotas || [];
+      if (!cuotas.length) {
+        this.error = 'Debe definir cuotas para el saldo diferido.';
+        return;
+      }
+      const sumaCuotas = cuotas.reduce((s: number, q: any) => s + (Number(q.ValorCuota) || 0), 0);
+      if (Math.abs(sumaCuotas - saldo) > 0.01) {
+        this.error = 'La suma de las cuotas no coincide con el saldo pendiente.';
+        return;
+      }
+    }
+
+    c.guardando = true;
+    const body: any = {
+      AfectaCaja: !!c.AfectaCaja,
+      MetodoPago: c.MetodoPago,
+      PagoInicial: inicial,
+      Cuotas: c.MetodoPago === 'CREDITO'
+        ? (c.Cuotas || []).map((q: any) => ({
+            ValorCuota: Number(q.ValorCuota) || 0,
+            FechaVencimiento: q.FechaVencimiento || null
+          }))
+        : []
+    };
+
+    this.comprasService.confirmar(c.IdCompra, body).subscribe({
       next: () => {
-        this.mensaje = 'Compra confirmada, inventario actualizado.';
+        this.mensaje = 'Compra confirmada. Inventario actualizado.';
+        this.confirmandoCompra = null;
         this.cargarCompras();
       },
       error: (e: any) => {
         console.error('Error confirmando compra:', e);
+        c.guardando = false;
         this.error = e?.error?.mensaje || 'No fue posible confirmar la compra.';
       }
     });
   }
+
+  // ==================================================
+  // ABONO A CUOTA
+  // ==================================================
+
+  abrirAbono(cuota: any, idCompra?: number): void {
+    this.abonarCuota = {
+      ...cuota,
+      IdCompra: idCompra ?? this.detalleVista?.IdCompra ?? cuota.IdCompra,
+      ValorAbono: Number(cuota.SaldoPendiente) || 0,
+      AfectaCaja: false,
+      guardando: false
+    };
+    this.mensaje = '';
+    this.error = '';
+  }
+
+  cerrarAbono(): void {
+    this.abonarCuota = null;
+  }
+
+  ejecutarAbono(): void {
+    const a = this.abonarCuota;
+    this.mensaje = '';
+    this.error = '';
+
+    const monto = Number(a.ValorAbono) || 0;
+    if (monto <= 0) {
+      this.error = 'El valor del abono debe ser mayor a 0.';
+      return;
+    }
+    if (monto > Number(a.SaldoPendiente)) {
+      this.error = 'El abono no puede superar el saldo pendiente de la cuota.';
+      return;
+    }
+
+    a.guardando = true;
+    const body = { IdPagoCompra: a.IdPagoCompra, ValorAbono: monto, AfectaCaja: !!a.AfectaCaja };
+    this.comprasService.abonar(this.abonarCuota.IdCompra, body).subscribe({
+      next: () => {
+        this.mensaje = 'Abono registrado correctamente.';
+        const idVista = this.detalleVista ? this.detalleVista.IdCompra : null;
+        this.abonarCuota = null;
+        if (idVista) {
+          this.recargarDetalle(idVista);
+        } else {
+          this.cargarCompras();
+        }
+      },
+      error: (e: any) => {
+        console.error('Error registrando abono:', e);
+        a.guardando = false;
+        this.error = e?.error?.mensaje || 'No fue posible registrar el abono.';
+      }
+    });
+  }
+
+  recargarDetalle(id: number): void {
+    this.comprasService.obtener(id).subscribe({
+      next: (r: any) => {
+        this.detalleVista = r?.datos ?? null;
+        this.mostrarFormulario = false;
+        this.mensaje = this.mensaje;
+      },
+      error: (e: any) => {
+        console.error('Error recargando detalle:', e);
+        this.error = 'No fue posible recargar el detalle.';
+      }
+    });
+  }
+
+  num(v: any): number { return Number(v) || 0; }
 
   anular(compra: any): void {
 

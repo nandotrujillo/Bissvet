@@ -24,8 +24,8 @@ const SELECT_CON_JOINS = `
 // =====================================================
 router.get('/', async (req, res) => {
     try {
-        const condiciones = [];
-        const params = [];
+        const condiciones = ['p.IdEmpresa = ?'];
+        const params = [req.auth.IdEmpresa];
 
         if (req.query.activo !== undefined) {
             condiciones.push('p.Activo = ?');
@@ -55,7 +55,7 @@ router.get('/', async (req, res) => {
 // =====================================================
 router.get('/:id', async (req, res) => {
     try {
-        const [rows] = await pool.query(`${SELECT_CON_JOINS} WHERE p.IdProducto = ?`, [req.params.id]);
+        const [rows] = await pool.query(`${SELECT_CON_JOINS} WHERE p.IdProducto = ? AND p.IdEmpresa = ?`, [req.params.id, req.auth.IdEmpresa]);
         if (rows.length === 0)
             return res.status(404).json({ ok: false, mensaje: 'Producto no encontrado' });
         res.json({ ok: true, datos: rows[0] });
@@ -91,8 +91,8 @@ router.post('/', async (req, res) => {
                 IdCategoriaProducto, IdUnidadMedida, IdMarca, Referencia,
                 PrecioVenta, CostoActual, CostoPromedio,
                 StockMinimo, StockMaximo, ManejaInventario, PermiteVenta,
-                Activo, UsuarioIdCreacion
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                Activo, UsuarioIdCreacion, IdEmpresa
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
                 CodigoProducto.trim(),
                 CodigoBarras || null,
@@ -110,7 +110,8 @@ router.post('/', async (req, res) => {
                 ManejaInventario ?? 1,
                 PermiteVenta ?? 1,
                 Activo ?? 1,
-                UsuarioIdCreacion || null
+                (UsuarioIdCreacion || null),
+                req.auth.IdEmpresa
             ]
         );
 
@@ -148,13 +149,13 @@ router.put('/:id', async (req, res) => {
                 PrecioVenta = ?, CostoActual = ?, CostoPromedio = ?,
                 StockMinimo = ?, StockMaximo = ?, ManejaInventario = ?, PermiteVenta = ?,
                 Activo = ?, FechaModificacion = NOW(), UsuarioIdModificacion = ?
-             WHERE IdProducto = ?`,
+             WHERE IdProducto = ? AND IdEmpresa = ?`,
             [
                 CodigoProducto.trim(), CodigoBarras || null, NombreProducto.trim(), Descripcion || null,
                 IdCategoriaProducto, IdUnidadMedida || null, IdMarca || null, Referencia || null,
                 PrecioVenta ?? 0, CostoActual ?? 0, CostoPromedio ?? 0,
                 StockMinimo ?? 0, StockMaximo ?? 0, ManejaInventario ?? 1, PermiteVenta ?? 1,
-                Activo ?? 1, UsuarioIdModificacion || null, req.params.id
+                Activo ?? 1, UsuarioIdModificacion || null, req.params.id, req.auth.IdEmpresa
             ]
         );
 
@@ -174,21 +175,21 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const [inv] = await pool.query(
-            `SELECT COUNT(*) AS total FROM inventario WHERE IdProducto = ? AND Cantidad > 0`,
-            [req.params.id]
+            `SELECT COUNT(*) AS total FROM inventario WHERE IdProducto = ? AND IdEmpresa = ? AND Cantidad > 0`,
+            [req.params.id, req.auth.IdEmpresa]
         );
         if (inv[0].total > 0)
             return res.status(409).json({ ok: false, mensaje: 'No se puede eliminar: tiene existencias en inventario' });
 
         const [kardex] = await pool.query(
-            `SELECT COUNT(*) AS total FROM kardex WHERE IdProducto = ?`,
-            [req.params.id]
+            `SELECT COUNT(*) AS total FROM kardex WHERE IdProducto = ? AND IdEmpresa = ?`,
+            [req.params.id, req.auth.IdEmpresa]
         );
         if (kardex[0].total > 0)
             return res.status(409).json({ ok: false, mensaje: 'No se puede eliminar: tiene movimientos de Kardex' });
 
         const [resultado] = await pool.query(
-            `DELETE FROM productos WHERE IdProducto = ?`, [req.params.id]
+            `DELETE FROM productos WHERE IdProducto = ? AND IdEmpresa = ?`, [req.params.id, req.auth.IdEmpresa]
         );
         if (resultado.affectedRows === 0)
             return res.status(404).json({ ok: false, mensaje: 'Producto no encontrado' });

@@ -65,8 +65,8 @@
       </div>
 
       <div class="dato">
-        <span class="label">Número documento</span>
-        <span>{{ empresa.Nit }}</span>
+        <span class="label">Documento</span>
+        <span>{{ empresa.Nit || empresa.TipoDocumento || '-' }}</span>
       </div>
 
       <div class="dato">
@@ -117,6 +117,11 @@
       <div class="dato">
         <span class="label">Apertura y control de caja</span>
         <span>{{ empresa.UsaControlCaja === 1 ? 'Sí' : 'No' }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Control de existencias</span>
+        <span>{{ empresa.ControlExistencias === 1 ? 'Sí' : 'No' }}</span>
       </div>
 
     </div>
@@ -200,11 +205,21 @@
 
         <label>Tipo de documento</label>
 
-        <input
-          type="text"
-          [(ngModel)]="empresa.TipoDocumento"
-          maxlength="20"
-          placeholder="NIT, CC, ...">
+        <select [(ngModel)]="empresa.TipoDocumento">
+
+          <option [ngValue]="''">
+            Seleccione el tipo de documento...
+          </option>
+
+          <option
+            *ngFor="let tipoDoc of tiposDocumento"
+            [ngValue]="tipoDoc.Codigo">
+
+            {{ tipoDoc.Documento }} ({{ tipoDoc.Codigo }})
+
+          </option>
+
+        </select>
 
       </div>
 
@@ -334,6 +349,22 @@
             type="checkbox"
             [(ngModel)]="controlCaja">
           <span>Habilitar módulo de caja</span>
+        </label>
+
+      </div>
+
+
+      <!-- CONTROL DE EXISTENCIAS -->
+
+      <div class="campo">
+
+        <label>Control de existencias</label>
+
+        <label class="control-linea">
+          <input
+            type="checkbox"
+            [(ngModel)]="controlExistencias">
+          <span>Validar y descontar stock de productos en ventas</span>
         </label>
 
       </div>

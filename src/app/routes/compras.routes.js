@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../../database/mysql');
 const invBusiness = require('../services/inventarioBusiness');
+const cajaBusiness = require('../services/cajaBusiness');
 
 // =====================================================
 // LISTAR COMPRAS  (GET /api/compras)
@@ -27,6 +28,7 @@ router.get('/', async (req, res) => {
                 c.IdProveedor, pr.Nombre AS NombreProveedor, pr.Nit,
                 c.IdBodega, b.NombreBodega,
                 c.Subtotal, c.Descuento, c.Impuesto, c.Total,
+                c.MetodoPago, c.SaldoPendiente,
                 c.Observaciones, c.UsuarioIdCreacion,
                 c.FechaCreacion, c.FechaConfirmacion, c.FechaAnulacion,
                 (SELECT COUNT(*) FROM compras_detalle cd WHERE cd.IdCompra = c.IdCompra) AS TotalItems,
@@ -55,6 +57,7 @@ router.get('/:id', async (req, res) => {
                 c.IdProveedor, pr.Nombre AS NombreProveedor, pr.Nit,
                 c.IdBodega, b.NombreBodega,
                 c.Subtotal, c.Descuento, c.Impuesto, c.Total,
+                c.MetodoPago, c.SaldoPendiente,
                 c.Observaciones, c.UsuarioIdCreacion, c.FechaCreacion,
                 c.UsuarioIdConfirmacion, c.FechaConfirmacion,
                 c.UsuarioIdAnulacion, c.FechaAnulacion
@@ -79,7 +82,20 @@ router.get('/:id', async (req, res) => {
             WHERE cd.IdCompra = ?
         `, [req.params.id]);
 
-        res.json({ ok: true, datos: { ...cabecera[0], Detalle: detalle } });
+        const [cuotas] = await pool.query(`
+            SELECT
+                pc.IdPagoCompra, pc.NumeroCuota, pc.ValorCuota,
+                pc.SaldoPendiente, pc.FechaVencimiento, pc.Estado,
+                COALESCE((SELECT SUM(a.ValorAbono) FROM pagos_compras_abonos a
+                          WHERE a.IdPagoCompra = pc.IdPagoCompra), 0) AS TotalAbonado,
+                (SELECT COUNT(*) FROM pagos_compras_abonos a
+                 WHERE a.IdPagoCompra = pc.IdPagoCompra) AS NumeroAbonos
+            FROM pagos_compras pc
+            WHERE pc.IdCompra = ? AND pc.IdEmpresa = ?
+            ORDER BY pc.NumeroCuota
+        `, [req.params.id, req.auth?.IdEmpresa ?? null]);
+
+        res.json({ ok: true, datos: { ...cabecera[0], Detalle: detalle, Cuotas: cuotas } });
     } catch (error) {
         console.error('Error obteniendo compra:', error);
         res.status(500).json({ ok: false, mensaje: 'Error consultando compra', error: error.message });
@@ -99,7 +115,7 @@ router.post('/', async (req, res) => {
 
         const {
             Numero, IdProveedor, IdBodega, Fecha, Observaciones,
-            Detalle
+            MetodoPago, Detalle
         } = req.body;
         // Usuario y empresa provienen de la sesión, no del body.
         const UsuarioIdCreacion = req.auth?.UsuarioId ?? null;
@@ -142,11 +158,14 @@ router.post('/', async (req, res) => {
         const [cabecera] = await conn.query(
             `INSERT INTO compras (
                 Numero, IdProveedor, IdBodega, Fecha, Subtotal, Descuento,
-                Impuesto, Total, Estado, Observaciones, UsuarioIdCreacion, IdEmpresa
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'BORRADOR', ?, ?, ?)`,
+                Impuesto, Total, MetodoPago, SaldoPendiente, Estado, Observaciones,
+                UsuarioIdCreacion, IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'BORRADOR', ?, ?, ?)`,
             [
                 Numero.trim(), IdProveedor, IdBodega, Fecha || new Date(),
                 Subtotal, Descuento, Impuesto, Total,
+                MetodoPago === 'CREDITO' ? 'CREDITO' : 'CONTADO',
+                MetodoPago === 'CREDITO' ? Total : 0,
                 Observaciones || null, UsuarioIdCreacion, IdEmpresa
             ]
         );
@@ -190,7 +209,7 @@ router.put('/:id', async (req, res) => {
     try {
         await conn.beginTransaction();
 
-        const { Numero, IdProveedor, IdBodega, Fecha, Observaciones, UsuarioIdModificacion, Detalle } = req.body;
+        const { Numero, IdProveedor, IdBodega, Fecha, Observaciones, MetodoPago, UsuarioIdModificacion, Detalle } = req.body;
         const IdCompra = Number(req.params.id);
 
         const [actual] = await conn.query(`SELECT Estado FROM compras WHERE IdCompra = ?`, [IdCompra]);
@@ -210,11 +229,15 @@ router.put('/:id', async (req, res) => {
             Subtotal += subLinea; Descuento += desc; Impuesto += imp; Total += subLinea + imp;
         }
 
+        const metodo = MetodoPago === 'CREDITO' ? 'CREDITO' : 'CONTADO';
+
         await conn.query(
             `UPDATE compras SET Numero=?, IdProveedor=?, IdBodega=?, Fecha=?,
-                Subtotal=?, Descuento=?, Impuesto=?, Total=?, Observaciones=?
+                Subtotal=?, Descuento=?, Impuesto=?, Total=?,
+                MetodoPago=?, SaldoPendiente=?, Observaciones=?
              WHERE IdCompra=?`,
-            [Numero.trim(), IdProveedor, IdBodega, Fecha || new Date(), Subtotal, Descuento, Impuesto, Total, Observaciones || null, IdCompra]
+            [Numero.trim(), IdProveedor, IdBodega, Fecha || new Date(), Subtotal, Descuento, Impuesto, Total,
+             metodo, metodo === 'CREDITO' ? Total : 0, Observaciones || null, IdCompra]
         );
         await conn.query(`DELETE FROM compras_detalle WHERE IdCompra = ?`, [IdCompra]);
         for (const item of Detalle) {
@@ -247,7 +270,14 @@ router.put('/:id', async (req, res) => {
 //   2. Para cada detalle: registra ENTRADA en Kardex (COMPRA)
 //   3. Recalcula CPP en inventario del producto+bodega
 //   4. Actualiza costo promedio del producto
-//   5. Marca compra como CONFIRMADA
+//   5. Procesa el pago (opción B3 híbrido):
+//        - MetodoPago CONTADO|CREDITO
+//        - AfectaCaja: si se registra egreso en la jornada de caja abierta
+//          (sólo cuando la empresa usa control de caja).
+//        - PagoInicial: monto que sale de caja en el momento (default Total en
+//          CONTADO, 0 en CREDITO).
+//        - Cuotas: para CREDITO, desglose del saldo diferido.
+//   6. Marca compra como CONFIRMADA
 // =====================================================
 router.post('/:id/confirmar', async (req, res) => {
     const conn = await pool.getConnection();
@@ -259,8 +289,19 @@ router.post('/:id/confirmar', async (req, res) => {
         const UsuarioIdConfirmacion = req.auth?.UsuarioId ?? null;
         const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
+        const {
+            AfectaCaja,
+            MetodoPago,
+            PagoInicial,
+            Cuotas
+        } = req.body;
+
         const [compra] = await conn.query(
-            `SELECT IdCompra, IdBodega, Estado FROM compras WHERE IdCompra = ? AND IdEmpresa = ? FOR UPDATE`,
+            `SELECT c.IdCompra, c.IdBodega, c.Estado, c.Total, c.Numero,
+                    c.IdProveedor, pr.Nombre AS NombreProveedor
+             FROM compras c
+             LEFT JOIN proveedores pr ON pr.IdProveedor = c.IdProveedor
+             WHERE c.IdCompra = ? AND c.IdEmpresa = ? FOR UPDATE`,
             [IdCompra, IdEmpresa]
         );
         if (compra.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Compra no encontrada' }); }
@@ -298,19 +339,98 @@ router.post('/:id/confirmar', async (req, res) => {
             movimientos.push(entrada);
         }
 
+        // ============================================================
+        // PROCESO DE PAGO (opción B3 híbrido)
+        // ============================================================
+        const total = Number(compra[0].Total) || 0;
+        const metodo = MetodoPago === 'CREDITO' ? 'CREDITO' : 'CONTADO';
+        const afectaCaja = AfectaCaja === true || AfectaCaja === 1;
+
+        let pagoInicial = 0;
+        let saldoPendiente = total;
+        if (metodo === 'CONTADO') {
+            // En contado el egreso cubre el total (o un pago inicial que deja saldo).
+            pagoInicial = (PagoInicial !== undefined && PagoInicial !== null && PagoInicial !== '')
+                ? Number(PagoInicial) : total;
+            if (pagoInicial < 0) pagoInicial = 0;
+            if (pagoInicial > total) pagoInicial = total;
+            saldoPendiente = Math.max(0, total - pagoInicial);
+        } else {
+            // En crédito el pago inicial es opcional (por defecto 0).
+            pagoInicial = (PagoInicial !== undefined && PagoInicial !== null && PagoInicial !== '')
+                ? Number(PagoInicial) : 0;
+            if (pagoInicial < 0) pagoInicial = 0;
+            if (pagoInicial > total) pagoInicial = total;
+            saldoPendiente = Math.max(0, total - pagoInicial);
+        }
+
+        // Movimiento de caja (egreso) por el pago inicial, sólo si afecta caja.
+        let movCaja = null;
+        if (afectaCaja && pagoInicial > 0) {
+            movCaja = await cajaBusiness.registrarMovimientoCompra(conn, {
+                IdEmpresa,
+                UsuarioId: UsuarioIdConfirmacion,
+                NumeroCompra: compra[0].Numero,
+                ValorMov: pagoInicial,
+                NombreProveedor: compra[0].NombreProveedor,
+                IdProveedor: compra[0].IdProveedor,
+                Accion: 'CONFIRMAR',
+                Fecha: new Date(),
+                validarSaldo: true
+            });
+        }
+
+        // Si CONTADO paga todo y deja saldo 0, no se crean cuotas.
+        // Si queda saldo pendiente (contado parcial o crédito), se crean cuotas.
+        let cuotasCreadas = [];
+        if (saldoPendiente > 0) {
+            const cuotasReq = Array.isArray(Cuotas) ? Cuotas.filter(c => c && Number(c.ValorCuota) > 0) : [];
+            let desglose;
+            if (cuotasReq.length) {
+                const sumaCuotas = cuotasReq.reduce((s, c) => s + Number(c.ValorCuota), 0);
+                if (Math.abs(sumaCuotas - saldoPendiente) > 0.01) {
+                    await conn.rollback();
+                    return res.status(400).json({ ok: false, mensaje: 'La suma de las cuotas no coincide con el saldo pendiente' });
+                }
+                desglose = cuotasReq;
+            } else {
+                desglose = [{ ValorCuota: saldoPendiente, FechaVencimiento: null }];
+            }
+            for (let i = 0; i < desglose.length; i++) {
+                const vc = Number(desglose[i].ValorCuota);
+                const [cuota] = await conn.query(
+                    `INSERT INTO pagos_compras
+                       (IdCompra, IdEmpresa, NumeroCuota, ValorCuota, SaldoPendiente, FechaVencimiento, Estado, UsuarioIdCreacion)
+                     VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE', ?)`,
+                    [IdCompra, IdEmpresa, i + 1, vc, vc, desglose[i].FechaVencimiento || null, UsuarioIdConfirmacion]
+                );
+                cuotasCreadas.push({ IdPagoCompra: cuota.insertId, NumeroCuota: i + 1, ValorCuota: vc });
+            }
+        }
+
         await conn.query(
             `UPDATE compras SET Estado = 'CONFIRMADA',
+                MetodoPago = ?, SaldoPendiente = ?,
                 UsuarioIdConfirmacion = ?, FechaConfirmacion = NOW()
              WHERE IdCompra = ?`,
-            [UsuarioIdConfirmacion || null, IdCompra]
+            [metodo, saldoPendiente, UsuarioIdConfirmacion || null, IdCompra]
         );
 
         await conn.commit();
-        res.json({ ok: true, mensaje: 'Compra confirmada, inventario actualizado (CPP recalculado)', movimientos });
+        res.json({
+            ok: true,
+            mensaje: 'Compra confirmada, inventario actualizado (CPP recalculado)',
+            movimientos,
+            movCaja,
+            Pago: { MetodoPago: metodo, PagoInicial: pagoInicial, SaldoPendiente: saldoPendiente },
+            cuotas: cuotasCreadas
+        });
     } catch (error) {
         await conn.rollback();
         console.error('Error confirmando compra:', error);
-        res.status(500).json({ ok: false, mensaje: 'Error confirmando compra', error: error.message });
+        const status = error.codigo === 'CAJA_SALDO_INSUFICIENTE' || error.codigo === 'SIN_CAJA_ABIERTA'
+            ? 409 : 500;
+        res.status(status).json({ ok: false, mensaje: error.message || 'Error confirmando compra', error: error.message });
     } finally {
         conn.release();
     }
@@ -336,7 +456,11 @@ router.post('/:id/anular', async (req, res) => {
         const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
         const [compra] = await conn.query(
-            `SELECT IdCompra, IdBodega, Estado FROM compras WHERE IdCompra = ? AND IdEmpresa = ? FOR UPDATE`,
+            `SELECT c.IdCompra, c.IdBodega, c.Estado, c.Total, c.MetodoPago, c.SaldoPendiente, c.Numero,
+                    c.IdProveedor, pr.Nombre AS NombreProveedor
+             FROM compras c
+             LEFT JOIN proveedores pr ON pr.IdProveedor = c.IdProveedor
+             WHERE c.IdCompra = ? AND c.IdEmpresa = ? FOR UPDATE`,
             [IdCompra, IdEmpresa]
         );
         if (compra.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Compra no encontrada' }); }
@@ -364,19 +488,162 @@ router.post('/:id/anular', async (req, res) => {
             movimientos.push(salida);
         }
 
+        // Revertir los egresos de caja ligados a la compra (número de documento).
+        // Se revierte la suma de los egresos registrados en la jornada abierta que
+        // usen como referencia el número de esta compra.
+        let movCaja = null;
+        const [egresos] = await conn.query(
+            `SELECT COALESCE(SUM(d.ValorMov), 0) AS TotalEgreso
+             FROM cajeromovdet d
+             INNER JOIN tipomovcaja t ON d.TipoMov = t.id
+             WHERE d.idEmpresa = ? AND d.NroDocumentoProveedor = ? AND d.ValorMov > 0`,
+            [IdEmpresa, String(compra[0].Numero).slice(0, 10)]
+        );
+        const montoEgreso = Number(egresos[0].TotalEgreso) || 0;
+        if (montoEgreso > 0) {
+            movCaja = await cajaBusiness.registrarMovimientoCompra(conn, {
+                IdEmpresa,
+                UsuarioId: UsuarioIdAnulacion,
+                NumeroCompra: compra[0].Numero,
+                ValorMov: montoEgreso,
+                NombreProveedor: compra[0].NombreProveedor,
+                IdProveedor: compra[0].IdProveedor,
+                Accion: 'ANULAR',
+                Fecha: new Date(),
+                validarSaldo: false
+            });
+        }
+
+        // Cancelar cuotas pendientes (las abonadas no se revierten automáticamente).
         await conn.query(
-            `UPDATE compras SET Estado = 'ANULADA',
+            `UPDATE pagos_compras SET Estado = 'CANCELADA'
+             WHERE IdCompra = ? AND Estado = 'PENDIENTE'`,
+            [IdCompra]
+        );
+
+        await conn.query(
+            `UPDATE compras SET Estado = 'ANULADA', SaldoPendiente = 0,
                 UsuarioIdAnulacion = ?, FechaAnulacion = NOW()
              WHERE IdCompra = ?`,
             [UsuarioIdAnulacion || null, IdCompra]
         );
 
         await conn.commit();
-        res.json({ ok: true, mensaje: 'Compra anulada, inventario revertido', movimientos });
+        res.json({ ok: true, mensaje: 'Compra anulada, inventario revertido', movimientos, movCaja });
     } catch (error) {
         await conn.rollback();
         console.error('Error anulando compra:', error);
         res.status(500).json({ ok: false, mensaje: 'Error anulando compra', error: error.message });
+    } finally {
+        conn.release();
+    }
+});
+
+// =====================================================
+// ABONAR A CUENTA POR PAGAR / CUOTA  (POST /api/compras/:id/abono)
+// Body: { IdPagoCompra, ValorAbono, AfectaCaja }
+// Registra un abono sobre una cuota PENDIENTE; si AfectaCaja y la empresa usa
+// control de caja, se registra el egreso correspondiente (validando saldo).
+// =====================================================
+router.post('/:id/abono', async (req, res) => {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const IdCompra = Number(req.params.id);
+        const { IdPagoCompra, ValorAbono, AfectaCaja } = req.body;
+        const UsuarioId = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
+
+        const monto = Number(ValorAbono);
+        if (!IdPagoCompra || !monto || monto <= 0) {
+            await conn.rollback();
+            return res.status(400).json({ ok: false, mensaje: 'IdPagoCompra y ValorAbono (mayor a 0) son obligatorios' });
+        }
+
+        const [compra] = await conn.query(
+            `SELECT c.IdCompra, c.Numero, c.Estado, c.IdProveedor, c.SaldoPendiente,
+                    pr.Nombre AS NombreProveedor
+             FROM compras c
+             LEFT JOIN proveedores pr ON pr.IdProveedor = c.IdProveedor
+             WHERE c.IdCompra = ? AND c.IdEmpresa = ? FOR UPDATE`,
+            [IdCompra, IdEmpresa]
+        );
+        if (compra.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Compra no encontrada' }); }
+        if (compra[0].Estado !== 'CONFIRMADA') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'Solo se pueden abonar compras CONFIRMADAS' }); }
+
+        const [cuota] = await conn.query(
+            `SELECT IdPagoCompra, ValorCuota, SaldoPendiente, Estado
+             FROM pagos_compras WHERE IdPagoCompra = ? AND IdCompra = ? AND IdEmpresa = ? FOR UPDATE`,
+            [IdPagoCompra, IdCompra, IdEmpresa]
+        );
+        if (cuota.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Cuota no encontrada' }); }
+        if (cuota[0].Estado !== 'PENDIENTE') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'La cuota no está pendiente de pago' }); }
+        if (monto > Number(cuota[0].SaldoPendiente)) {
+            await conn.rollback();
+            return res.status(400).json({ ok: false, mensaje: `El abono supera el saldo pendiente de la cuota ($${Number(cuota[0].SaldoPendiente).toLocaleString('es-CO')})` });
+        }
+
+        // Egreso de caja por el abono, si afecta caja.
+        let movCaja = null;
+        if (AfectaCaja === true || AfectaCaja === 1) {
+            movCaja = await cajaBusiness.registrarMovimientoCompra(conn, {
+                IdEmpresa,
+                UsuarioId,
+                NumeroCompra: compra[0].Numero,
+                ValorMov: monto,
+                NombreProveedor: compra[0].NombreProveedor,
+                IdProveedor: compra[0].IdProveedor,
+                Accion: 'CONFIRMAR',
+                Fecha: new Date(),
+                validarSaldo: true
+            });
+        }
+
+        const nuevoSaldoCuota = Math.max(0, Number(cuota[0].SaldoPendiente) - monto);
+        const estadoCuota = nuevoSaldoCuota === 0 ? 'PAGADA' : 'PENDIENTE';
+
+        const [abono] = await conn.query(
+            `INSERT INTO pagos_compras_abonos
+               (IdPagoCompra, IdCompra, IdEmpresa, ValorAbono, IdCajaMov, MetodoCaja, UsuarioIdCreacion)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [IdPagoCompra, IdCompra, IdEmpresa, monto,
+             movCaja ? movCaja.IdMov : null,
+             movCaja && movCaja.registrado ? 1 : 0,
+             UsuarioId]
+        );
+
+        await conn.query(
+            `UPDATE pagos_compras
+                SET SaldoPendiente = ?, Estado = ?,
+                    FechaPagoCompleto = ?
+             WHERE IdPagoCompra = ?`,
+            [nuevoSaldoCuota, estadoCuota, estadoCuota === 'PAGADA' ? new Date() : null, IdPagoCompra]
+        );
+
+        // Recalcular saldo pendiente global de la compra.
+        const [sumSaldo] = await conn.query(
+            `SELECT COALESCE(SUM(SaldoPendiente), 0) AS Resta
+             FROM pagos_compras WHERE IdCompra = ? AND IdEmpresa = ? AND Estado <> 'CANCELADA'`,
+            [IdCompra, IdEmpresa]
+        );
+        await conn.query(`UPDATE compras SET SaldoPendiente = ? WHERE IdCompra = ?`,
+            [Number(sumSaldo[0].Resta) || 0, IdCompra]);
+
+        await conn.commit();
+        res.json({
+            ok: true,
+            mensaje: 'Abono registrado',
+            IdAbono: abono.insertId,
+            Cuota: { IdPagoCompra, SaldoPendiente: nuevoSaldoCuota, Estado: estadoCuota },
+            movCaja
+        });
+    } catch (error) {
+        await conn.rollback();
+        console.error('Error registrando abono:', error);
+        const status = error.codigo === 'CAJA_SALDO_INSUFICIENTE' || error.codigo === 'SIN_CAJA_ABIERTA'
+            ? 409 : 500;
+        res.status(status).json({ ok: false, mensaje: error.message || 'Error registrando abono', error: error.message });
     } finally {
         conn.release();
     }

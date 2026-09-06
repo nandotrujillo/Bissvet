@@ -362,6 +362,203 @@ th {
   margin: 6px 0;
 }
 
+/* MÉTODO DE PAGO */
+
+.metodo-pago {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.metodo-pago.contado {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.metodo-pago.credito {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.saldo-pendiente {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  color: #d32f2f;
+  font-weight: 500;
+}
+
+.ayuda-campo {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #888;
+}
+
+/* CUOTAS */
+
+.cuotas {
+  margin-top: 20px;
+  margin-bottom: 15px;
+}
+
+.cuotas .detalle-titulo {
+  margin-bottom: 10px;
+}
+
+.btn-abonar {
+  background: #1565c0;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.btn-abonar:hover {
+  opacity: 0.85;
+}
+
+/* MODAL CONFIRMAR / ABONAR (panel flotante superpuesto) */
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-panel {
+  background: white;
+  border-radius: 10px;
+  padding: 25px;
+  min-width: 420px;
+  max-width: 560px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+}
+
+.modal-panel h3 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.modal-panel .campo-modal {
+  margin-bottom: 14px;
+}
+
+.modal-panel label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.modal-panel input,
+.modal-panel select {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.modal-panel input:focus,
+.modal-panel select:focus {
+  outline: none;
+  border-color: #1976d2;
+}
+
+.modal-panel .checkbox-linea {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-panel .checkbox-linea input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+.modal-panel .cuotas-lista {
+  margin-top: 10px;
+}
+
+.modal-panel .cuotas-lista .cuota-fila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.modal-panel .cuotas-lista .cuota-fila input {
+  width: 120px;
+}
+
+.modal-panel .cuotas-lista .cuota-fila input[type="date"] {
+  flex: 1;
+  width: auto;
+}
+
+.modal-panel .cuotas-lista .btn-remover {
+  background: #ffcdd2;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-panel .acciones-modal {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.modal-panel .acciones-modal button {
+  padding: 10px 16px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-panel .acciones-modal .btn-ok {
+  background: #2e7d32;
+  color: white;
+}
+
+.modal-panel .acciones-modal .btn-cancel {
+  background: #eee;
+  color: #555;
+}
+
+.modal-panel .acciones-modal button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.resumen-modal {
+  background: #f5f5f5;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.resumen-modal div {
+  margin-bottom: 4px;
+}
+
 /* SIN REGISTROS */
 
 .sin-registros {

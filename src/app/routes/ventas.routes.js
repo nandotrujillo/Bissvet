@@ -2,6 +2,17 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../../database/mysql');
 const invBusiness = require('../services/inventarioBusiness');
+const cajaBusiness = require('../services/cajaBusiness');
+const parametrosBusiness = require('../services/parametrosBusiness');
+const { authorize, obtenerPermisosUsuario } = require('../../middleware/authorize');
+
+// Verifica si el usuario tiene un permiso concreto (perfil + rol + usuario,
+// con precedencia DENEGAR > PERMITIR, igual que el middleware authorize).
+async function tienePermiso(UsuarioId, IdPerfil, codigo) {
+    if (!UsuarioId) return false;
+    const permisos = await obtenerPermisosUsuario(UsuarioId, IdPerfil);
+    return permisos.get(codigo) === true;
+}
 
 // =====================================================
 // LISTAR VENTAS  (GET /api/ventas)
@@ -9,8 +20,8 @@ const invBusiness = require('../services/inventarioBusiness');
 // =====================================================
 router.get('/', async (req, res) => {
     try {
-        const condiciones = [];
-        const params = [];
+        const condiciones = ['v.IdEmpresa = ?'];
+        const params = [req.auth.IdEmpresa];
         if (req.query.doc)      { condiciones.push('v.IdVenta = ?'); params.push(Number(req.query.doc)); }
         if (req.query.estado)   { condiciones.push('v.Estado = ?'); params.push(req.query.estado); }
         if (req.query.cliente)  { condiciones.push('v.IdCliente = ?'); params.push(Number(req.query.cliente)); }
@@ -35,7 +46,7 @@ router.get('/', async (req, res) => {
                 v.CostoTotal, v.Utilidad,
                 v.Observaciones, v.UsuarioIdCreacion,
                 v.FechaCreacion, v.FechaConfirmacion, v.FechaAnulacion,
-                (SELECT COUNT(*) FROM ventas_detalle vd WHERE vd.IdVenta = v.IdVenta) AS TotalItems
+                (SELECT COUNT(*) FROM ventas_detalle vd WHERE vd.IdVenta = v.IdVenta AND vd.IdEmpresa = v.IdEmpresa) AS TotalItems
             FROM ventas v
             INNER JOIN clientes c    ON c.ClienteId = v.IdCliente
             LEFT JOIN Usuarios ven   ON ven.UsuarioId = v.IdVendedor
@@ -75,21 +86,24 @@ router.get('/:id', async (req, res) => {
             INNER JOIN clientes c    ON c.ClienteId = v.IdCliente
             LEFT JOIN Usuarios ven   ON ven.UsuarioId = v.IdVendedor
             INNER JOIN bodegas b     ON b.Id = v.IdBodega
-            WHERE v.IdVenta = ?
-        `, [req.params.id]);
+            WHERE v.IdVenta = ? AND v.IdEmpresa = ?
+        `, [req.params.id, req.auth.IdEmpresa]);
         if (cabecera.length === 0)
             return res.status(404).json({ ok: false, mensaje: 'Venta no encontrada' });
 
         const [detalle] = await pool.query(`
             SELECT
-                vd.IdDetalleVenta, vd.IdVenta, vd.IdProducto,
+                vd.IdDetalleVenta, vd.IdVenta, vd.IdProducto, vd.IdServicio,
                 p.CodigoProducto, p.NombreProducto,
+                s.Nombre AS NombreServicio,
+                COALESCE(p.NombreProducto, s.Nombre) AS DescripcionItem,
                 vd.Cantidad, vd.PrecioUnitario, vd.Descuento, vd.Impuesto, vd.Total,
                 vd.CostoUnitario, vd.CostoTotal, vd.Utilidad
             FROM ventas_detalle vd
-            INNER JOIN productos p ON p.IdProducto = vd.IdProducto
-            WHERE vd.IdVenta = ?
-        `, [req.params.id]);
+            LEFT JOIN productos p ON p.IdProducto = vd.IdProducto
+            LEFT JOIN servicios s ON s.IdServicio = vd.IdServicio
+            WHERE vd.IdVenta = ? AND vd.IdEmpresa = ?
+        `, [req.params.id, req.auth.IdEmpresa]);
 
         res.json({ ok: true, datos: { ...cabecera[0], Detalle: detalle } });
     } catch (error) {
@@ -111,7 +125,11 @@ function calcularLinea(base, descuento, pct) {
 // El número de venta se genera automáticamente (V-N) por empresa.
 // Body: { IdCliente, IdVendedor, TipoPago, PorcentajeImpuesto, IdBodega,
 //         Fecha, Observaciones,
-//         Detalle: [{ IdProducto, Cantidad, PrecioUnitario, Descuento }] }
+//         Detalle: [{ IdProducto | IdServicio, Cantidad, PrecioUnitario,
+//                     Descuento }] }
+// - Ítem con IdProducto => afecta inventario/kardex al confirmar.
+// - Ítem con IdServicio => línea de servicio (sin inventario); el precio se
+//   toma de la tabla `servicios` si no se envía PrecioUnitario.
 // La empresa y el usuario se toman de la sesión (req.auth).
 // No afecta inventario hasta CONFIRMAR.
 // =====================================================
@@ -139,9 +157,34 @@ router.post('/', async (req, res) => {
         if (!IdBodega)
             return res.status(400).json({ ok: false, mensaje: 'La bodega es obligatoria' });
         if (!Detalle || !Detalle.length)
-            return res.status(400).json({ ok: false, mensaje: 'Debe agregar al menos un producto' });
+            return res.status(400).json({ ok: false, mensaje: 'Debe agregar al menos un producto o servicio' });
 
-        const pct = Number(PorcentajeImpuesto) || 0;
+        // Control de caja por día: si la empresa lo tiene activo y no hay una
+        // jornada ABIERTA hoy, no se permite ni siquiera crear la venta/factura.
+        await cajaBusiness.verificarCajaAbiertaDelDia(conn, req.auth.IdEmpresa, new Date());
+
+        // Si la venta incluye líneas de SERVICIO (facturación desde Citas),
+        // exige el permiso FACTURACION.SERVICIOS del rol/perfil/usuario.
+        if (Detalle.some((d) => !!d.IdServicio && !d.IdProducto)) {
+            const puedeFacturar = await tienePermiso(
+                req.auth.UsuarioId,
+                req.auth.IdPerfil,
+                'FACTURACION.SERVICIOS'
+            );
+            if (!puedeFacturar) {
+                await conn.rollback();
+                return res.status(403).json({
+                    ok: false,
+                    mensaje: 'No autorizado: se requiere el permiso FACTURACION.SERVICIOS para facturar servicios'
+                });
+            }
+        }
+
+        let pct = PorcentajeImpuesto;
+        if (pct === undefined || pct === null || pct === '') {
+            pct = await parametrosBusiness.obtenerImpuestoVentas(conn, req.auth.IdEmpresa);
+        }
+        pct = Number(pct) || 0;
         if (pct < 0 || pct > 100)
             return res.status(400).json({ ok: false, mensaje: 'El porcentaje de impuesto debe estar entre 0 y 100' });
 
@@ -163,15 +206,27 @@ router.post('/', async (req, res) => {
 
         let Subtotal = 0, Descuento = 0, Impuesto = 0, Total = 0;
         for (const item of Detalle) {
-            if (!item.IdProducto) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: 'Cada detalle debe tener IdProducto' }); }
-            if (!item.Cantidad || item.Cantidad <= 0) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: `Cantidad inválida para producto ${item.IdProducto}` }); }
+            const esServicio = !!item.IdServicio && !item.IdProducto;
+            const esProducto = !!item.IdProducto;
 
-            const [producto] = await conn.query(
-                `SELECT PrecioVenta FROM productos WHERE IdProducto = ?`, [item.IdProducto]
-            );
-            if (producto.length === 0) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: `Producto ${item.IdProducto} no encontrado` }); }
+            if (!esServicio && !esProducto) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: 'Cada detalle debe tener IdProducto o IdServicio' }); }
+            if (!item.Cantidad || item.Cantidad <= 0) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: `Cantidad inválida en la línea ${item.IdProducto || item.IdServicio}` }); }
 
-            const precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
+            let precio;
+            if (esProducto) {
+                const [producto] = await conn.query(
+                    `SELECT PrecioVenta FROM productos WHERE IdProducto = ? AND IdEmpresa = ?`, [item.IdProducto, req.auth.IdEmpresa]
+                );
+                if (producto.length === 0) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: `Producto ${item.IdProducto} no encontrado` }); }
+                precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
+            } else {
+                const [servicio] = await conn.query(
+                    `SELECT Precio FROM servicios WHERE IdServicio = ? AND IdEmpresa = ?`, [item.IdServicio, req.auth.IdEmpresa]
+                );
+                if (servicio.length === 0) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: `Servicio ${item.IdServicio} no encontrado` }); }
+                precio = item.PrecioUnitario ?? Number(servicio[0].Precio);
+            }
+
             const base = item.Cantidad * precio;
             const desc = item.Descuento ?? 0;
             const { subLinea, imp, linea } = calcularLinea(base, desc, pct);
@@ -198,19 +253,29 @@ router.post('/', async (req, res) => {
         const IdVenta = cabecera.insertId;
 
         for (const item of Detalle) {
-            const [producto] = await conn.query(
-                `SELECT PrecioVenta FROM productos WHERE IdProducto = ?`, [item.IdProducto]
-            );
-            const precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
+            const esServicio = !!item.IdServicio && !item.IdProducto;
+            let precio;
+            if (esServicio) {
+                const [servicio] = await conn.query(
+                    `SELECT Precio FROM servicios WHERE IdServicio = ? AND IdEmpresa = ?`, [item.IdServicio, req.auth.IdEmpresa]
+                );
+                precio = item.PrecioUnitario ?? Number(servicio[0].Precio);
+            } else {
+                const [producto] = await conn.query(
+                    `SELECT PrecioVenta FROM productos WHERE IdProducto = ? AND IdEmpresa = ?`, [item.IdProducto, req.auth.IdEmpresa]
+                );
+                precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
+            }
             const base = item.Cantidad * precio;
             const desc = item.Descuento ?? 0;
             const { imp, linea } = calcularLinea(base, desc, pct);
             await conn.query(
                 `INSERT INTO ventas_detalle (
-                    IdVenta, IdProducto, Cantidad, PrecioUnitario,
-                    Descuento, Impuesto, Total, CostoUnitario, CostoTotal, Utilidad
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0)`,
-                [IdVenta, item.IdProducto, item.Cantidad, precio, desc, imp, linea]
+                    IdVenta, IdProducto, IdServicio, Cantidad, PrecioUnitario,
+                    Descuento, Impuesto, Total, CostoUnitario, CostoTotal, Utilidad,
+                    IdEmpresa
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?)`,
+                [IdVenta, esServicio ? null : item.IdProducto, esServicio ? item.IdServicio : null, item.Cantidad, precio, desc, imp, linea, req.auth.IdEmpresa]
             );
         }
 
@@ -220,6 +285,9 @@ router.post('/', async (req, res) => {
         await conn.rollback();
         if (error.code === 'ER_DUP_ENTRY') {
             return res.status(409).json({ ok: false, mensaje: 'El número de venta ya existe, intente de nuevo' });
+        }
+        if (error.codigo === 'SIN_CAJA_ABIERTA') {
+            return res.status(409).json({ ok: false, mensaje: error.message });
         }
         console.error('Error creando venta:', error);
         res.status(500).json({ ok: false, mensaje: 'Error creando venta', error: error.message });
@@ -240,8 +308,9 @@ router.put('/:id', async (req, res) => {
         const { IdCliente, IdVendedor, TipoPago, PorcentajeImpuesto, IdBodega, Fecha, Observaciones, UsuarioIdModificacion, Detalle } = req.body;
         const IdVenta = Number(req.params.id);
 
-        const [actual] = await conn.query(`SELECT Estado, NumeroVenta, IdEmpresa FROM ventas WHERE IdVenta = ?`, [IdVenta]);
+        const [actual] = await conn.query(`SELECT Estado, NumeroVenta, IdEmpresa FROM ventas WHERE IdVenta = ? AND IdEmpresa = ?`, [IdVenta, req.auth.IdEmpresa]);
         if (actual.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Venta no encontrada' }); }
+        if (req.auth.IdEmpresa !== actual[0].IdEmpresa) { await conn.rollback(); return res.status(403).json({ ok: false, mensaje: 'No autorizado para modificar esta venta' }); }
         if (actual[0].Estado !== 'BORRADOR') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'Solo se pueden editar ventas en BORRADOR' }); }
 
         if (!IdCliente)
@@ -251,19 +320,38 @@ router.put('/:id', async (req, res) => {
         if (!TipoPago || !TipoPago.trim())
             return res.status(400).json({ ok: false, mensaje: 'El tipo de pago es obligatorio' });
         if (!Detalle || !Detalle.length)
-            return res.status(400).json({ ok: false, mensaje: 'Debe agregar al menos un producto' });
+            return res.status(400).json({ ok: false, mensaje: 'Debe agregar al menos un producto o servicio' });
 
-        const pct = Number(PorcentajeImpuesto) || 0;
+        let pct = PorcentajeImpuesto;
+        if (pct === undefined || pct === null || pct === '') {
+            pct = await parametrosBusiness.obtenerImpuestoVentas(conn, req.auth.IdEmpresa);
+        }
+        pct = Number(pct) || 0;
         if (pct < 0 || pct > 100)
             return res.status(400).json({ ok: false, mensaje: 'El porcentaje de impuesto debe estar entre 0 y 100' });
 
         let Subtotal = 0, Descuento = 0, Impuesto = 0, Total = 0;
         for (const item of Detalle) {
-            if (!item.IdProducto) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: 'Detalle inválido' }); }
-            const [producto] = await conn.query(
-                `SELECT PrecioVenta FROM productos WHERE IdProducto = ?`, [item.IdProducto]
-            );
-            const precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
+            const esServicio = !!item.IdServicio && !item.IdProducto;
+            const esProducto = !!item.IdProducto;
+            if (!esServicio && !esProducto) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: 'Detalle inválido' }); }
+            if (!item.Cantidad || item.Cantidad <= 0) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: 'Cantidad inválida' }); }
+
+            let precio;
+            if (esProducto) {
+                const [producto] = await conn.query(
+                    `SELECT PrecioVenta FROM productos WHERE IdProducto = ? AND IdEmpresa = ?`, [item.IdProducto, req.auth.IdEmpresa]
+                );
+                if (producto.length === 0) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: `Producto ${item.IdProducto} no encontrado` }); }
+                precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
+            } else {
+                const [servicio] = await conn.query(
+                    `SELECT Precio FROM servicios WHERE IdServicio = ? AND IdEmpresa = ?`, [item.IdServicio, req.auth.IdEmpresa]
+                );
+                if (servicio.length === 0) { await conn.rollback(); return res.status(400).json({ ok: false, mensaje: `Servicio ${item.IdServicio} no encontrado` }); }
+                precio = item.PrecioUnitario ?? Number(servicio[0].Precio);
+            }
+
             const base = item.Cantidad * precio;
             const desc = item.Descuento ?? 0;
             const { subLinea, imp, linea } = calcularLinea(base, desc, pct);
@@ -274,24 +362,34 @@ router.put('/:id', async (req, res) => {
             `UPDATE ventas SET NumeroVenta=?, IdCliente=?, IdVendedor=?, TipoPago=?, PorcentajeImpuesto=?,
                 IdBodega=?, Fecha=?,
                 Subtotal=?, Descuento=?, Impuesto=?, Total=?, Observaciones=?
-             WHERE IdVenta=?`,
-            [actual[0].NumeroVenta, IdCliente, IdVendedor, TipoPago, pct, IdBodega, Fecha || new Date(), Subtotal, Descuento, Impuesto, Total, Observaciones || null, IdVenta]
+             WHERE IdVenta=? AND IdEmpresa=?`,
+            [actual[0].NumeroVenta, IdCliente, IdVendedor, TipoPago, pct, IdBodega, Fecha || new Date(), Subtotal, Descuento, Impuesto, Total, Observaciones || null, IdVenta, req.auth.IdEmpresa]
         );
-        await conn.query(`DELETE FROM ventas_detalle WHERE IdVenta = ?`, [IdVenta]);
+        await conn.query(`DELETE FROM ventas_detalle WHERE IdVenta = ? AND IdEmpresa = ?`, [IdVenta, req.auth.IdEmpresa]);
         for (const item of Detalle) {
-            const [producto] = await conn.query(
-                `SELECT PrecioVenta FROM productos WHERE IdProducto = ?`, [item.IdProducto]
-            );
-            const precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
+            const esServicio = !!item.IdServicio && !item.IdProducto;
+            let precio;
+            if (esServicio) {
+                const [servicio] = await conn.query(
+                    `SELECT Precio FROM servicios WHERE IdServicio = ? AND IdEmpresa = ?`, [item.IdServicio, req.auth.IdEmpresa]
+                );
+                precio = item.PrecioUnitario ?? Number(servicio[0].Precio);
+            } else {
+                const [producto] = await conn.query(
+                    `SELECT PrecioVenta FROM productos WHERE IdProducto = ? AND IdEmpresa = ?`, [item.IdProducto, req.auth.IdEmpresa]
+                );
+                precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
+            }
             const base = item.Cantidad * precio;
             const desc = item.Descuento ?? 0;
             const { imp, linea } = calcularLinea(base, desc, pct);
             await conn.query(
                 `INSERT INTO ventas_detalle (
-                    IdVenta, IdProducto, Cantidad, PrecioUnitario,
-                    Descuento, Impuesto, Total, CostoUnitario, CostoTotal, Utilidad
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0)`,
-                [IdVenta, item.IdProducto, item.Cantidad, precio, desc, imp, linea]
+                    IdVenta, IdProducto, IdServicio, Cantidad, PrecioUnitario,
+                    Descuento, Impuesto, Total, CostoUnitario, CostoTotal, Utilidad,
+                    IdEmpresa
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?)`,
+                [IdVenta, esServicio ? null : item.IdProducto, esServicio ? item.IdServicio : null, item.Cantidad, precio, desc, imp, linea, req.auth.IdEmpresa]
             );
         }
 
@@ -324,21 +422,67 @@ router.post('/:id/confirmar', async (req, res) => {
         const UsuarioIdConfirmacion = req.auth?.UsuarioId ?? null;
 
         const [venta] = await conn.query(
-            `SELECT IdVenta, IdBodega, Estado FROM ventas WHERE IdVenta = ? FOR UPDATE`,
-            [IdVenta]
+            `SELECT v.IdVenta, v.IdBodega, v.IdEmpresa, v.Estado, v.NumeroVenta,
+                    v.Total, v.TipoPago, v.IdCliente,
+                    CONCAT_WS(' ', c.PrimerNombre, c.SegundoNombre,
+                              c.PrimerApellido, c.SegundoApellido) AS NombreCliente
+             FROM ventas v
+             INNER JOIN clientes c ON c.ClienteId = v.IdCliente
+             WHERE v.IdVenta = ? AND v.IdEmpresa = ?
+             FOR UPDATE`,
+            [IdVenta, req.auth.IdEmpresa]
         );
         if (venta.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Venta no encontrada' }); }
         if (venta[0].Estado === 'CONFIRMADA') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'La venta ya está confirmada' }); }
         if (venta[0].Estado === 'ANULADA') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'No se puede confirmar una venta anulada' }); }
 
         const [detalle] = await conn.query(
-            `SELECT IdProducto, Cantidad, PrecioUnitario, Descuento, Impuesto, Total
-             FROM ventas_detalle WHERE IdVenta = ?`, [IdVenta]
+            `SELECT IdDetalleVenta, IdProducto, IdServicio, Cantidad, PrecioUnitario, Descuento, Impuesto, Total
+             FROM ventas_detalle WHERE IdVenta = ? AND IdEmpresa = ?`, [IdVenta, req.auth.IdEmpresa]
         );
+
+        // Si la venta incluye líneas de SERVICIO, el usuario que confirma debe
+        // tener el permiso FACTURACION.SERVICIOS (facturación desde Citas).
+        if (detalle.some((d) => !!d.IdServicio && !d.IdProducto)) {
+            const puedeFacturar = await tienePermiso(
+                req.auth.UsuarioId,
+                req.auth.IdPerfil,
+                'FACTURACION.SERVICIOS'
+            );
+            if (!puedeFacturar) {
+                await conn.rollback();
+                return res.status(403).json({
+                    ok: false,
+                    mensaje: 'No autorizado: se requiere el permiso FACTURACION.SERVICIOS para confirmar la facturación'
+                });
+            }
+        }
 
         let CostoTotal = 0, Utilidad = 0;
         const movimientos = [];
+
+        // "controla" = la empresa valida/descuenta existencias de producto.
+        const controla = await parametrosBusiness.empresaControlaExistencias(conn, req.auth.IdEmpresa);
+
         for (const item of detalle) {
+            // Línea SIN control de inventario: un servicio siempre, o un
+            // producto cuando la empresa tiene ControlExistencias = 0. No
+            // afecta inventario ni kardex; va directo a utilidad (ingreso).
+            const sinInventario = item.IdServicio && !item.IdProducto ? true
+                                : (!controla && item.IdProducto);
+            if (sinInventario) {
+                const UtilidadLinea = Number(item.Total);
+                await conn.query(
+                    `UPDATE ventas_detalle
+                     SET CostoUnitario = 0, CostoTotal = 0, Utilidad = ?
+                     WHERE IdVenta = ? AND IdEmpresa = ? AND IdDetalleVenta = ?`,
+                    [UtilidadLinea, IdVenta, req.auth.IdEmpresa, item.IdDetalleVenta]
+                );
+                CostoTotal += 0;
+                Utilidad += UtilidadLinea;
+                continue;
+            }
+
             const salida = await invBusiness.registrarSalida(conn, {
                 IdProducto: item.IdProducto,
                 IdBodega: venta[0].IdBodega,
@@ -358,8 +502,8 @@ router.post('/:id/confirmar', async (req, res) => {
             await conn.query(
                 `UPDATE ventas_detalle
                  SET CostoUnitario = ?, CostoTotal = ?, Utilidad = ?
-                 WHERE IdVenta = ? AND IdProducto = ?`,
-                [CostoUnitario, CostoTotalLinea, UtilidadLinea, IdVenta, item.IdProducto]
+                 WHERE IdVenta = ? AND IdProducto = ? AND IdEmpresa = ?`,
+                [CostoUnitario, CostoTotalLinea, UtilidadLinea, IdVenta, item.IdProducto, req.auth.IdEmpresa]
             );
 
             CostoTotal += CostoTotalLinea;
@@ -370,16 +514,32 @@ router.post('/:id/confirmar', async (req, res) => {
         await conn.query(
             `UPDATE ventas SET Estado = 'CONFIRMADA', CostoTotal = ?, Utilidad = ?,
                 UsuarioIdConfirmacion = ?, FechaConfirmacion = NOW()
-             WHERE IdVenta = ?`,
-            [CostoTotal, Utilidad, UsuarioIdConfirmacion || null, IdVenta]
+             WHERE IdVenta = ? AND IdEmpresa = ?`,
+            [CostoTotal, Utilidad, UsuarioIdConfirmacion || null, IdVenta, req.auth.IdEmpresa]
         );
 
+        // La venta confirmada genera el ingreso en la jornada de caja abierta
+        // de la empresa (quien la registre: admin o vendedor).
+        const movCaja = await cajaBusiness.registrarMovimientoVenta(conn, {
+            IdEmpresa: req.auth.IdEmpresa,
+            UsuarioId: UsuarioIdConfirmacion,
+            NumeroVenta: venta[0].NumeroVenta,
+            ValorMov: venta[0].Total,
+            TipoPago: venta[0].TipoPago,
+            Cliente: venta[0].NombreCliente,
+            Accion: 'CONFIRMAR',
+            Fecha: new Date()
+        });
+
         await conn.commit();
-        res.json({ ok: true, mensaje: 'Venta confirmada, inventario actualizado (CPP vigente)', movimientos });
+        res.json({ ok: true, mensaje: 'Venta confirmada, inventario actualizado (CPP vigente)', movimientos, movCaja });
     } catch (error) {
         await conn.rollback();
         console.error('Error confirmando venta:', error);
-        res.status(500).json({ ok: false, mensaje: error.codigo === 'INSUFICIENTE' ? error.message : 'Error confirmando venta', error: error.message });
+        if (error.codigo === 'INSUFICIENTE' || error.codigo === 'SIN_CAJA_ABIERTA' || error.codigo === 'SIN_TIPO_CAJA') {
+            return res.status(409).json({ ok: false, mensaje: error.message });
+        }
+        res.status(500).json({ ok: false, mensaje: 'Error confirmando venta', error: error.message });
     } finally {
         conn.release();
     }
@@ -404,18 +564,35 @@ router.post('/:id/anular', async (req, res) => {
         const { MotivoAnulacion } = req.body;
 
         const [venta] = await conn.query(
-            `SELECT IdVenta, IdBodega, Estado FROM ventas WHERE IdVenta = ? FOR UPDATE`,
-            [IdVenta]
+            `SELECT v.IdVenta, v.IdBodega, v.IdEmpresa, v.Estado, v.NumeroVenta,
+                    v.Total, v.TipoPago, v.IdCliente,
+                    CONCAT_WS(' ', c.PrimerNombre, c.SegundoNombre,
+                              c.PrimerApellido, c.SegundoApellido) AS NombreCliente
+             FROM ventas v
+             INNER JOIN clientes c ON c.ClienteId = v.IdCliente
+             WHERE v.IdVenta = ? AND v.IdEmpresa = ?
+             FOR UPDATE`,
+            [IdVenta, req.auth.IdEmpresa]
         );
         if (venta.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Venta no encontrada' }); }
         if (venta[0].Estado !== 'CONFIRMADA') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'Solo se pueden anular ventas CONFIRMADAS' }); }
 
         const [detalle] = await conn.query(
-            `SELECT IdProducto, Cantidad, CostoUnitario FROM ventas_detalle WHERE IdVenta = ?`, [IdVenta]
+            `SELECT IdProducto, IdServicio, Cantidad, CostoUnitario FROM ventas_detalle WHERE IdVenta = ? AND IdEmpresa = ?`, [IdVenta, req.auth.IdEmpresa]
         );
+
+        // "controla" = la empresa valida/descuenta existencias de producto.
+        const controla = await parametrosBusiness.empresaControlaExistencias(conn, req.auth.IdEmpresa);
 
         const movimientos = [];
         for (const item of detalle) {
+            // Línea sin control de inventario: servicio, o producto con
+            // ControlExistencias = 0. No afecta inventario ni kardex.
+            const sinInventario = item.IdServicio && !item.IdProducto ? true
+                                : (!controla && item.IdProducto);
+            if (sinInventario) {
+                continue;
+            }
             const entrada = await invBusiness.registrarEntrada(conn, {
                 IdProducto: item.IdProducto,
                 IdBodega: venta[0].IdBodega,
@@ -435,15 +612,31 @@ router.post('/:id/anular', async (req, res) => {
         await conn.query(
             `UPDATE ventas SET Estado = 'ANULADA', CostoTotal = 0, Utilidad = 0,
                 UsuarioIdAnulacion = ?, FechaAnulacion = NOW()
-             WHERE IdVenta = ?`,
-            [UsuarioIdAnulacion || null, IdVenta]
+             WHERE IdVenta = ? AND IdEmpresa = ?`,
+            [UsuarioIdAnulacion || null, IdVenta, req.auth.IdEmpresa]
         );
 
+        // Se revierte el movimiento de caja de la venta anulada (valor negativo)
+        // en la jornada abierta de la empresa.
+        const movCaja = await cajaBusiness.registrarMovimientoVenta(conn, {
+            IdEmpresa: req.auth.IdEmpresa,
+            UsuarioId: UsuarioIdAnulacion,
+            NumeroVenta: venta[0].NumeroVenta,
+            ValorMov: venta[0].Total,
+            TipoPago: venta[0].TipoPago,
+            Cliente: venta[0].NombreCliente,
+            Accion: 'ANULAR',
+            Fecha: new Date()
+        });
+
         await conn.commit();
-        res.json({ ok: true, mensaje: 'Venta anulada, inventario restaurado', movimientos });
+        res.json({ ok: true, mensaje: 'Venta anulada, inventario restaurado', movimientos, movCaja });
     } catch (error) {
         await conn.rollback();
         console.error('Error anulando venta:', error);
+        if (error.codigo === 'SIN_CAJA_ABIERTA' || error.codigo === 'SIN_TIPO_CAJA') {
+            return res.status(409).json({ ok: false, mensaje: error.message });
+        }
         res.status(500).json({ ok: false, mensaje: 'Error anulando venta', error: error.message });
     } finally {
         conn.release();
@@ -460,12 +653,12 @@ router.delete('/:id', async (req, res) => {
         await conn.beginTransaction();
         const IdVenta = Number(req.params.id);
 
-        const [actual] = await conn.query(`SELECT Estado FROM ventas WHERE IdVenta = ?`, [IdVenta]);
+        const [actual] = await conn.query(`SELECT Estado FROM ventas WHERE IdVenta = ? AND IdEmpresa = ?`, [IdVenta, req.auth.IdEmpresa]);
         if (actual.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Venta no encontrada' }); }
         if (actual[0].Estado !== 'BORRADOR') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'Solo se pueden eliminar ventas en BORRADOR' }); }
 
-        await conn.query(`DELETE FROM ventas_detalle WHERE IdVenta = ?`, [IdVenta]);
-        await conn.query(`DELETE FROM ventas WHERE IdVenta = ?`, [IdVenta]);
+        await conn.query(`DELETE FROM ventas_detalle WHERE IdVenta = ? AND IdEmpresa = ?`, [IdVenta, req.auth.IdEmpresa]);
+        await conn.query(`DELETE FROM ventas WHERE IdVenta = ? AND IdEmpresa = ?`, [IdVenta, req.auth.IdEmpresa]);
 
         await conn.commit();
         res.json({ ok: true, mensaje: 'Venta eliminada' });

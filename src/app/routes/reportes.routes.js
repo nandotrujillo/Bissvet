@@ -382,8 +382,8 @@ async function consultarReporte(id, query, IdEmpresa) {
                 ORDER BY c.Fecha DESC, c.Numero DESC`;
             params = p;
         } else if (id === 'clientes') {
-            const cond = [];
-            const p = [];
+            const cond = ['c.IdEmpresa = ?'];
+            const p = [emp];
             querySQL = `
                 SELECT
                     CONCAT_WS(' ', c.PrimerNombre, c.SegundoNombre, c.PrimerApellido, c.SegundoApellido) AS Cliente,
@@ -392,13 +392,15 @@ async function consultarReporte(id, query, IdEmpresa) {
                     COALESCE(cant.Mascotas, 0) AS Mascotas
                 FROM clientes c
                 LEFT JOIN (SELECT ClienteId, COUNT(*) AS Mascotas
-                           FROM mascotas GROUP BY ClienteId) cant ON cant.ClienteId = c.ClienteId
-                ${cond.length ? `WHERE ${cond.join(' AND ')}` : ''}
+                           FROM mascotas
+                           WHERE IdEmpresa = ?
+                           GROUP BY ClienteId) cant ON cant.ClienteId = c.ClienteId
+                WHERE ${cond.join(' AND ')}
                 ORDER BY Cliente`;
-            params = p;
+            params = [emp, emp];
         } else if (id === 'citas') {
-            const cond = [];
-            const p = [];
+            const cond = ['c.IdEmpresa = ?'];
+            const p = [emp];
             if (desde) { cond.push('c.FechaCita >= ?'); p.push(desde); }
             if (hasta) { cond.push('c.FechaCita <= ?'); p.push(hasta); }
             if (estado) { cond.push('c.Estado = ?'); p.push(estado); }

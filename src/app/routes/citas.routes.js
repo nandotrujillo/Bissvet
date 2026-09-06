@@ -21,8 +21,9 @@ router.get('/', async (req, res) => {
             INNER JOIN mascotas m ON c.IdMascota = m.IdMascota
             INNER JOIN veterinarios v ON c.IdVeterinario = v.IdVeterinario
             INNER JOIN servicios s ON c.IdServicio = s.IdServicio
+            WHERE c.IdEmpresa = ?
             ORDER BY c.FechaCita DESC, c.HoraCita DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar citas:', error);
@@ -55,8 +56,8 @@ router.get('/:id', async (req, res) => {
             INNER JOIN veterinarios v ON c.IdVeterinario = v.IdVeterinario
             INNER JOIN servicios s ON c.IdServicio = s.IdServicio
             INNER JOIN clientes cl ON m.ClienteId = cl.ClienteId
-            WHERE c.IdCita = ?
-        `, [id]);
+            WHERE c.IdCita = ? AND c.IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Cita no encontrada' });
@@ -98,8 +99,9 @@ router.post('/', async (req, res) => {
             INSERT INTO citas (
                 IdMascota, IdVeterinario, IdServicio, FechaCita, HoraCita,
                 Estado, MotivoConsulta, Observaciones, Precio,
-                UsuarioIdVeterinario, FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                UsuarioIdVeterinario, FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             IdMascota,
             IdVeterinario,
@@ -111,7 +113,8 @@ router.post('/', async (req, res) => {
             Observaciones || null,
             Precio ?? 0,
             UsuarioIdVeterinario || null,
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({
@@ -157,7 +160,7 @@ router.put('/:id', async (req, res) => {
                 Precio = ?,
                 FechaModificacion = NOW(),
                 UsuarioIdModificacion = ?
-            WHERE IdCita = ?
+            WHERE IdCita = ? AND IdEmpresa = ?
         `, [
             IdMascota,
             IdVeterinario,
@@ -169,7 +172,8 @@ router.put('/:id', async (req, res) => {
             Observaciones || null,
             Precio ?? 0,
             UsuarioIdModificacion || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {
@@ -192,8 +196,8 @@ router.delete('/:id', async (req, res) => {
             UPDATE citas SET
                 Estado = 'Cancelada',
                 FechaModificacion = NOW()
-            WHERE IdCita = ?
-        `, [id]);
+            WHERE IdCita = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Cita no encontrada' });
@@ -219,9 +223,9 @@ router.get('/mascota/:idMascota', async (req, res) => {
             FROM citas c
             INNER JOIN veterinarios v ON c.IdVeterinario = v.IdVeterinario
             INNER JOIN servicios s ON c.IdServicio = s.IdServicio
-            WHERE c.IdMascota = ?
+            WHERE c.IdMascota = ? AND c.IdEmpresa = ?
             ORDER BY c.FechaCita DESC, c.HoraCita DESC
-        `, [idMascota]);
+        `, [idMascota, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar citas por mascota:', error);
@@ -246,9 +250,9 @@ router.get('/fecha/:fecha', async (req, res) => {
             INNER JOIN mascotas m ON c.IdMascota = m.IdMascota
             INNER JOIN veterinarios v ON c.IdVeterinario = v.IdVeterinario
             INNER JOIN servicios s ON c.IdServicio = s.IdServicio
-            WHERE c.FechaCita = ?
+            WHERE c.FechaCita = ? AND c.IdEmpresa = ?
             ORDER BY c.HoraCita ASC
-        `, [fecha]);
+        `, [fecha, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar citas por fecha:', error);
@@ -271,9 +275,9 @@ router.get('/veterinario/:idVeterinario', async (req, res) => {
             FROM citas c
             INNER JOIN mascotas m ON c.IdMascota = m.IdMascota
             INNER JOIN servicios s ON c.IdServicio = s.IdServicio
-            WHERE c.IdVeterinario = ?
+            WHERE c.IdVeterinario = ? AND c.IdEmpresa = ?
             ORDER BY c.FechaCita DESC, c.HoraCita DESC
-        `, [idVeterinario]);
+        `, [idVeterinario, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar citas por veterinario:', error);

@@ -34,9 +34,9 @@ router.get('/', async (req, res) => {
                 FechaModificacion,
                 UsuarioIdModificacion
             FROM bissvet.clientes
-            WHERE Activo = 1
+            WHERE Activo = 1 AND IdEmpresa = ?
             ORDER BY PrimerNombre, PrimerApellido
-        `);
+        `, [req.auth.IdEmpresa]);
 
         res.json({
             ok: true,
@@ -80,8 +80,8 @@ router.get('/:id', async (req, res) => {
         const [rows] = await pool.query(`
             SELECT *
             FROM bissvet.clientes
-            WHERE ClienteId = ?
-        `, [id]);
+            WHERE ClienteId = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
 
         if (rows.length === 0) {
@@ -225,9 +225,10 @@ router.post('/', async (req, res) => {
                 Observaciones,
                 Activo,
                 FechaCreacion,
-                UsuarioIdCreacion
+                UsuarioIdCreacion,
+                IdEmpresa
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), ?, ?)
 
         `, [
 
@@ -244,7 +245,8 @@ router.post('/', async (req, res) => {
             IdCiudad || null,
             fechaNacimiento,
             Observaciones || null,
-            usuarioId
+            usuarioId,
+            req.auth.IdEmpresa
 
         ]);
 
@@ -374,7 +376,7 @@ router.put('/:id', async (req, res) => {
 
                 UsuarioIdModificacion = ?
 
-            WHERE ClienteId = ?
+            WHERE ClienteId = ? AND IdEmpresa = ?
 
         `, [
 
@@ -402,7 +404,8 @@ router.put('/:id', async (req, res) => {
 
             usuarioId,
 
-            id
+            id,
+            req.auth.IdEmpresa
 
         ]);
 
@@ -481,9 +484,9 @@ router.delete('/:id', async (req, res) => {
 
             SET Activo = 0
 
-            WHERE ClienteId = ?
+            WHERE ClienteId = ? AND IdEmpresa = ?
 
-        `, [id]);
+        `, [id, req.auth.IdEmpresa]);
 
 
         if (result.affectedRows === 0) {

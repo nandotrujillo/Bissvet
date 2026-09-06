@@ -39,9 +39,9 @@ router.get('/', async (req, res) => {
                 c.Direccion AS DireccionCliente
             FROM bissvet.mascotas m
             INNER JOIN bissvet.clientes c ON m.ClienteId = c.ClienteId
-            WHERE m.Activo = 1
+            WHERE m.Activo = 1 AND m.IdEmpresa = ?
             ORDER BY m.Nombre
-        `);
+        `, [req.auth.IdEmpresa]);
 
         res.json({
             ok: true,
@@ -99,8 +99,8 @@ router.get('/:id', async (req, res) => {
                 c.Direccion AS DireccionCliente
             FROM bissvet.mascotas m
             INNER JOIN bissvet.clientes c ON m.ClienteId = c.ClienteId
-            WHERE m.IdMascota = ?
-        `, [id]);
+            WHERE m.IdMascota = ? AND m.IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
 
@@ -211,9 +211,10 @@ router.post('/', async (req, res) => {
                 Observaciones,
                 Activo,
                 FechaCreacion,
-                UsuarioIdCreacion
+                UsuarioIdCreacion,
+                IdEmpresa
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), ?, ?)
 
         `, [
             ClienteId,
@@ -227,7 +228,8 @@ router.post('/', async (req, res) => {
             Microchip || null,
             Esterilizado ? 1 : 0,
             Observaciones || null,
-            UsuarioIdCreacion ? null:usuarioIdNumero
+            UsuarioIdCreacion ? null:usuarioIdNumero,
+            req.auth.IdEmpresa
         ]);
 
 
@@ -308,7 +310,7 @@ router.put('/:id', async (req, res) => {
                 FechaModificacion = NOW(),
                 UsuarioIdModificacion = ?
 
-            WHERE IdMascota = ?
+            WHERE IdMascota = ? AND IdEmpresa = ?
 
         `, [
             ClienteId,
@@ -323,7 +325,8 @@ router.put('/:id', async (req, res) => {
             Esterilizado ? 1 : 0,
             Observaciones || null,
             UsuarioIdModificacion || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
 
@@ -376,9 +379,9 @@ router.delete('/:id', async (req, res) => {
                 Activo = 0,
                 FechaModificacion = NOW()
 
-            WHERE IdMascota = ?
+            WHERE IdMascota = ? AND IdEmpresa = ?
 
-        `, [id]);
+        `, [id, req.auth.IdEmpresa]);
 
 
         if (result.affectedRows === 0) {

@@ -7,6 +7,10 @@ import { CitasService, Cita } from '../../Services/citas.service';
 import { HistoriasClinicasService } from '../../Services/historiasclinicas.service';
 import { MascotasService } from '../../Services/mascotas.service';
 import { Mascota } from '../../Models/mascota';
+import { VentasService } from '../../Services/ventas.service';
+import { BodegaService } from '../../Services/Bodega.service';
+import { TipoPagoService } from '../../Services/tipo-pago.service';
+import { SeguridadService } from '../../Services/seguridad.service';
 import { Veterinario } from '../../Models/veterinario';
 import { VeterinariosService } from '../../Services/veterinarios.service';
 import { Modulo } from '../../Models/modulo';
@@ -82,13 +86,15 @@ private readonly ID_CATEGORIA_CITAS = 1;
 
   mensaje = '';
 
+  // ¿El usuario autenticado puede facturar servicios desde citas?
+  puedeFacturarServicios = false;
+
 
   // =====================================================
   // CITA
   // =====================================================
 
   cita: Cita = this.nuevaCitaModelo();
-
 
   constructor(
 
@@ -102,9 +108,18 @@ private readonly ID_CATEGORIA_CITAS = 1;
 
     private historiasService: HistoriasClinicasService,
 
+    private ventasService: VentasService,
+
+    private bodegaService: BodegaService,
+
+    private tipoPagoService: TipoPagoService,
+
+    private seguridadService: SeguridadService,
+
     private router: Router
 
       
+
   ) {}
 
 
@@ -122,6 +137,19 @@ private readonly ID_CATEGORIA_CITAS = 1;
 
   this.cargarVeterinarios();
 
+
+  this.cargarPermisosFacturacion();
+
+  }
+
+
+  cargarPermisosFacturacion(): void {
+
+    const permisos =
+      this.seguridadService.obtenerPermisosLocal();
+
+    this.puedeFacturarServicios =
+      permisos.includes('FACTURACION.SERVICIOS');
 
   }
 
@@ -766,6 +794,148 @@ cargarServiciosCitas(): void {
         this.error =
           error.error?.mensaje ||
           'No fue posible crear la historia clínica.';
+      }
+    });
+
+  }
+
+
+  // =====================================================
+  // FACTURAR SERVICIO DE LA CITA
+  // =====================================================
+
+  puedeFacturar(cita: Cita): boolean {
+    return this.puedeFacturarServicios
+      && Number(cita.Precio || 0) > 0
+      && !!cita.IdServicio
+      && cita.Estado !== 'Cancelada'
+      && cita.Estado !== 'Facturada';
+  }
+
+  facturarServicio(cita: Cita): void {
+
+    const precio = Number(cita.Precio || 0);
+
+    if (precio <= 0) {
+      this.error = 'La cita no tiene un valor para facturar.';
+      return;
+    }
+
+    if (!confirm(
+      `¿Facturar el servicio "${this.nombreServicio(cita.IdServicio)}" por $${precio.toLocaleString('es-CO')}?\n` +
+      'Se generará la venta y la factura al cliente.'
+    )) {
+      return;
+    }
+
+    this.error = '';
+    this.mensaje = '';
+
+    // Cliente del dueño de la mascota
+    const mascota = this.mascotas.find(
+      m => Number(m.IdMascota) === Number(cita.IdMascota)
+    );
+
+    const IdCliente = mascota?.ClienteId;
+
+    if (!IdCliente) {
+      this.error = 'La mascota de esta cita no tiene un cliente asociado.';
+      return;
+    }
+
+    this.cargando = true;
+
+    // Bodega por defecto (primera de la empresa) y tipo de pago por defecto
+    this.bodegaService.listar().subscribe({
+      next: (bRes: any) => {
+        const bodegas = bRes.datos || bRes.data || [];
+        if (!bodegas.length) {
+          this.cargando = false;
+          this.error = 'No hay bodegas disponibles para facturar.';
+          return;
+        }
+        const IdBodega = Number(bodegas[0].Id);
+        this.tipoPagoService.listar(true).subscribe({
+          next: (tRes: any) => {
+            const tipos = tRes.datos || tRes.data || [];
+            const tipo = (tipos.find((t: any) => String(t.Nombre).trim().toUpperCase() === 'EFECTIVO') || tipos[0]);
+            const TipoPago = tipo?.Nombre || 'EFECTIVO';
+
+            const UsuarioId = Number(localStorage.getItem('UsuarioId')) || null;
+
+            const body: any = {
+              IdCliente,
+              IdVendedor: UsuarioId || cita.IdVeterinario || 0,
+              TipoPago,
+              IdBodega,
+              Observaciones:
+                `Facturación de cita del servicio: ${this.nombreServicio(cita.IdServicio)}` +
+                (cita.IdCita ? ` (IdCita ${cita.IdCita})` : ''),
+              Detalle: [{
+                IdServicio: cita.IdServicio,
+                Cantidad: 1,
+                PrecioUnitario: precio
+              }]
+            };
+
+            this.ventasService.crear(body).subscribe({
+              next: (cRes: any) => {
+                const IdVenta = cRes.IdVenta;
+                this.cargando = false;
+                this.mensaje =
+                  `Venta ${cRes.NumeroVenta || ''} generada. Confirmando facturación...`;
+                this.confirmarFactura(cita, IdVenta);
+              },
+              error: (cEr: any) => {
+                this.cargando = false;
+                this.error =
+                  cEr.error?.mensaje ||
+                  'No fue posible generar la venta del servicio.';
+              }
+            });
+          },
+          error: () => {
+            this.cargando = false;
+            this.error = 'No fue posible cargar los tipos de pago.';
+          }
+        });
+      },
+      error: () => {
+        this.cargando = false;
+        this.error = 'No fue posible cargar las bodegas.';
+      }
+    });
+
+  }
+
+  private confirmarFactura(cita: Cita, IdVenta: number): void {
+
+    const UsuarioId =
+      Number(localStorage.getItem('UsuarioId')) || null;
+
+    this.ventasService.confirmar(IdVenta, {
+      UsuarioIdConfirmacion: UsuarioId
+    }).subscribe({
+      next: () => {
+        this.mensaje =
+          'Servicio facturado correctamente. La cita queda marcada como atendida.';
+
+        // Marcar la cita como Facturada
+        cita.Estado = 'Facturada';
+        if (cita.IdCita) {
+          this.citasService.actualizar(cita.IdCita, {
+            ...cita,
+            UsuarioIdModificacion: UsuarioId || 0
+          }).subscribe({
+            error: () => { /* la factura ya quedó, el marca no es crítico */ }
+          });
+        }
+        this.cargarCitas();
+      },
+      error: (e: any) => {
+        this.error =
+          e.error?.mensaje ||
+          'La venta se generó pero no fue posible confirmar la facturación.';
       }
     });
 

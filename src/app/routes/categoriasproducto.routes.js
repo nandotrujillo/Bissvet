@@ -12,8 +12,9 @@ router.get('/', async (req, res) => {
             SELECT IdCategoriaProducto, Nombre, Descripcion, Activo,
                    FechaCreacion, FechaModificacion
             FROM categoriasproducto
+            WHERE IdEmpresa = ?
             ORDER BY Nombre
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error listando categorías:', error);
@@ -28,8 +29,8 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const [rows] = await pool.query(
-            `SELECT * FROM categoriasproducto WHERE IdCategoriaProducto = ?`,
-            [req.params.id]
+            `SELECT * FROM categoriasproducto WHERE IdCategoriaProducto = ? AND IdEmpresa = ?`,
+            [req.params.id, req.auth.IdEmpresa]
         );
         if (rows.length === 0)
             return res.status(404).json({ ok: false, mensaje: 'Categoría no encontrada' });
@@ -51,9 +52,9 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ ok: false, mensaje: 'El nombre es obligatorio' });
 
         const [resultado] = await pool.query(
-            `INSERT INTO categoriasproducto (Nombre, Descripcion, Activo, UsuarioIdCreacion)
-             VALUES (?, ?, ?, ?)`,
-            [Nombre.trim(), Descripcion || null, Activo ?? 1, UsuarioIdCreacion || null]
+            `INSERT INTO categoriasproducto (Nombre, Descripcion, Activo, UsuarioIdCreacion, IdEmpresa)
+             VALUES (?, ?, ?, ?, ?)`,
+            [Nombre.trim(), Descripcion || null, Activo ?? 1, UsuarioIdCreacion || null, req.auth.IdEmpresa]
         );
         res.status(201).json({ ok: true, mensaje: 'Categoría creada', IdCategoriaProducto: resultado.insertId });
     } catch (error) {
@@ -76,8 +77,8 @@ router.put('/:id', async (req, res) => {
             `UPDATE categoriasproducto
              SET Nombre = ?, Descripcion = ?, Activo = ?,
                  FechaModificacion = NOW(), UsuarioIdModificacion = ?
-             WHERE IdCategoriaProducto = ?`,
-            [Nombre.trim(), Descripcion || null, Activo ?? 1, UsuarioIdModificacion || null, req.params.id]
+             WHERE IdCategoriaProducto = ? AND IdEmpresa = ?`,
+            [Nombre.trim(), Descripcion || null, Activo ?? 1, UsuarioIdModificacion || null, req.params.id, req.auth.IdEmpresa]
         );
         if (resultado.affectedRows === 0)
             return res.status(404).json({ ok: false, mensaje: 'Categoría no encontrada' });
@@ -95,8 +96,8 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const [resultado] = await pool.query(
-            `DELETE FROM categoriasproducto WHERE IdCategoriaProducto = ?`,
-            [req.params.id]
+            `DELETE FROM categoriasproducto WHERE IdCategoriaProducto = ? AND IdEmpresa = ?`,
+            [req.params.id, req.auth.IdEmpresa]
         );
         if (resultado.affectedRows === 0)
             return res.status(404).json({ ok: false, mensaje: 'Categoría no encontrada' });

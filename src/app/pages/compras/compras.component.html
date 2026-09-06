@@ -93,6 +93,7 @@
             <th>Proveedor</th>
             <th>Bodega</th>
             <th>Total</th>
+            <th>Pago</th>
             <th>Estado</th>
             <th>Acciones</th>
 
@@ -127,6 +128,20 @@
 
             <td>
 
+              <span class="metodo-pago" [class]="(compra.MetodoPago || 'CONTADO').toLowerCase()">
+                {{ compra.MetodoPago || 'CONTADO' }}
+              </span>
+
+              <span
+                *ngIf="num(compra.SaldoPendiente) > 0"
+                class="saldo-pendiente">
+                Saldo: {{ compra.SaldoPendiente | currency }}
+              </span>
+
+            </td>
+
+            <td>
+
               <span
                 class="estado"
                 [class]="compra.Estado.toLowerCase()">
@@ -157,7 +172,7 @@
               <button
                 *ngIf="compra.Estado === 'BORRADOR'"
                 class="btn btn-confirmar"
-                (click)="confirmar(compra)"
+                (click)="abrirConfirmar(compra)"
                 title="Confirmar (afecta inventario)">
                 ✔️
               </button>
@@ -185,9 +200,9 @@
 
           <tr *ngIf="compras.length === 0">
 
-            <td
-              colspan="7"
-              class="sin-registros">
+<td
+                colspan="8"
+                class="sin-registros">
               No existen compras registradas.
             </td>
 
@@ -272,6 +287,23 @@
         <input
           type="date"
           [(ngModel)]="compra.Fecha">
+
+      </div>
+
+      <div class="campo">
+
+        <label>Método de pago</label>
+
+        <select [(ngModel)]="compra.MetodoPago">
+
+          <option value="CONTADO">Contado</option>
+          <option value="CREDITO">Crédito (cuotas)</option>
+
+        </select>
+
+        <small class="ayuda-campo">
+          En el crédito podrá definir cuotas / cuentas por pagar al confirmar.
+        </small>
 
       </div>
 
@@ -465,6 +497,27 @@
 
       <p><strong>Bodega:</strong> {{ detalleVista.NombreBodega }}</p>
 
+      <p><strong>Método de pago:</strong>
+
+        <span
+          class="metodo-pago"
+          [class]="(detalleVista.MetodoPago || 'CONTADO').toLowerCase()">
+
+          {{ detalleVista.MetodoPago || 'CONTADO' }}
+
+        </span>
+
+      </p>
+
+      <p *ngIf="num(detalleVista.SaldoPendiente) > 0">
+        <strong>Saldo pendiente:</strong>
+
+        <span class="saldo-pendiente">
+          {{ detalleVista.SaldoPendiente | currency }}
+        </span>
+
+      </p>
+
       <p><strong>Estado:</strong>
 
         <span
@@ -576,6 +629,80 @@
     </div>
 
 
+    <!-- CUOTAS / CUENTAS POR PAGAR -->
+
+    <div
+      *ngIf="detalleVista.Cuotas && detalleVista.Cuotas.length"
+      class="cuotas">
+
+      <div class="detalle-titulo">
+        <span>Cuotas / Cuentas por pagar</span>
+      </div>
+
+      <table class="tabla-detalle">
+
+        <thead>
+
+          <tr>
+
+            <th>Cuota</th>
+            <th>Valor</th>
+            <th>Saldo</th>
+            <th>Vencimiento</th>
+            <th>Estado</th>
+            <th>Abonos</th>
+            <th></th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          <tr *ngFor="let cuota of detalleVista.Cuotas; let i = index">
+
+            <td>#{{ cuota.NumeroCuota }}</td>
+
+            <td>{{ cuota.ValorCuota | currency }}</td>
+
+            <td>{{ cuota.SaldoPendiente | currency }}</td>
+
+            <td>{{ (cuota.FechaVencimiento | date:'dd/MM/yyyy') || '-' }}</td>
+
+            <td>
+
+              <span class="estado" [class]="cuota.Estado.toLowerCase()">
+                {{ cuota.Estado }}
+              </span>
+
+            </td>
+
+            <td>
+              <span *ngIf="cuota.NumeroAbonos">{{ cuota.TotalAbonado | currency }} ({{ cuota.NumeroAbonos }})</span>
+              <span *ngIf="!cuota.NumeroAbonos">-</span>
+            </td>
+
+            <td class="acciones">
+
+              <button
+                *ngIf="cuota.Estado === 'PENDIENTE'"
+                class="btn btn-abonar"
+                (click)="abrirAbono(cuota, detalleVista.IdCompra)"
+                title="Abonar">
+                💰 Abonar
+              </button>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
     <div class="acciones-formulario">
 
       <button
@@ -583,6 +710,231 @@
         (click)="cerrarVista()">
         Cerrar
       </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- MODAL: CONFIRMAR COMPRA (Pago + Caja) -->
+
+  <div
+    class="modal-overlay"
+    *ngIf="confirmandoCompra">
+
+    <div class="modal-panel">
+
+      <h3>
+        Confirmar compra #{{ confirmandoCompra.Numero }}
+      </h3>
+
+      <div class="resumen-modal">
+
+        <div>
+          <strong>Total:</strong> {{ confirmandoCompra.Total | currency }}
+        </div>
+
+        <div>
+          <strong>Método de pago:</strong>
+
+          <select [(ngModel)]="confirmandoCompra.MetodoPago">
+
+            <option value="CONTADO">Contado</option>
+            <option value="CREDITO">Crédito (cuotas)</option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <!-- CONTADO / PAGO INICIAL EN CREDITO -->
+
+      <div class="campo-modal">
+
+        <label>
+          Monto a pagar de contado / pago inicial
+        </label>
+
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          [max]="confirmandoCompra.Total"
+          [(ngModel)]="confirmandoCompra.PagoInicial">
+
+      </div>
+
+
+      <!-- CHEK CAJA -->
+
+      <div class="campo-modal">
+
+        <label class="checkbox-linea">
+
+          <input
+            type="checkbox"
+            [(ngModel)]="confirmandoCompra.AfectaCaja">
+
+          <span>Pagar con dinero de caja</span>
+
+        </label>
+
+        <small class="ayuda-campo">
+          Si está activo y la empresa controla caja, se generará un egreso en la jornada de caja abierta.
+        </small>
+
+      </div>
+
+
+      <!-- CUOTAS (solo crédito) -->
+
+      <div
+        class="campo-modal cuotas-lista"
+        *ngIf="confirmandoCompra.MetodoPago === 'CREDITO'">
+
+        <label>Cuotas / Cuentas por pagar</label>
+
+        <small class="ayuda-campo">
+          Saldo a diferir: {{ (confirmandoCompra.Total - confirmandoCompra.PagoInicial) | currency }}
+          &nbsp;|&nbsp; En cuotas: {{ (confirmandoCompra.Cuotas || []).length }}
+        </small>
+
+        <div
+          class="cuota-fila"
+          *ngFor="let q of confirmandoCompra.Cuotas; let i = index">
+
+          <span>#{{ i + 1 }}</span>
+
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            [(ngModel)]="q.ValorCuota"
+            placeholder="Valor">
+
+          <input
+            type="date"
+            [(ngModel)]="q.FechaVencimiento">
+
+          <button
+            class="btn-remover"
+            (click)="quitarCuotaConfirmar(i)"
+            *ngIf="confirmandoCompra.Cuotas.length > 1">
+            ✕
+          </button>
+
+        </div>
+
+        <button
+          class="btn-agregar"
+          style="margin-top:6px; padding:7px 12px; font-size:13px;"
+          (click)="agregarCuotaConfirmar()">
+          + Agregar cuota (repartir saldo)
+        </button>
+
+        <div
+          style="margin-top:8px; font-size:13px; color:#c62828;"
+          *ngIf="calcularSaldoPendienteConfirmar() > 0.01">
+          ⚠️ Saldo no cubierto: {{ calcularSaldoPendienteConfirmar() | currency }}
+        </div>
+
+      </div>
+
+
+      <div class="acciones-modal">
+
+        <button
+          class="btn-cancel"
+          (click)="cerrarConfirmar()">
+          Cancelar
+        </button>
+
+        <button
+          class="btn-ok"
+          (click)="ejecutarConfirmar()"
+          [disabled]="confirmandoCompra.guardando">
+          {{ confirmandoCompra.guardando ? 'Guardando...' : '✔ Confirmar y afectar inventario' }}
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- MODAL: ABONAR A CUOTA -->
+
+  <div
+    class="modal-overlay"
+    *ngIf="abonarCuota">
+
+    <div class="modal-panel">
+
+      <h3>
+        Abonar a cuota #{{ abonarCuota.NumeroCuota }}
+      </h3>
+
+      <div class="resumen-modal">
+
+        <div>
+          <strong>Valor cuota:</strong> {{ abonarCuota.ValorCuota | currency }}
+        </div>
+
+        <div>
+          <strong>Saldo pendiente de la cuota:</strong> {{ abonarCuota.SaldoPendiente | currency }}
+        </div>
+
+      </div>
+
+
+      <div class="campo-modal">
+
+        <label>Monto a abonar</label>
+
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          [max]="abonarCuota.SaldoPendiente"
+          [(ngModel)]="abonarCuota.ValorAbono">
+
+      </div>
+
+
+      <div class="campo-modal">
+
+        <label class="checkbox-linea">
+
+          <input
+            type="checkbox"
+            [(ngModel)]="abonarCuota.AfectaCaja">
+
+          <span>Pagar con dinero de caja (egreso)</span>
+
+        </label>
+
+      </div>
+
+
+      <div class="acciones-modal">
+
+        <button
+          class="btn-cancel"
+          (click)="cerrarAbono()">
+          Cancelar
+        </button>
+
+        <button
+          class="btn-ok"
+          (click)="ejecutarAbono()"
+          [disabled]="abonarCuota.guardando">
+          {{ abonarCuota.guardando ? 'Guardando...' : '💰 Registrar abono' }}
+        </button>
+
+      </div>
 
     </div>
 

@@ -28,4 +28,6 @@ export interface Empresa {
 
   UsaControlCaja?: number;
 
+  ControlExistencias?: number;
+
 }

@@ -10,9 +10,9 @@ router.get('/receta/:idReceta', async (req, res) => {
         const idReceta = Number(req.params.idReceta);
         const [rows] = await pool.query(`
             SELECT * FROM detallerecetas
-            WHERE IdReceta = ?
+            WHERE IdReceta = ? AND IdEmpresa = ?
             ORDER BY IdDetalleReceta ASC
-        `, [idReceta]);
+        `, [idReceta, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar detalles de receta:', error);
@@ -27,8 +27,8 @@ router.get('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [rows] = await pool.query(`
-            SELECT * FROM detallerecetas WHERE IdDetalleReceta = ?
-        `, [id]);
+            SELECT * FROM detallerecetas WHERE IdDetalleReceta = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Detalle no encontrado' });
@@ -64,8 +64,9 @@ router.post('/', async (req, res) => {
                 IdReceta, IdProducto, Medicamento, Concentracion,
                 FormaFarmaceutica, Dosis, UnidadDosis, Frecuencia,
                 ViaAdministracion, Duracion, Cantidad,
-                Indicaciones, Observaciones, FechaCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                Indicaciones, Observaciones, FechaCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
         `, [
             IdReceta,
             IdProducto || null,
@@ -79,7 +80,8 @@ router.post('/', async (req, res) => {
             Duracion || null,
             Cantidad || null,
             Indicaciones || null,
-            Observaciones || null
+            Observaciones || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({ ok: true, mensaje: 'Medicamento agregado correctamente', IdDetalleReceta: result.insertId });
@@ -116,7 +118,7 @@ router.put('/:id', async (req, res) => {
                 Cantidad = ?,
                 Indicaciones = ?,
                 Observaciones = ?
-            WHERE IdDetalleReceta = ?
+            WHERE IdDetalleReceta = ? AND IdEmpresa = ?
         `, [
             IdProducto || null,
             Medicamento,
@@ -130,7 +132,8 @@ router.put('/:id', async (req, res) => {
             Cantidad || null,
             Indicaciones || null,
             Observaciones || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {
@@ -150,8 +153,8 @@ router.delete('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [result] = await pool.query(`
-            DELETE FROM detallerecetas WHERE IdDetalleReceta = ?
-        `, [id]);
+            DELETE FROM detallerecetas WHERE IdDetalleReceta = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Detalle no encontrado' });

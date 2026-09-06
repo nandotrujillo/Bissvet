@@ -39,6 +39,12 @@ export class UsuarioService {
     return this.http.get<{ ok: boolean; datos: Usuario[] }>(this.apiUrl);
   }
 
+  obtenerVendedores(): Observable<{ ok: boolean; datos: Usuario[] }> {
+    return this.http.get<{ ok: boolean; datos: Usuario[] }>(
+      `${this.apiUrl}/vendedores`
+    );
+  }
+
   obtenerUsuarioPorId(id: number): Observable<{ ok: boolean; datos: Usuario }> {
     return this.http.get<{ ok: boolean; datos: Usuario }>(
       `${this.apiUrl}/${id}`

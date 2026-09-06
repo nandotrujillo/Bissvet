@@ -302,6 +302,52 @@ router.get('/', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, res) 
 });
 
 // =============================================================================
+// GET /api/usuarios/vendedores   (PROTEGIDO - sesión)
+// Lista de vendedores para el formulario de ventas: usuarios ACTIVOS y NO
+// bloqueados de la empresa del token cuyo perfil o rol es VENDEDOR o
+// ADMINISTRADOR. Nunca expone al SUPERADMIN global.
+// No depende de USUARIOS.CONSULTAR para que un perfil de ventas pueda
+// cargar el combo de vendedores.
+// =============================================================================
+router.get('/vendedores', authenticate, async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            `SELECT u.UsuarioId, u.IdEmpresa, u.IdPerfil, u.Username, u.TipoDocumento,
+                    u.NumeroDocumento, u.PrimerNombre, u.SegundoNombre, u.PrimerApellido,
+                    u.SegundoApellido, u.Correo, u.Telefono, p.Nombre AS Perfil
+             FROM Usuarios u
+             LEFT JOIN perfiles p ON p.IdPerfil = u.IdPerfil
+             LEFT JOIN usuarioroles ur ON ur.UsuarioId = u.UsuarioId
+             LEFT JOIN roles r ON r.IdRol = ur.IdRol
+             WHERE u.IdEmpresa = ?
+               AND u.Activo = 1
+               AND u.Bloqueado = 0
+               AND (
+                   UPPER(COALESCE(p.Nombre, '')) IN ('ADMINISTRADOR', 'VENDEDOR')
+                   OR UPPER(COALESCE(r.Nombre, '')) IN ('ADMINISTRADOR', 'VENDEDOR')
+               )
+               AND NOT EXISTS(
+                   SELECT 1 FROM usuarioroles ur2
+                   INNER JOIN roles r2 ON ur2.IdRol = r2.IdRol AND r2.Activo = 1
+                   WHERE ur2.UsuarioId = u.UsuarioId
+                     AND r2.Nombre = 'SUPERADMIN' AND r2.IdEmpresa IS NULL
+               )
+               AND NOT EXISTS(
+                   SELECT 1 FROM perfiles pf
+                   WHERE pf.IdPerfil = u.IdPerfil AND pf.Nombre = 'SUPERADMIN'
+               )
+             GROUP BY u.UsuarioId
+             ORDER BY u.PrimerNombre, u.PrimerApellido`,
+            [req.auth.IdEmpresa]
+        );
+        res.json({ ok: true, datos: rows });
+    } catch (error) {
+        console.error('Error listando vendedores:', error);
+        res.status(500).json({ ok: false, mensaje: 'Error obteniendo vendedores', error: error.message });
+    }
+});
+
+// =============================================================================
 // GET /api/usuarios/:id   (PROTEGIDO - RF-003, RN-008)
 // Solo puede ver usuarios de su propia empresa (RF-013).
 // Nunca expone al SUPERADMIN global.

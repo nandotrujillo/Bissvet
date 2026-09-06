@@ -40,9 +40,11 @@ router.get('/', async (req, res) => {
 
             FROM veterinarios
 
+            WHERE IdEmpresa = ?
+
             ORDER BY PrimerApellido, PrimerNombre
 
-        `);
+        `, [req.auth.IdEmpresa]);
 
         res.json({
 
@@ -91,9 +93,9 @@ router.get('/:id', async (req, res) => {
 
             FROM veterinarios
 
-            WHERE IdVeterinario = ?
+            WHERE IdVeterinario = ? AND IdEmpresa = ?
 
-        `, [id]);
+        `, [id, req.auth.IdEmpresa]);
 
 
         if (rows.length === 0) {
@@ -191,10 +193,11 @@ router.post('/', async (req, res) => {
                 Observaciones,
                 Activo,
                 UsuarioIdCreacion,
-                FechaCreacion
+                FechaCreacion,
+                IdEmpresa
             )
 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
 
         `, [
 
@@ -215,7 +218,8 @@ router.post('/', async (req, res) => {
             FechaNacimiento ?? null,
             Observaciones ?? null,
             Activo ?? true,
-            UsuarioId ?? null
+            UsuarioId ?? null,
+            req.auth.IdEmpresa
         ]);
 
 
@@ -223,9 +227,9 @@ router.post('/', async (req, res) => {
 
             SELECT * FROM veterinarios
 
-            WHERE IdVeterinario = ?
+            WHERE IdVeterinario = ? AND IdEmpresa = ?
 
-        `, [resultado.insertId]);
+        `, [resultado.insertId, req.auth.IdEmpresa]);
 
 
         res.status(201).json({
@@ -322,7 +326,7 @@ router.put('/:id', async (req, res) => {
                 FechaModificacion = NOW(),
                 UsuarioIdModificacion = ?
 
-            WHERE IdVeterinario = ?
+            WHERE IdVeterinario = ? AND IdEmpresa = ?
 
         `, [
 
@@ -344,7 +348,8 @@ router.put('/:id', async (req, res) => {
             Observaciones ?? null,
             Activo ?? true,
             UsuarioIdCreacion ?? null,
-            id
+            id,
+            req.auth.IdEmpresa
 
         ]);
 
@@ -353,9 +358,9 @@ router.put('/:id', async (req, res) => {
 
             SELECT * FROM veterinarios
 
-            WHERE IdVeterinario = ?
+            WHERE IdVeterinario = ? AND IdEmpresa = ?
 
-        `, [id]);
+        `, [id, req.auth.IdEmpresa]);
 
 
         res.json({
@@ -408,9 +413,9 @@ router.delete('/:id', async (req, res) => {
 
             DELETE FROM veterinarios
 
-            WHERE IdVeterinario = ?
+            WHERE IdVeterinario = ? AND IdEmpresa = ?
 
-        `, [id]);
+        `, [id, req.auth.IdEmpresa]);
 
 
         res.json({

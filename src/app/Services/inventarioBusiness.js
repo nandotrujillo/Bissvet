@@ -13,15 +13,15 @@ function conEmpresa(IdEmpresa) {
     return IdEmpresa ?? null;
 }
 
-// Obtiene/crea el registro de inventario (existencias) de un producto+bodega.
-// Devuelve { id, cantidad, costoPromedio } o null si el producto o bodega no
-// existen.
-async function obtenerInventario(conn, IdProducto, IdBodega) {
+// Obtiene/crea el registro de inventario (existencias) de un producto+bodega
+// dentro de la empresa. Devuelve { id, cantidad, costoPromedio } o null si el
+// producto o bodega no existen.
+async function obtenerInventario(conn, IdProducto, IdBodega, IdEmpresa) {
     const [filas] = await conn.query(
         `SELECT IdInventario, Cantidad, CostoPromedio, CostoTotal
          FROM inventario
-         WHERE IdProducto = ? AND IdBodega = ?`,
-        [IdProducto, IdBodega]
+         WHERE IdProducto = ? AND IdBodega = ? AND IdEmpresa = ?`,
+        [IdProducto, IdBodega, conEmpresa(IdEmpresa)]
     );
     if (filas.length === 0) return null;
 
@@ -35,34 +35,34 @@ async function obtenerInventario(conn, IdProducto, IdBodega) {
 }
 
 // Crea un registro de inventario con cantidad cero (para poder registrarlo en
-// kardex aunque todavía no exista existencia previa).
-async function crearInventario(conn, IdProducto, IdBodega) {
+// kardex aunque todavía no exista existencia previa) en la empresa indicada.
+async function crearInventario(conn, IdProducto, IdBodega, IdEmpresa) {
     await conn.query(
-        `INSERT INTO inventario (IdProducto, IdBodega, Cantidad, CostoPromedio, CostoTotal, Activo)
-         VALUES (?, ?, 0, 0, 0, 1)`,
-        [IdProducto, IdBodega]
+        `INSERT INTO inventario (IdProducto, IdBodega, Cantidad, CostoPromedio, CostoTotal, Activo, IdEmpresa)
+         VALUES (?, ?, 0, 0, 0, 1, ?)`,
+        [IdProducto, IdBodega, conEmpresa(IdEmpresa)]
     );
-    return obtenerInventario(conn, IdProducto, IdBodega);
+    return obtenerInventario(conn, IdProducto, IdBodega, IdEmpresa);
 }
 
 // Consulta el kardex de un producto+bodega para obtener el saldo previo real
-// (independiente del registro de inventario) filtrando por bodega.
-async function saldoKardexActual(conn, IdProducto, IdBodega) {
+// (independiente del registro de inventario) filtrando por bodega y empresa.
+async function saldoKardexActual(conn, IdProducto, IdBodega, IdEmpresa) {
     const [filas] = await conn.query(
         `SELECT COALESCE(SUM(EntradaCantidad - SalidaCantidad), 0) AS SaldoCantidad
          FROM kardex
-         WHERE IdProducto = ? AND IdBodega = ?`,
-        [IdProducto, IdBodega]
+         WHERE IdProducto = ? AND IdBodega = ? AND IdEmpresa = ?`,
+        [IdProducto, IdBodega, conEmpresa(IdEmpresa)]
     );
     return parseFloat(filas[0].SaldoCantidad);
 }
 
 // Recalcula el Costo Promedio Ponderado sumando una entrada al inventario de
-// un producto+bodega. Devuelve el nuevo estado { cantidad, costoPromedio,
-// costoTotal }.
-async function calcularCPP(conn, IdProducto, IdBodega, entradaCantidad, entradaCostoUnitario) {
-    const inventario = await obtenerInventario(conn, IdProducto, IdBodega);
-    const inv = inventario || await crearInventario(conn, IdProducto, IdBodega);
+// un producto+bodega (dentro de la empresa). Devuelve el nuevo estado
+// { cantidad, costoPromedio, costoTotal }.
+async function calcularCPP(conn, IdProducto, IdBodega, entradaCantidad, entradaCostoUnitario, IdEmpresa) {
+    const inventario = await obtenerInventario(conn, IdProducto, IdBodega, IdEmpresa);
+    const inv = inventario || await crearInventario(conn, IdProducto, IdBodega, IdEmpresa);
 
     const cantidadPrevia = Number(inv.Cantidad);
     const costoPromedioPrevio = Number(inv.CostoPromedio);
@@ -83,8 +83,8 @@ async function calcularCPP(conn, IdProducto, IdBodega, entradaCantidad, entradaC
     await conn.query(
         `UPDATE inventario
          SET Cantidad = ?, CostoPromedio = ?, CostoTotal = ?, FechaUltimoMovimiento = NOW()
-         WHERE IdProducto = ? AND IdBodega = ?`,
-        [nuevaCantidad, nuevoCostoPromedio, costoTotalNuevo, IdProducto, IdBodega]
+         WHERE IdProducto = ? AND IdBodega = ? AND IdEmpresa = ?`,
+        [nuevaCantidad, nuevoCostoPromedio, costoTotalNuevo, IdProducto, IdBodega, conEmpresa(IdEmpresa)]
     );
 
     return {
@@ -96,11 +96,11 @@ async function calcularCPP(conn, IdProducto, IdBodega, entradaCantidad, entradaC
     };
 }
 
-// Reduce la existencia de un producto+bodega (salida). Verifica que no quede
-// negativo. Devuelve el nuevo estado.
-async function reducirInventario(conn, IdProducto, IdBodega, salidaCantidad) {
-    const inventario = await obtenerInventario(conn, IdProducto, IdBodega);
-    const inv = inventario || await crearInventario(conn, IdProducto, IdBodega);
+// Reduce la existencia de un producto+bodega (salida) dentro de la empresa.
+// Verifica que no quede negativo. Devuelve el nuevo estado.
+async function reducirInventario(conn, IdProducto, IdBodega, salidaCantidad, IdEmpresa) {
+    const inventario = await obtenerInventario(conn, IdProducto, IdBodega, IdEmpresa);
+    const inv = inventario || await crearInventario(conn, IdProducto, IdBodega, IdEmpresa);
 
     if (inv.Cantidad < salidaCantidad) {
         const error = new Error('No existe inventario suficiente para realizar la operación.');
@@ -115,8 +115,8 @@ async function reducirInventario(conn, IdProducto, IdBodega, salidaCantidad) {
     await conn.query(
         `UPDATE inventario
          SET Cantidad = ?, CostoTotal = ?, FechaUltimoMovimiento = NOW()
-         WHERE IdProducto = ? AND IdBodega = ?`,
-        [nuevaCantidad, costoTotalNuevo, IdProducto, IdBodega]
+         WHERE IdProducto = ? AND IdBodega = ? AND IdEmpresa = ?`,
+        [nuevaCantidad, costoTotalNuevo, IdProducto, IdBodega, conEmpresa(IdEmpresa)]
     );
 
     return {
@@ -147,11 +147,11 @@ async function registrarEntrada(
         Observaciones
     }
 ) {
-    const saldoPrevio = parseFloat(await saldoKardexActual(conn, IdProducto, IdBodega));
+    const saldoPrevio = parseFloat(await saldoKardexActual(conn, IdProducto, IdBodega, IdEmpresa));
     const cantidadNum = Number(cantidad);
     const saldoNuevo = saldoPrevio + cantidadNum;
 
-    const estado = await calcularCPP(conn, IdProducto, IdBodega, cantidad, costoUnitario);
+    const estado = await calcularCPP(conn, IdProducto, IdBodega, cantidad, costoUnitario, IdEmpresa);
     const saldoValor = saldoNuevo * estado.CostoPromedio;
 
     const [res] = await conn.query(
@@ -199,8 +199,8 @@ async function registrarSalida(
         Observaciones
     }
 ) {
-    const inventario = await obtenerInventario(conn, IdProducto, IdBodega);
-    const inv = inventario || await crearInventario(conn, IdProducto, IdBodega);
+    const inventario = await obtenerInventario(conn, IdProducto, IdBodega, IdEmpresa);
+    const inv = inventario || await crearInventario(conn, IdProducto, IdBodega, IdEmpresa);
 
     if (inv.Cantidad < cantidad) {
         const error = new Error('No existe inventario suficiente para realizar la operación.');
@@ -212,10 +212,10 @@ async function registrarSalida(
     const cantidadNum = Number(cantidad);
     const costoTotal = cantidadNum * costoUnitario;
 
-    const saldoPrevio = parseFloat(await saldoKardexActual(conn, IdProducto, IdBodega));
+    const saldoPrevio = parseFloat(await saldoKardexActual(conn, IdProducto, IdBodega, IdEmpresa));
     const saldoNuevo = saldoPrevio - cantidadNum;
 
-    await reducirInventario(conn, IdProducto, IdBodega, cantidadNum);
+    await reducirInventario(conn, IdProducto, IdBodega, cantidadNum, IdEmpresa);
 
     const saldoValor = saldoNuevo * costoUnitario;
 
@@ -270,8 +270,8 @@ async function revertirEntrada(
         Observaciones
     }
 ) {
-    const inventario = await obtenerInventario(conn, IdProducto, IdBodega);
-    const inv = inventario || await crearInventario(conn, IdProducto, IdBodega);
+    const inventario = await obtenerInventario(conn, IdProducto, IdBodega, IdEmpresa);
+    const inv = inventario || await crearInventario(conn, IdProducto, IdBodega, IdEmpresa);
 
     if (inv.Cantidad < cantidad) {
         const error = new Error('No existe inventario suficiente para revertir la operación.');
@@ -279,7 +279,7 @@ async function revertirEntrada(
         throw error;
     }
 
-    const saldoPrevio = parseFloat(await saldoKardexActual(conn, IdProducto, IdBodega));
+    const saldoPrevio = parseFloat(await saldoKardexActual(conn, IdProducto, IdBodega, IdEmpresa));
 
     // Quitar el valor que aportó la entrada original
     const nuevaCantidad = Number(inv.Cantidad) - Number(cantidad);
@@ -296,8 +296,8 @@ async function revertirEntrada(
     await conn.query(
         `UPDATE inventario
          SET Cantidad = ?, CostoPromedio = ?, CostoTotal = ?, FechaUltimoMovimiento = NOW()
-         WHERE IdProducto = ? AND IdBodega = ?`,
-        [nuevaCantidad, nuevoCostoPromedio, nuevoCostoTotal, IdProducto, IdBodega]
+         WHERE IdProducto = ? AND IdBodega = ? AND IdEmpresa = ?`,
+        [nuevaCantidad, nuevoCostoPromedio, nuevoCostoTotal, IdProducto, IdBodega, conEmpresa(IdEmpresa)]
     );
 
     const saldoNuevo = saldoPrevio - Number(cantidad);

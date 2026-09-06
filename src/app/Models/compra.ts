@@ -26,6 +26,12 @@ export interface Compra {
 
   Total?: number;
 
+  MetodoPago?: string;
+
+  SaldoPendiente?: number;
+
+  Cuotas?: any[];
+
   Observaciones?: string;
 
   UsuarioIdCreacion?: number | null;

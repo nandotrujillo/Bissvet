@@ -11,9 +11,9 @@ router.get('/', async (req, res) => {
             SELECT Id, Nombre, Descripcion, Activo,
                    FechaCreacion, FechaModificacion
             FROM marcas
-            WHERE Activo = 1
+            WHERE Activo = 1 AND IdEmpresa = ?
             ORDER BY Nombre
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error listando marcas:', error);

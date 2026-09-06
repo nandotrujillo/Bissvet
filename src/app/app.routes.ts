@@ -168,6 +168,17 @@ export const routes: Routes = [
       },
 
       // -------------------------------------------------
+      // TIPOS DE PAGO (MÓDULO VENTAS)
+      // -------------------------------------------------
+
+      {
+        path: 'tipos-pago',
+        loadComponent: () =>
+          import('./pages/tipos-pago/tipos-pago.component')
+            .then(m => m.TiposPagoComponent)
+      },
+
+      // -------------------------------------------------
       // TRASLADOS (MÓDULO INVENTARIO)
       // -------------------------------------------------
 

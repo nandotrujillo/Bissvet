@@ -11,8 +11,9 @@ router.get('/', async (req, res) => {
             SELECT a.*, hc.IdMascota
             FROM archivoshistoriaclinica a
             INNER JOIN historiasclinicas hc ON a.IdHistoriaClinica = hc.IdHistoriaClinica
+            WHERE a.IdEmpresa = ?
             ORDER BY a.FechaCreacion DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar archivos:', error);
@@ -28,9 +29,9 @@ router.get('/historia/:idHistoriaClinica', async (req, res) => {
         const idHistoriaClinica = Number(req.params.idHistoriaClinica);
         const [rows] = await pool.query(`
             SELECT * FROM archivoshistoriaclinica
-            WHERE IdHistoriaClinica = ?
+            WHERE IdHistoriaClinica = ? AND IdEmpresa = ?
             ORDER BY FechaCreacion DESC
-        `, [idHistoriaClinica]);
+        `, [idHistoriaClinica, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar archivos:', error);
@@ -45,8 +46,8 @@ router.get('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [rows] = await pool.query(`
-            SELECT * FROM archivoshistoriaclinica WHERE IdArchivo = ?
-        `, [id]);
+            SELECT * FROM archivoshistoriaclinica WHERE IdArchivo = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Archivo no encontrado' });
@@ -80,8 +81,9 @@ router.post('/', async (req, res) => {
             INSERT INTO archivoshistoriaclinica (
                 IdHistoriaClinica, TipoArchivo, NombreArchivo, Descripcion,
                 RutaArchivo, TamanoBytes, TipoMIME,
-                FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             IdHistoriaClinica,
             TipoArchivo || 'Documento',
@@ -90,7 +92,8 @@ router.post('/', async (req, res) => {
             RutaArchivo,
             TamanoBytes || null,
             TipoMIME || null,
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({ ok: true, mensaje: 'Archivo registrado correctamente', IdArchivo: result.insertId });
@@ -107,8 +110,8 @@ router.delete('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [result] = await pool.query(`
-            DELETE FROM archivoshistoriaclinica WHERE IdArchivo = ?
-        `, [id]);
+            DELETE FROM archivoshistoriaclinica WHERE IdArchivo = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Archivo no encontrado' });

@@ -8,8 +8,8 @@ const pool = require('../../database/mysql');
 // =====================================================
 router.get('/', async (req, res) => {
     try {
-        const condiciones = [];
-        const params = [];
+        const condiciones = ['k.IdEmpresa = ?'];
+        const params = [req.auth.IdEmpresa];
 
         if (req.query.producto) { condiciones.push('k.IdProducto = ?'); params.push(Number(req.query.producto)); }
         if (req.query.bodega)   { condiciones.push('k.IdBodega = ?');   params.push(Number(req.query.bodega)); }
@@ -49,8 +49,8 @@ router.get('/', async (req, res) => {
 // =====================================================
 router.get('/resumen', async (req, res) => {
     try {
-        const condiciones = [];
-        const params = [];
+        const condiciones = ['k.IdEmpresa = ?'];
+        const params = [req.auth.IdEmpresa];
         if (req.query.producto) { condiciones.push('k.IdProducto = ?'); params.push(Number(req.query.producto)); }
         if (req.query.bodega)   { condiciones.push('k.IdBodega = ?');   params.push(Number(req.query.bodega)); }
         if (req.query.desde) { condiciones.push('k.Fecha >= ?'); params.push(req.query.desde); }
@@ -67,9 +67,11 @@ router.get('/resumen', async (req, res) => {
                 SUM(k.SalidaCostoTotal) AS ValorSalidas,
                 (SELECT k2.SaldoCantidad FROM kardex k2
                  WHERE k2.IdProducto = k.IdProducto AND k2.IdBodega = k.IdBodega
+                   AND k2.IdEmpresa = k.IdEmpresa
                  ORDER BY k2.Fecha DESC, k2.IdKardex DESC LIMIT 1) AS SaldoActual,
                 (SELECT k3.CostoPromedio FROM kardex k3
                  WHERE k3.IdProducto = k.IdProducto AND k3.IdBodega = k.IdBodega
+                   AND k3.IdEmpresa = k.IdEmpresa
                  ORDER BY k3.Fecha DESC, k3.IdKardex DESC LIMIT 1) AS CostoPromedio
             FROM kardex k
             INNER JOIN productos p ON p.IdProducto = k.IdProducto

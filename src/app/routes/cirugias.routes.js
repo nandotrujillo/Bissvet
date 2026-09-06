@@ -16,8 +16,9 @@ router.get('/', async (req, res) => {
             FROM cirugias ci
             INNER JOIN mascotas m ON ci.IdMascota = m.IdMascota
             INNER JOIN veterinarios v ON ci.IdVeterinario = v.IdVeterinario
+            WHERE ci.IdEmpresa = ?
             ORDER BY ci.FechaProgramacion DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar cirugías:', error);
@@ -37,9 +38,9 @@ router.get('/mascota/:idMascota', async (req, res) => {
                 CONCAT(v.PrimerNombre, ' ', v.PrimerApellido) AS NombreVeterinario
             FROM cirugias ci
             INNER JOIN veterinarios v ON ci.IdVeterinario = v.IdVeterinario
-            WHERE ci.IdMascota = ?
+            WHERE ci.IdMascota = ? AND ci.IdEmpresa = ?
             ORDER BY ci.FechaProgramacion DESC
-        `, [idMascota]);
+        `, [idMascota, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar cirugías por mascota:', error);
@@ -55,9 +56,9 @@ router.get('/historia/:idHistoriaClinica', async (req, res) => {
         const idHistoriaClinica = Number(req.params.idHistoriaClinica);
         const [rows] = await pool.query(`
             SELECT * FROM cirugias
-            WHERE IdHistoriaClinica = ?
+            WHERE IdHistoriaClinica = ? AND IdEmpresa = ?
             ORDER BY FechaProgramacion DESC
-        `, [idHistoriaClinica]);
+        `, [idHistoriaClinica, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar cirugías por historia:', error);
@@ -88,24 +89,24 @@ router.get('/:id', async (req, res) => {
             INNER JOIN mascotas m ON ci.IdMascota = m.IdMascota
             INNER JOIN veterinarios v ON ci.IdVeterinario = v.IdVeterinario
             INNER JOIN clientes cl ON m.ClienteId = cl.ClienteId
-            WHERE ci.IdCirugia = ?
-        `, [id]);
+            WHERE ci.IdCirugia = ? AND ci.IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (cirugia.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Cirugía no encontrada' });
         }
 
         const [preoperatorio] = await pool.query(`
-            SELECT * FROM registropreoperatorio WHERE IdCirugia = ?
-        `, [id]);
+            SELECT * FROM registropreoperatorio WHERE IdCirugia = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         const [anestesico] = await pool.query(`
-            SELECT * FROM registroanestesico WHERE IdCirugia = ?
-        `, [id]);
+            SELECT * FROM registroanestesico WHERE IdCirugia = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         const [postoperatorio] = await pool.query(`
-            SELECT * FROM registropostoperatorio WHERE IdCirugia = ?
-        `, [id]);
+            SELECT * FROM registropostoperatorio WHERE IdCirugia = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         res.json({
             ok: true,
@@ -148,8 +149,9 @@ router.post('/', async (req, res) => {
                 FechaProgramacion, FechaCirugia, TipoCirugia, Motivo,
                 DiagnosticoPreoperatorio, DiagnosticoPostoperatorio,
                 ProcedimientoRealizado, TipoAnestesia, Observaciones,
-                Estado, FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                Estado, FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             IdHistoriaClinica || null,
             IdMascota,
@@ -164,7 +166,8 @@ router.post('/', async (req, res) => {
             TipoAnestesia || null,
             Observaciones || null,
             Estado || 'Programada',
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({ ok: true, mensaje: 'Cirugía registrada correctamente', IdCirugia: result.insertId });
@@ -200,7 +203,7 @@ router.put('/:id', async (req, res) => {
                 Observaciones = ?,
                 Estado = ?,
                 UsuarioIdModificacion = ?
-            WHERE IdCirugia = ?
+            WHERE IdCirugia = ? AND IdEmpresa = ?
         `, [
             FechaProgramacion || null,
             FechaCirugia || null,
@@ -213,7 +216,8 @@ router.put('/:id', async (req, res) => {
             Observaciones || null,
             Estado,
             UsuarioIdModificacion || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {
@@ -239,8 +243,8 @@ router.post('/:id/preoperatorio', async (req, res) => {
         } = req.body;
 
         const [existing] = await pool.query(
-            `SELECT IdRegistroPreoperatorio FROM registropreoperatorio WHERE IdCirugia = ?`,
-            [idCirugia]
+            `SELECT IdRegistroPreoperatorio FROM registropreoperatorio WHERE IdCirugia = ? AND IdEmpresa = ?`,
+            [idCirugia, req.auth.IdEmpresa]
         );
 
         let resultId;
@@ -251,12 +255,12 @@ router.post('/:id/preoperatorio', async (req, res) => {
                     FrecuenciaRespiratoria = ?, EstadoGeneral = ?,
                     ExamenesPrequirurgicos = ?, RiesgoAnestesico = ?,
                     Ayuno = ?, Observaciones = ?
-                WHERE IdCirugia = ?
+                WHERE IdCirugia = ? AND IdEmpresa = ?
             `, [
                 Peso || null, Temperatura || null, FrecuenciaCardiaca || null,
                 FrecuenciaRespiratoria || null, EstadoGeneral || null,
                 ExamenesPrequirurgicos || null, RiesgoAnestesico || null,
-                Ayuno || null, Observaciones || null, idCirugia
+                Ayuno || null, Observaciones || null, idCirugia, req.auth.IdEmpresa
             ]);
             resultId = existing[0].IdRegistroPreoperatorio;
             return res.json({ ok: true, mensaje: 'Preoperatorio actualizado correctamente', IdRegistroPreoperatorio: resultId });
@@ -267,15 +271,17 @@ router.post('/:id/preoperatorio', async (req, res) => {
                 IdCirugia, Peso, Temperatura, FrecuenciaCardiaca,
                 FrecuenciaRespiratoria, EstadoGeneral, ExamenesPrequirurgicos,
                 RiesgoAnestesico, Ayuno, Observaciones,
-                FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             idCirugia,
             Peso || null, Temperatura || null, FrecuenciaCardiaca || null,
             FrecuenciaRespiratoria || null, EstadoGeneral || null,
             ExamenesPrequirurgicos || null, RiesgoAnestesico || null,
             Ayuno || null, Observaciones || null,
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({ ok: true, mensaje: 'Preoperatorio registrado correctamente', IdRegistroPreoperatorio: result.insertId });
@@ -298,8 +304,8 @@ router.post('/:id/anestesico', async (req, res) => {
         } = req.body;
 
         const [existing] = await pool.query(
-            `SELECT IdRegistroAnestesico FROM registroanestesico WHERE IdCirugia = ?`,
-            [idCirugia]
+            `SELECT IdRegistroAnestesico FROM registroanestesico WHERE IdCirugia = ? AND IdEmpresa = ?`,
+            [idCirugia, req.auth.IdEmpresa]
         );
 
         if (existing.length > 0) {
@@ -308,12 +314,12 @@ router.post('/:id/anestesico', async (req, res) => {
                     MedicamentosAnestesicos = ?, Dosis = ?, HoraAdministracion = ?,
                     ViaAdministracion = ?, HoraInicio = ?, HoraFin = ?,
                     SignosVitales = ?, Observaciones = ?, Complicaciones = ?
-                WHERE IdCirugia = ?
+                WHERE IdCirugia = ? AND IdEmpresa = ?
             `, [
                 MedicamentosAnestesicos || null, Dosis || null, HoraAdministracion || null,
                 ViaAdministracion || null, HoraInicio || null, HoraFin || null,
                 SignosVitales || null, Observaciones || null, Complicaciones || null,
-                idCirugia
+                idCirugia, req.auth.IdEmpresa
             ]);
             return res.json({ ok: true, mensaje: 'Registro anestésico actualizado correctamente' });
         }
@@ -323,14 +329,16 @@ router.post('/:id/anestesico', async (req, res) => {
                 IdCirugia, MedicamentosAnestesicos, Dosis, HoraAdministracion,
                 ViaAdministracion, HoraInicio, HoraFin,
                 SignosVitales, Observaciones, Complicaciones,
-                FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             idCirugia,
             MedicamentosAnestesicos || null, Dosis || null, HoraAdministracion || null,
             ViaAdministracion || null, HoraInicio || null, HoraFin || null,
             SignosVitales || null, Observaciones || null, Complicaciones || null,
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({ ok: true, mensaje: 'Registro anestésico guardado correctamente', IdRegistroAnestesico: result.insertId });
@@ -353,8 +361,8 @@ router.post('/:id/postoperatorio', async (req, res) => {
         } = req.body;
 
         const [existing] = await pool.query(
-            `SELECT IdRegistroPostoperatorio FROM registropostoperatorio WHERE IdCirugia = ?`,
-            [idCirugia]
+            `SELECT IdRegistroPostoperatorio FROM registropostoperatorio WHERE IdCirugia = ? AND IdEmpresa = ?`,
+            [idCirugia, req.auth.IdEmpresa]
         );
 
         if (existing.length > 0) {
@@ -363,12 +371,12 @@ router.post('/:id/postoperatorio', async (req, res) => {
                     EstadoPostoperatorio = ?, Medicamentos = ?, Tratamiento = ?,
                     Recomendaciones = ?, Alimentacion = ?, Restricciones = ?,
                     Cuidados = ?, SignosDeAlarma = ?, FechaControl = ?, Observaciones = ?
-                WHERE IdCirugia = ?
+                WHERE IdCirugia = ? AND IdEmpresa = ?
             `, [
                 EstadoPostoperatorio || null, Medicamentos || null, Tratamiento || null,
                 Recomendaciones || null, Alimentacion || null, Restricciones || null,
                 Cuidados || null, SignosDeAlarma || null, FechaControl || null, Observaciones || null,
-                idCirugia
+                idCirugia, req.auth.IdEmpresa
             ]);
             return res.json({ ok: true, mensaje: 'Postoperatorio actualizado correctamente' });
         }
@@ -378,14 +386,16 @@ router.post('/:id/postoperatorio', async (req, res) => {
                 IdCirugia, EstadoPostoperatorio, Medicamentos, Tratamiento,
                 Recomendaciones, Alimentacion, Restricciones,
                 Cuidados, SignosDeAlarma, FechaControl, Observaciones,
-                FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             idCirugia,
             EstadoPostoperatorio || null, Medicamentos || null, Tratamiento || null,
             Recomendaciones || null, Alimentacion || null, Restricciones || null,
             Cuidados || null, SignosDeAlarma || null, FechaControl || null, Observaciones || null,
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({ ok: true, mensaje: 'Postoperatorio registrado correctamente', IdRegistroPostoperatorio: result.insertId });

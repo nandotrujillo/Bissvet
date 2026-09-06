@@ -11,9 +11,9 @@ router.get('/', async (req, res) => {
             SELECT Id, Unidad, Descripcion, Activo,
                    FechaCreacion, FechaModificacion
             FROM unidades_medida
-            WHERE Activo = 1
+            WHERE Activo = 1 AND IdEmpresa = ?
             ORDER BY Unidad
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error listando unidades de medida:', error);

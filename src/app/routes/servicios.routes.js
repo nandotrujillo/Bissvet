@@ -26,8 +26,9 @@ router.get('/', async (req, res) => {
             FROM servicios s
             LEFT JOIN categoriasservicio cs
                 ON s.IdCategoriaServicio = cs.IdCategoriaServicio
+            WHERE s.IdEmpresa = ?
             ORDER BY s.Nombre
-        `);
+        `, [req.auth.IdEmpresa]);
 
         res.json({
             ok: true,
@@ -72,8 +73,8 @@ router.get('/:id', async (req, res) => {
             FROM servicios s
             LEFT JOIN categoriasservicio cs
                 ON s.IdCategoriaServicio = cs.IdCategoriaServicio
-            WHERE s.IdServicio = ?
-        `, [id]);
+            WHERE s.IdServicio = ? AND s.IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
 
@@ -227,7 +228,7 @@ router.put('/:id', async (req, res) => {
                 Activo = ?,
                 IdEmpresa = ?
 
-            WHERE IdServicio = ?
+            WHERE IdServicio = ? AND IdEmpresa = ?
 
         `, [
 
@@ -237,7 +238,8 @@ router.put('/:id', async (req, res) => {
             Precio ?? 0,
             Activo ?? 1,
             IdEmpresa ?? null,
-            id
+            id,
+            req.auth.IdEmpresa
 
         ]);
 
@@ -291,8 +293,8 @@ router.delete('/:id', async (req, res) => {
 
         const [resultado] = await pool.query(`
             DELETE FROM servicios
-            WHERE IdServicio = ?
-        `, [id]);
+            WHERE IdServicio = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
 
         if (resultado.affectedRows === 0) {

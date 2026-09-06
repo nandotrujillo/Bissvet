@@ -11,8 +11,9 @@ router.get('/', async (req, res) => {
             SELECT d.*, hc.IdMascota
             FROM diagnosticos d
             INNER JOIN historiasclinicas hc ON d.IdHistoriaClinica = hc.IdHistoriaClinica
+            WHERE d.IdEmpresa = ?
             ORDER BY d.IdDiagnostico DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar diagnósticos:', error);
@@ -28,9 +29,9 @@ router.get('/historia/:idHistoriaClinica', async (req, res) => {
         const idHistoriaClinica = Number(req.params.idHistoriaClinica);
         const [rows] = await pool.query(`
             SELECT * FROM diagnosticos
-            WHERE IdHistoriaClinica = ?
+            WHERE IdHistoriaClinica = ? AND IdEmpresa = ?
             ORDER BY IdDiagnostico ASC
-        `, [idHistoriaClinica]);
+        `, [idHistoriaClinica, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar diagnósticos:', error);
@@ -45,8 +46,8 @@ router.get('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [rows] = await pool.query(`
-            SELECT * FROM diagnosticos WHERE IdDiagnostico = ?
-        `, [id]);
+            SELECT * FROM diagnosticos WHERE IdDiagnostico = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Diagnóstico no encontrado' });
@@ -83,15 +84,17 @@ router.post('/', async (req, res) => {
             INSERT INTO diagnosticos (
                 IdHistoriaClinica, Diagnostico, CodigoDiagnostico,
                 TipoDiagnostico, Observaciones,
-                FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, NOW(), ?)
+                FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             IdHistoriaClinica,
             Diagnostico,
             CodigoDiagnostico || null,
             TipoDiagnostico || 'Presuntivo',
             Observaciones || null,
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({ ok: true, mensaje: 'Diagnóstico registrado correctamente', IdDiagnostico: result.insertId });
@@ -120,13 +123,14 @@ router.put('/:id', async (req, res) => {
                 CodigoDiagnostico = ?,
                 TipoDiagnostico = ?,
                 Observaciones = ?
-            WHERE IdDiagnostico = ?
+            WHERE IdDiagnostico = ? AND IdEmpresa = ?
         `, [
             Diagnostico,
             CodigoDiagnostico || null,
             TipoDiagnostico,
             Observaciones || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {
@@ -146,8 +150,8 @@ router.delete('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [result] = await pool.query(`
-            DELETE FROM diagnosticos WHERE IdDiagnostico = ?
-        `, [id]);
+            DELETE FROM diagnosticos WHERE IdDiagnostico = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Diagnóstico no encontrado' });

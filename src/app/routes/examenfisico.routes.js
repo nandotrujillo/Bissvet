@@ -11,8 +11,9 @@ router.get('/', async (req, res) => {
             SELECT ef.*, hc.IdMascota
             FROM examenfisico ef
             INNER JOIN historiasclinicas hc ON ef.IdHistoriaClinica = hc.IdHistoriaClinica
+            WHERE ef.IdEmpresa = ?
             ORDER BY ef.IdExamenFisico DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar exámenes físicos:', error);
@@ -28,8 +29,8 @@ router.get('/historia/:idHistoriaClinica', async (req, res) => {
         const idHistoriaClinica = Number(req.params.idHistoriaClinica);
         const [rows] = await pool.query(`
             SELECT * FROM examenfisico
-            WHERE IdHistoriaClinica = ?
-        `, [idHistoriaClinica]);
+            WHERE IdHistoriaClinica = ? AND IdEmpresa = ?
+        `, [idHistoriaClinica, req.auth.IdEmpresa]);
 
         res.json({ ok: true, datos: rows[0] || null });
     } catch (error) {
@@ -45,8 +46,8 @@ router.get('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [rows] = await pool.query(`
-            SELECT * FROM examenfisico WHERE IdExamenFisico = ?
-        `, [id]);
+            SELECT * FROM examenfisico WHERE IdExamenFisico = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Examen físico no encontrado' });
@@ -82,8 +83,9 @@ router.post('/', async (req, res) => {
                 SistemaRespiratorio, SistemaCardiovascular, Abdomen,
                 SistemaDigestivo, SistemaUrinario, SistemaReproductivo,
                 SistemaMusculoesqueletico, PielYPelaje, SistemaNeurologico,
-                Ganglios, OtrosHallazgos, ObservacionesGenerales, FechaCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                Ganglios, OtrosHallazgos, ObservacionesGenerales, FechaCreacion,
+                IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
         `, [
             IdHistoriaClinica,
             EstadoGeneral || null, Cabeza || null, Ojos || null, Oidos || null,
@@ -91,7 +93,8 @@ router.post('/', async (req, res) => {
             SistemaRespiratorio || null, SistemaCardiovascular || null, Abdomen || null,
             SistemaDigestivo || null, SistemaUrinario || null, SistemaReproductivo || null,
             SistemaMusculoesqueletico || null, PielYPelaje || null, SistemaNeurologico || null,
-            Ganglios || null, OtrosHallazgos || null, ObservacionesGenerales || null
+            Ganglios || null, OtrosHallazgos || null, ObservacionesGenerales || null,
+            req.auth.IdEmpresa
         ]);
 
         res.status(201).json({ ok: true, mensaje: 'Examen físico registrado correctamente', IdExamenFisico: result.insertId });
@@ -136,7 +139,7 @@ router.put('/:id', async (req, res) => {
                 Ganglios = ?,
                 OtrosHallazgos = ?,
                 ObservacionesGenerales = ?
-            WHERE IdExamenFisico = ?
+            WHERE IdExamenFisico = ? AND IdEmpresa = ?
         `, [
             EstadoGeneral || null, Cabeza || null, Ojos || null, Oidos || null,
             Nariz || null, Boca || null, Cuello || null,
@@ -144,7 +147,8 @@ router.put('/:id', async (req, res) => {
             SistemaDigestivo || null, SistemaUrinario || null, SistemaReproductivo || null,
             SistemaMusculoesqueletico || null, PielYPelaje || null, SistemaNeurologico || null,
             Ganglios || null, OtrosHallazgos || null, ObservacionesGenerales || null,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {

@@ -14,13 +14,14 @@ router.get('/', async (req, res) => {
                 m.Nombre AS NombreMascota,
                 CONCAT(v.PrimerNombre, ' ', v.PrimerApellido) AS NombreVeterinario,
                 v.TarjetaProfesional,
-                (SELECT COUNT(*) FROM detallerecetas dr WHERE dr.IdReceta = r.IdReceta) AS TotalMedicamentos
+                (SELECT COUNT(*) FROM detallerecetas dr WHERE dr.IdReceta = r.IdReceta AND dr.IdEmpresa = r.IdEmpresa) AS TotalMedicamentos
             FROM recetas r
             INNER JOIN historiasclinicas hc ON r.IdHistoriaClinica = hc.IdHistoriaClinica
             INNER JOIN mascotas m ON hc.IdMascota = m.IdMascota
             INNER JOIN veterinarios v ON r.IdVeterinario = v.IdVeterinario
+            WHERE r.IdEmpresa = ?
             ORDER BY r.Fecha DESC
-        `);
+        `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar recetas:', error);
@@ -41,9 +42,9 @@ router.get('/historia/:idHistoriaClinica', async (req, res) => {
                 v.TarjetaProfesional
             FROM recetas r
             INNER JOIN veterinarios v ON r.IdVeterinario = v.IdVeterinario
-            WHERE r.IdHistoriaClinica = ?
+            WHERE r.IdHistoriaClinica = ? AND r.IdEmpresa = ?
             ORDER BY r.Fecha DESC
-        `, [idHistoriaClinica]);
+        `, [idHistoriaClinica, req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error al listar recetas:', error);
@@ -79,8 +80,8 @@ router.get('/:id', async (req, res) => {
             INNER JOIN mascotas m ON hc.IdMascota = m.IdMascota
             INNER JOIN veterinarios v ON r.IdVeterinario = v.IdVeterinario
             INNER JOIN clientes cl ON m.ClienteId = cl.ClienteId
-            WHERE r.IdReceta = ?
-        `, [id]);
+            WHERE r.IdReceta = ? AND r.IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (receta.length === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Receta no encontrada' });
@@ -88,9 +89,9 @@ router.get('/:id', async (req, res) => {
 
         const [detalle] = await pool.query(`
             SELECT * FROM detallerecetas
-            WHERE IdReceta = ?
+            WHERE IdReceta = ? AND IdEmpresa = ?
             ORDER BY IdDetalleReceta ASC
-        `, [id]);
+        `, [id, req.auth.IdEmpresa]);
 
         res.json({
             ok: true,
@@ -134,15 +135,17 @@ router.post('/', async (req, res) => {
             INSERT INTO recetas (
                 IdHistoriaClinica, Fecha, IdVeterinario,
                 Observaciones, IndicacionesGenerales, Estado,
-                FechaCreacion, UsuarioIdCreacion
-            ) VALUES (?, NOW(), ?, ?, ?, ?, NOW(), ?)
+                FechaCreacion, UsuarioIdCreacion,
+                IdEmpresa
+            ) VALUES (?, NOW(), ?, ?, ?, ?, NOW(), ?, ?)
         `, [
             IdHistoriaClinica,
             IdVeterinario,
             Observaciones || null,
             IndicacionesGenerales || null,
             Estado || 'Activa',
-            UsuarioIdCreacion || null
+            UsuarioIdCreacion || null,
+            req.auth.IdEmpresa
         ]);
 
         const IdReceta = result.insertId;
@@ -154,8 +157,9 @@ router.post('/', async (req, res) => {
                         IdReceta, IdProducto, Medicamento, Concentracion,
                         FormaFarmaceutica, Dosis, UnidadDosis, Frecuencia,
                         ViaAdministracion, Duracion, Cantidad,
-                        Indicaciones, Observaciones, FechaCreacion
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                        Indicaciones, Observaciones, FechaCreacion,
+                        IdEmpresa
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
                 `, [
                     IdReceta,
                     item.IdProducto || null,
@@ -169,7 +173,8 @@ router.post('/', async (req, res) => {
                     item.Duracion || null,
                     item.Cantidad || null,
                     item.Indicaciones || null,
-                    item.Observaciones || null
+                    item.Observaciones || null,
+                    req.auth.IdEmpresa
                 ]);
             }
         }
@@ -202,12 +207,13 @@ router.put('/:id', async (req, res) => {
                 Observaciones = ?,
                 IndicacionesGenerales = ?,
                 Estado = ?
-            WHERE IdReceta = ?
+            WHERE IdReceta = ? AND IdEmpresa = ?
         `, [
             Observaciones || null,
             IndicacionesGenerales || null,
             Estado,
-            id
+            id,
+            req.auth.IdEmpresa
         ]);
 
         if (result.affectedRows === 0) {
@@ -227,8 +233,8 @@ router.put('/:id/cancelar', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const [result] = await pool.query(`
-            UPDATE recetas SET Estado = 'Cancelada' WHERE IdReceta = ?
-        `, [id]);
+            UPDATE recetas SET Estado = 'Cancelada' WHERE IdReceta = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Receta no encontrada' });
