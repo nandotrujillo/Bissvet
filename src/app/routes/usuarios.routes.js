@@ -257,6 +257,7 @@ router.post('/logout', authenticate, async (req, res) => {
 // =============================================================================
 // GET /api/usuarios   (PROTEGIDO - RF-003, RN-008)
 // Lista usuarios de la empresa del token; no filtra nada del body.
+// Nunca expone al SUPERADMIN global (rol o perfil) ni al usuario que consulta.
 // =============================================================================
 router.get('/', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, res) => {
     try {
@@ -270,6 +271,16 @@ router.get('/', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, res) 
              LEFT JOIN perfiles p ON p.IdPerfil = u.IdPerfil
              LEFT JOIN empresas e ON e.IdEmpresa = u.IdEmpresa
              WHERE u.IdEmpresa = ?
+               AND NOT EXISTS(
+                   SELECT 1 FROM usuarioroles ur
+                   INNER JOIN roles r ON ur.IdRol = r.IdRol AND r.Activo = 1
+                   WHERE ur.UsuarioId = u.UsuarioId
+                     AND r.Nombre = 'SUPERADMIN' AND r.IdEmpresa IS NULL
+               )
+               AND NOT EXISTS(
+                   SELECT 1 FROM perfiles pf
+                   WHERE pf.IdPerfil = u.IdPerfil AND pf.Nombre = 'SUPERADMIN'
+               )
              ORDER BY u.PrimerNombre, u.PrimerApellido`,
             [req.auth.IdEmpresa]
         );
@@ -293,6 +304,7 @@ router.get('/', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, res) 
 // =============================================================================
 // GET /api/usuarios/:id   (PROTEGIDO - RF-003, RN-008)
 // Solo puede ver usuarios de su propia empresa (RF-013).
+// Nunca expone al SUPERADMIN global.
 // =============================================================================
 router.get('/:id', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, res) => {
     try {
@@ -306,7 +318,17 @@ router.get('/:id', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, re
                     p.Nombre AS Perfil
              FROM Usuarios u
              LEFT JOIN perfiles p ON p.IdPerfil = u.IdPerfil
-             WHERE u.UsuarioId = ? AND u.IdEmpresa = ?`,
+             WHERE u.UsuarioId = ? AND u.IdEmpresa = ?
+               AND NOT EXISTS(
+                   SELECT 1 FROM usuarioroles ur
+                   INNER JOIN roles r ON ur.IdRol = r.IdRol AND r.Activo = 1
+                   WHERE ur.UsuarioId = u.UsuarioId
+                     AND r.Nombre = 'SUPERADMIN' AND r.IdEmpresa IS NULL
+               )
+               AND NOT EXISTS(
+                   SELECT 1 FROM perfiles pf
+                   WHERE pf.IdPerfil = u.IdPerfil AND pf.Nombre = 'SUPERADMIN'
+               )`,
             [id, req.auth.IdEmpresa]
         );
 

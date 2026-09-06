@@ -12,9 +12,13 @@ export interface Venta {
 
   NombreCliente?: string;
 
-  IdMascota?: number | null;
+  IdVendedor?: number | null;
 
-  NombreMascota?: string;
+  NombreVendedor?: string;
+
+  TipoPago?: string;
+
+  PorcentajeImpuesto?: number;
 
   IdBodega?: number | null;
 

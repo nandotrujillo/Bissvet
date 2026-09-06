@@ -17,6 +17,8 @@ router.get('/', async (req, res) => {
         if (req.query.tipo)   { condiciones.push('a.TipoAjuste = ?'); params.push(req.query.tipo); }
         if (req.query.desde) { condiciones.push('a.Fecha >= ?'); params.push(req.query.desde); }
         if (req.query.hasta) { condiciones.push('a.Fecha <= ?'); params.push(req.query.hasta); }
+        condiciones.push('a.IdEmpresa = ?');
+        params.push(req.auth?.IdEmpresa ?? null);
         const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
 
         const [rows] = await pool.query(`
@@ -52,8 +54,8 @@ router.get('/:id', async (req, res) => {
                 a.UsuarioIdAnulacion, a.FechaAnulacion
             FROM ajustes_inventario a
             INNER JOIN bodegas b ON b.Id = a.IdBodega
-            WHERE a.IdAjuste = ?
-        `, [req.params.id]);
+            WHERE a.IdAjuste = ? AND a.IdEmpresa = ?
+        `, [req.params.id, req.auth?.IdEmpresa ?? null]);
         if (cabecera.length === 0)
             return res.status(404).json({ ok: false, mensaje: 'Ajuste no encontrado' });
 
@@ -88,8 +90,11 @@ router.post('/', async (req, res) => {
 
         const {
             Numero, IdBodega, Fecha, TipoAjuste, Motivo, Observaciones,
-            UsuarioIdCreacion, Detalle
+            Detalle
         } = req.body;
+        // Usuario y empresa provienen de la sesión, no del body.
+        const UsuarioIdCreacion = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
         if (!Numero || !Numero.trim())
             return res.status(400).json({ ok: false, mensaje: 'El número de documento es obligatorio' });
@@ -102,7 +107,10 @@ router.post('/', async (req, res) => {
         if (!Detalle || !Detalle.length)
             return res.status(400).json({ ok: false, mensaje: 'Debe agregar al menos un producto' });
 
-        const [duplicado] = await conn.query(`SELECT IdAjuste FROM ajustes_inventario WHERE Numero = ?`, [Numero.trim()]);
+        const [duplicado] = await conn.query(
+            `SELECT IdAjuste FROM ajustes_inventario WHERE Numero = ? AND IdEmpresa = ?`,
+            [Numero.trim(), IdEmpresa]
+        );
         if (duplicado.length > 0)
             return res.status(409).json({ ok: false, mensaje: 'Ya existe un ajuste con ese número' });
 
@@ -116,20 +124,20 @@ router.post('/', async (req, res) => {
         const [cabecera] = await conn.query(
             `INSERT INTO ajustes_inventario (
                 Numero, IdBodega, Fecha, TipoAjuste, Estado, Motivo,
-                Observaciones, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, 'BORRADOR', ?, ?, ?)`,
+                Observaciones, UsuarioIdCreacion, IdEmpresa
+            ) VALUES (?, ?, ?, ?, 'BORRADOR', ?, ?, ?, ?)`,
             [
                 Numero.trim(), IdBodega, Fecha || new Date(), TipoAjuste,
-                Motivo.trim(), Observaciones || null, UsuarioIdCreacion || null
+                Motivo.trim(), Observaciones || null, UsuarioIdCreacion, IdEmpresa
             ]
         );
         const IdAjuste = cabecera.insertId;
 
         for (const item of Detalle) {
             await conn.query(
-                `INSERT INTO ajustes_inventario_detalle (IdAjuste, IdProducto, Cantidad, CostoUnitario)
-                 VALUES (?, ?, ?, ?)`,
-                [IdAjuste, item.IdProducto, item.Cantidad, item.CostoUnitario ?? 0]
+                `INSERT INTO ajustes_inventario_detalle (IdAjuste, IdProducto, Cantidad, CostoUnitario, IdEmpresa)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [IdAjuste, item.IdProducto, item.Cantidad, item.CostoUnitario ?? 0, IdEmpresa]
             );
         }
 
@@ -204,11 +212,13 @@ router.post('/:id/confirmar', async (req, res) => {
         await conn.beginTransaction();
 
         const IdAjuste = Number(req.params.id);
-        const { UsuarioIdConfirmacion } = req.body;
+        // El usuario que confirma proviene de la sesión, no del body.
+        const UsuarioIdConfirmacion = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
         const [ajuste] = await conn.query(
-            `SELECT IdAjuste, IdBodega, TipoAjuste, Estado FROM ajustes_inventario WHERE IdAjuste = ? FOR UPDATE`,
-            [IdAjuste]
+            `SELECT IdAjuste, IdBodega, TipoAjuste, Estado FROM ajustes_inventario WHERE IdAjuste = ? AND IdEmpresa = ? FOR UPDATE`,
+            [IdAjuste, IdEmpresa]
         );
         if (ajuste.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Ajuste no encontrado' }); }
         if (ajuste[0].Estado === 'CONFIRMADA') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'El ajuste ya está confirmado' }); }
@@ -235,6 +245,7 @@ router.post('/:id/confirmar', async (req, res) => {
                     costoUnitario,
                     costoTotal: item.Cantidad * costoUnitario,
                     UsuarioId: UsuarioIdConfirmacion,
+                    IdEmpresa: IdEmpresa,
                     Observaciones: 'Entrada por ajuste positivo de inventario'
                 });
             } else {
@@ -246,6 +257,7 @@ router.post('/:id/confirmar', async (req, res) => {
                     IdDocumento: IdAjuste,
                     cantidad: item.Cantidad,
                     UsuarioId: UsuarioIdConfirmacion,
+                    IdEmpresa: IdEmpresa,
                     Observaciones: 'Salida por ajuste negativo de inventario'
                 });
 
@@ -291,11 +303,14 @@ router.post('/:id/anular', async (req, res) => {
         await conn.beginTransaction();
 
         const IdAjuste = Number(req.params.id);
-        const { UsuarioIdAnulacion, MotivoAnulacion } = req.body;
+        const { MotivoAnulacion } = req.body;
+        // El usuario que anula proviene de la sesión, no del body.
+        const UsuarioIdAnulacion = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
         const [ajuste] = await conn.query(
-            `SELECT IdAjuste, IdBodega, TipoAjuste, Estado FROM ajustes_inventario WHERE IdAjuste = ? FOR UPDATE`,
-            [IdAjuste]
+            `SELECT IdAjuste, IdBodega, TipoAjuste, Estado FROM ajustes_inventario WHERE IdAjuste = ? AND IdEmpresa = ? FOR UPDATE`,
+            [IdAjuste, IdEmpresa]
         );
         if (ajuste.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Ajuste no encontrado' }); }
         if (ajuste[0].Estado !== 'CONFIRMADA') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'Solo se pueden anular ajustes CONFIRMADOS' }); }
@@ -320,6 +335,7 @@ router.post('/:id/anular', async (req, res) => {
                     cantidad: item.Cantidad,
                     costoUnitario,
                     UsuarioId: UsuarioIdAnulacion,
+                    IdEmpresa: IdEmpresa,
                     Observaciones: nota
                 });
                 movimientos.push(reversa);
@@ -334,6 +350,7 @@ router.post('/:id/anular', async (req, res) => {
                     costoUnitario,
                     costoTotal: item.Cantidad * costoUnitario,
                     UsuarioId: UsuarioIdAnulacion,
+                    IdEmpresa: IdEmpresa,
                     Observaciones: nota
                 });
                 movimientos.push(reposicion);

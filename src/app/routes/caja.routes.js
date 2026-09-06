@@ -168,9 +168,13 @@ router.get('/:id/movimientos', async (req, res) => {
             SELECT
                 d.Id, d.TipoMov, t.DescTipoMovCaja, t.Signo,
                 d.ValorMov, d.FechaRegistro, d.DescMov,
-                d.idProveedor, d.NroDocumentoProveedor
+                d.idProveedor, d.NroDocumentoProveedor,
+                d.UsuarioIdCreacion,
+                CONCAT_WS(' ', u.PrimerNombre, u.SegundoNombre,
+                          u.PrimerApellido, u.SegundoApellido) AS NombreUsuario
             FROM cajeromovdet d
             INNER JOIN tipomovcaja t ON d.TipoMov = t.id
+            LEFT JOIN Usuarios u ON u.UsuarioId = d.UsuarioIdCreacion
             WHERE d.IdCajaMov = ?
             ORDER BY d.FechaRegistro ASC, d.Id ASC
         `, [id]);
@@ -291,15 +295,18 @@ router.post('/movimiento', async (req, res) => {
 
         const [result] = await conn.query(
             `INSERT INTO cajeromovdet
-               (IdCajaMov, TipoMov, ValorMov, FechaRegistro, DescMov, idProveedor, NroDocumentoProveedor)
-             VALUES (?, ?, ?, NOW(), ?, ?, ?)`,
+               (IdCajaMov, TipoMov, ValorMov, FechaRegistro, DescMov, idProveedor, NroDocumentoProveedor,
+                UsuarioIdCreacion, IdEmpresa)
+             VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
             [
                 jornada[0].Id,
                 tipo,
                 valor,
                 desc,
                 idProveedor != null && idProveedor !== '' ? Number(idProveedor) : null,
-                NroDocumentoProveedor || null
+                NroDocumentoProveedor || null,
+                req.auth.UsuarioId,
+                req.auth.IdEmpresa
             ]
         );
 

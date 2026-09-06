@@ -17,6 +17,8 @@ router.get('/', async (req, res) => {
             condiciones.push('(p.NombreProducto LIKE ? OR p.CodigoProducto LIKE ?)');
             const t = `%${req.query.buscar}%`; params.push(t, t);
         }
+        condiciones.push('i.IdEmpresa = ?');
+        params.push(req.auth?.IdEmpresa ?? null);
         const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
 
         const [rows] = await pool.query(`
@@ -67,11 +69,11 @@ router.get('/consolidado', async (req, res) => {
                      ELSE 'OK' END AS Alerta
             FROM inventario i
             INNER JOIN productos p ON p.IdProducto = i.IdProducto
-            WHERE p.Activo = 1
+            WHERE p.Activo = 1 AND i.IdEmpresa = ?
             GROUP BY p.IdProducto, p.CodigoProducto, p.NombreProducto,
                      p.PrecioVenta, p.StockMinimo, p.StockMaximo
             ORDER BY p.NombreProducto
-        `);
+        `, [req.auth?.IdEmpresa ?? null]);
         res.json({ ok: true, datos: rows });
     } catch (error) {
         console.error('Error consultando inventario consolidado:', error);
@@ -90,7 +92,10 @@ router.post('/inicial', async (req, res) => {
     try {
         await conn.beginTransaction();
 
-        const { IdBodega, UsuarioId, Items } = req.body;
+        const { IdBodega, Items } = req.body;
+        // Usuario y empresa provienen de la sesión, no del body.
+        const UsuarioId = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
         if (!IdBodega)
             return res.status(400).json({ ok: false, mensaje: 'El IdBodega es obligatorio' });
@@ -131,6 +136,7 @@ router.post('/inicial', async (req, res) => {
                 costoUnitario: item.CostoUnitario,
                 costoTotal: item.Cantidad * item.CostoUnitario,
                 UsuarioId,
+                IdEmpresa,
                 Observaciones: 'Inventario inicial del sistema'
             });
             resultados.push(resultado);

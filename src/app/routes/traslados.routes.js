@@ -17,6 +17,8 @@ router.get('/', async (req, res) => {
         if (req.query.destino)  { condiciones.push('t.IdBodegaDestino = ?'); params.push(Number(req.query.destino)); }
         if (req.query.desde) { condiciones.push('t.Fecha >= ?'); params.push(req.query.desde); }
         if (req.query.hasta) { condiciones.push('t.Fecha <= ?'); params.push(req.query.hasta); }
+        condiciones.push('t.IdEmpresa = ?');
+        params.push(req.auth?.IdEmpresa ?? null);
         const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
 
         const [rows] = await pool.query(`
@@ -56,8 +58,8 @@ router.get('/:id', async (req, res) => {
             FROM traslados t
             INNER JOIN bodegas bo ON bo.Id = t.IdBodegaOrigen
             INNER JOIN bodegas bd ON bd.Id = t.IdBodegaDestino
-            WHERE t.IdTraslado = ?
-        `, [req.params.id]);
+            WHERE t.IdTraslado = ? AND t.IdEmpresa = ?
+        `, [req.params.id, req.auth?.IdEmpresa ?? null]);
         if (cabecera.length === 0)
             return res.status(404).json({ ok: false, mensaje: 'Traslado no encontrado' });
 
@@ -92,8 +94,11 @@ router.post('/', async (req, res) => {
 
         const {
             Numero, IdBodegaOrigen, IdBodegaDestino, Fecha, Observaciones,
-            UsuarioIdCreacion, Detalle
+            Detalle
         } = req.body;
+        // Usuario y empresa provienen de la sesión, no del body.
+        const UsuarioIdCreacion = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
         if (!Numero || !Numero.trim())
             return res.status(400).json({ ok: false, mensaje: 'El número de documento es obligatorio' });
@@ -106,7 +111,10 @@ router.post('/', async (req, res) => {
         if (!Detalle || !Detalle.length)
             return res.status(400).json({ ok: false, mensaje: 'Debe agregar al menos un producto' });
 
-        const [duplicado] = await conn.query(`SELECT IdTraslado FROM traslados WHERE Numero = ?`, [Numero.trim()]);
+        const [duplicado] = await conn.query(
+            `SELECT IdTraslado FROM traslados WHERE Numero = ? AND IdEmpresa = ?`,
+            [Numero.trim(), IdEmpresa]
+        );
         if (duplicado.length > 0)
             return res.status(409).json({ ok: false, mensaje: 'Ya existe un traslado con ese número' });
 
@@ -118,20 +126,20 @@ router.post('/', async (req, res) => {
         const [cabecera] = await conn.query(
             `INSERT INTO traslados (
                 Numero, IdBodegaOrigen, IdBodegaDestino, Fecha, Estado,
-                Observaciones, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, 'BORRADOR', ?, ?)`,
+                Observaciones, UsuarioIdCreacion, IdEmpresa
+            ) VALUES (?, ?, ?, ?, 'BORRADOR', ?, ?, ?)`,
             [
                 Numero.trim(), IdBodegaOrigen, IdBodegaDestino, Fecha || new Date(),
-                Observaciones || null, UsuarioIdCreacion || null
+                Observaciones || null, UsuarioIdCreacion, IdEmpresa
             ]
         );
         const IdTraslado = cabecera.insertId;
 
         for (const item of Detalle) {
             await conn.query(
-                `INSERT INTO traslados_detalle (IdTraslado, IdProducto, Cantidad, CostoUnitario)
-                 VALUES (?, ?, ?, 0)`,
-                [IdTraslado, item.IdProducto, item.Cantidad]
+                `INSERT INTO traslados_detalle (IdTraslado, IdProducto, Cantidad, CostoUnitario, IdEmpresa)
+                 VALUES (?, ?, ?, 0, ?)`,
+                [IdTraslado, item.IdProducto, item.Cantidad, IdEmpresa]
             );
         }
 
@@ -206,11 +214,13 @@ router.post('/:id/confirmar', async (req, res) => {
         await conn.beginTransaction();
 
         const IdTraslado = Number(req.params.id);
-        const { UsuarioIdConfirmacion } = req.body;
+        // El usuario que confirma proviene de la sesión, no del body.
+        const UsuarioIdConfirmacion = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
         const [traslado] = await conn.query(
             `SELECT IdTraslado, IdBodegaOrigen, IdBodegaDestino, Estado
-             FROM traslados WHERE IdTraslado = ? FOR UPDATE`, [IdTraslado]
+             FROM traslados WHERE IdTraslado = ? AND IdEmpresa = ? FOR UPDATE`, [IdTraslado, IdEmpresa]
         );
         if (traslado.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Traslado no encontrado' }); }
         if (traslado[0].Estado === 'CONFIRMADA') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'El traslado ya está confirmado' }); }
@@ -230,6 +240,7 @@ router.post('/:id/confirmar', async (req, res) => {
                 IdDocumento: IdTraslado,
                 cantidad: item.Cantidad,
                 UsuarioId: UsuarioIdConfirmacion,
+                IdEmpresa: IdEmpresa,
                 Observaciones: 'Salida por traslado a otra bodega'
             });
 
@@ -244,6 +255,7 @@ router.post('/:id/confirmar', async (req, res) => {
                 costoUnitario,
                 costoTotal: item.Cantidad * costoUnitario,
                 UsuarioId: UsuarioIdConfirmacion,
+                IdEmpresa: IdEmpresa,
                 Observaciones: 'Entrada por traslado desde otra bodega'
             });
 
@@ -287,11 +299,14 @@ router.post('/:id/anular', async (req, res) => {
         await conn.beginTransaction();
 
         const IdTraslado = Number(req.params.id);
-        const { UsuarioIdAnulacion, MotivoAnulacion } = req.body;
+        const { MotivoAnulacion } = req.body;
+        // El usuario que anula proviene de la sesión, no del body.
+        const UsuarioIdAnulacion = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
         const [traslado] = await conn.query(
             `SELECT IdTraslado, IdBodegaOrigen, IdBodegaDestino, Estado
-             FROM traslados WHERE IdTraslado = ? FOR UPDATE`, [IdTraslado]
+             FROM traslados WHERE IdTraslado = ? AND IdEmpresa = ? FOR UPDATE`, [IdTraslado, IdEmpresa]
         );
         if (traslado.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Traslado no encontrado' }); }
         if (traslado[0].Estado !== 'CONFIRMADA') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'Solo se pueden anular traslados CONFIRMADOS' }); }
@@ -316,6 +331,7 @@ router.post('/:id/anular', async (req, res) => {
                 costoUnitario: item.CostoUnitario,
                 costoTotal: item.Cantidad * item.CostoUnitario,
                 UsuarioId: UsuarioIdAnulacion,
+                IdEmpresa: IdEmpresa,
                 Observaciones: notaOrigen
             });
 
@@ -329,6 +345,7 @@ router.post('/:id/anular', async (req, res) => {
                 cantidad: item.Cantidad,
                 costoUnitario: item.CostoUnitario,
                 UsuarioId: UsuarioIdAnulacion,
+                IdEmpresa: IdEmpresa,
                 Observaciones: notaDestino
             });
 

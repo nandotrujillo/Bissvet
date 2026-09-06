@@ -17,6 +17,8 @@ router.get('/', async (req, res) => {
         if (req.query.bodega)     { condiciones.push('c.IdBodega = ?'); params.push(Number(req.query.bodega)); }
         if (req.query.desde) { condiciones.push('c.Fecha >= ?'); params.push(req.query.desde); }
         if (req.query.hasta) { condiciones.push('c.Fecha <= ?'); params.push(req.query.hasta); }
+        condiciones.push('c.IdEmpresa = ?');
+        params.push(req.auth?.IdEmpresa ?? null);
         const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
 
         const [rows] = await pool.query(`
@@ -59,8 +61,8 @@ router.get('/:id', async (req, res) => {
             FROM compras c
             INNER JOIN proveedores pr ON pr.IdProveedor = c.IdProveedor
             INNER JOIN bodegas b      ON b.Id = c.IdBodega
-            WHERE c.IdCompra = ?
-        `, [req.params.id]);
+            WHERE c.IdCompra = ? AND c.IdEmpresa = ?
+        `, [req.params.id, req.auth?.IdEmpresa ?? null]);
         if (cabecera.length === 0)
             return res.status(404).json({ ok: false, mensaje: 'Compra no encontrada' });
 
@@ -97,8 +99,11 @@ router.post('/', async (req, res) => {
 
         const {
             Numero, IdProveedor, IdBodega, Fecha, Observaciones,
-            UsuarioIdCreacion, Detalle
+            Detalle
         } = req.body;
+        // Usuario y empresa provienen de la sesión, no del body.
+        const UsuarioIdCreacion = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
         if (!Numero || !Numero.trim())
             return res.status(400).json({ ok: false, mensaje: 'El número de documento es obligatorio' });
@@ -109,8 +114,11 @@ router.post('/', async (req, res) => {
         if (!Detalle || !Detalle.length)
             return res.status(400).json({ ok: false, mensaje: 'Debe agregar al menos un producto' });
 
-        // Verificar duplicado de número
-        const [duplicado] = await conn.query(`SELECT IdCompra FROM compras WHERE Numero = ?`, [Numero.trim()]);
+        // Verificar duplicado de número (dentro de la misma empresa)
+        const [duplicado] = await conn.query(
+            `SELECT IdCompra FROM compras WHERE Numero = ? AND IdEmpresa = ?`,
+            [Numero.trim(), IdEmpresa]
+        );
         if (duplicado.length > 0)
             return res.status(409).json({ ok: false, mensaje: 'Ya existe una compra con ese número' });
 
@@ -134,12 +142,12 @@ router.post('/', async (req, res) => {
         const [cabecera] = await conn.query(
             `INSERT INTO compras (
                 Numero, IdProveedor, IdBodega, Fecha, Subtotal, Descuento,
-                Impuesto, Total, Estado, Observaciones, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'BORRADOR', ?, ?)`,
+                Impuesto, Total, Estado, Observaciones, UsuarioIdCreacion, IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'BORRADOR', ?, ?, ?)`,
             [
                 Numero.trim(), IdProveedor, IdBodega, Fecha || new Date(),
                 Subtotal, Descuento, Impuesto, Total,
-                Observaciones || null, UsuarioIdCreacion || null
+                Observaciones || null, UsuarioIdCreacion, IdEmpresa
             ]
         );
         const IdCompra = cabecera.insertId;
@@ -152,11 +160,12 @@ router.post('/', async (req, res) => {
             await conn.query(
                 `INSERT INTO compras_detalle (
                     IdCompra, IdProducto, IdLote, Cantidad, CostoUnitario,
-                    Descuento, Impuesto, Total
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    Descuento, Impuesto, Total, IdEmpresa
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     IdCompra, item.IdProducto, item.IdLote || null,
-                    item.Cantidad, item.CostoUnitario, desc, imp, subLinea + imp
+                    item.Cantidad, item.CostoUnitario, desc, imp, subLinea + imp,
+                    IdEmpresa
                 ]
             );
         }
@@ -246,11 +255,13 @@ router.post('/:id/confirmar', async (req, res) => {
         await conn.beginTransaction();
 
         const IdCompra = Number(req.params.id);
-        const { UsuarioIdConfirmacion } = req.body;
+        // El usuario que confirma proviene de la sesión, no del body.
+        const UsuarioIdConfirmacion = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
         const [compra] = await conn.query(
-            `SELECT IdCompra, IdBodega, Estado FROM compras WHERE IdCompra = ? FOR UPDATE`,
-            [IdCompra]
+            `SELECT IdCompra, IdBodega, Estado FROM compras WHERE IdCompra = ? AND IdEmpresa = ? FOR UPDATE`,
+            [IdCompra, IdEmpresa]
         );
         if (compra.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Compra no encontrada' }); }
         if (compra[0].Estado === 'CONFIRMADA') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'La compra ya está confirmada' }); }
@@ -273,6 +284,7 @@ router.post('/:id/confirmar', async (req, res) => {
                 costoUnitario: item.CostoUnitario,
                 costoTotal: item.Cantidad * item.CostoUnitario,
                 UsuarioId: UsuarioIdConfirmacion,
+                IdEmpresa: IdEmpresa,
                 Observaciones: 'Entrada por compra confirmada'
             });
 
@@ -318,11 +330,14 @@ router.post('/:id/anular', async (req, res) => {
         await conn.beginTransaction();
 
         const IdCompra = Number(req.params.id);
-        const { UsuarioIdAnulacion, MotivoAnulacion } = req.body;
+        const { MotivoAnulacion } = req.body;
+        // El usuario que anula proviene de la sesión, no del body.
+        const UsuarioIdAnulacion = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
         const [compra] = await conn.query(
-            `SELECT IdCompra, IdBodega, Estado FROM compras WHERE IdCompra = ? FOR UPDATE`,
-            [IdCompra]
+            `SELECT IdCompra, IdBodega, Estado FROM compras WHERE IdCompra = ? AND IdEmpresa = ? FOR UPDATE`,
+            [IdCompra, IdEmpresa]
         );
         if (compra.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Compra no encontrada' }); }
         if (compra[0].Estado !== 'CONFIRMADA') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'Solo se pueden anular compras CONFIRMADAS' }); }
@@ -343,6 +358,7 @@ router.post('/:id/anular', async (req, res) => {
                 cantidad: item.Cantidad,
                 costoUnitario: item.CostoUnitario,
                 UsuarioId: UsuarioIdAnulacion,
+                IdEmpresa: IdEmpresa,
                 Observaciones: MotivoAnulacion || 'Anulación de compra'
             });
             movimientos.push(salida);

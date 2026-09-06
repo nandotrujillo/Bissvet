@@ -117,9 +117,10 @@ router.post('/', async (req, res) => {
             Nombre,
             Descripcion,
             Precio,
-            Activo,
-            IdEmpresa
+            Activo
         } = req.body;
+        // La empresa proviene de la sesión, no del body.
+        const IdEmpresa = req.auth ? req.auth.IdEmpresa : null;
 
 
         if (!Nombre || !Nombre.trim()) {
@@ -199,9 +200,10 @@ router.put('/:id', async (req, res) => {
             Nombre,
             Descripcion,
             Precio,
-            Activo,
-            IdEmpresa
+            Activo
         } = req.body;
+        // La empresa proviene de la sesión, no del body.
+        const IdEmpresa = req.auth ? req.auth.IdEmpresa : null;
 
 
         if (!Nombre || !Nombre.trim()) {

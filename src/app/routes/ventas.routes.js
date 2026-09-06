@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
         if (req.query.doc)      { condiciones.push('v.IdVenta = ?'); params.push(Number(req.query.doc)); }
         if (req.query.estado)   { condiciones.push('v.Estado = ?'); params.push(req.query.estado); }
         if (req.query.cliente)  { condiciones.push('v.IdCliente = ?'); params.push(Number(req.query.cliente)); }
-        if (req.query.mascota)  { condiciones.push('v.IdMascota = ?'); params.push(Number(req.query.mascota)); }
+        if (req.query.vendedor) { condiciones.push('v.IdVendedor = ?'); params.push(Number(req.query.vendedor)); }
         if (req.query.bodega)   { condiciones.push('v.IdBodega = ?'); params.push(Number(req.query.bodega)); }
         if (req.query.desde) { condiciones.push('v.Fecha >= ?'); params.push(req.query.desde); }
         if (req.query.hasta) { condiciones.push('v.Fecha <= ?'); params.push(req.query.hasta); }
@@ -26,7 +26,10 @@ router.get('/', async (req, res) => {
                 v.IdCliente,
                 CONCAT_WS(' ', c.PrimerNombre, c.SegundoNombre,
                           c.PrimerApellido, c.SegundoApellido) AS NombreCliente,
-                v.IdMascota, m.Nombre AS NombreMascota,
+                v.IdVendedor,
+                CONCAT_WS(' ', ven.PrimerNombre, ven.SegundoNombre,
+                          ven.PrimerApellido, ven.SegundoApellido) AS NombreVendedor,
+                v.TipoPago, v.PorcentajeImpuesto,
                 v.IdBodega, b.NombreBodega,
                 v.Subtotal, v.Descuento, v.Impuesto, v.Total,
                 v.CostoTotal, v.Utilidad,
@@ -35,7 +38,7 @@ router.get('/', async (req, res) => {
                 (SELECT COUNT(*) FROM ventas_detalle vd WHERE vd.IdVenta = v.IdVenta) AS TotalItems
             FROM ventas v
             INNER JOIN clientes c    ON c.ClienteId = v.IdCliente
-            LEFT JOIN mascotas m     ON m.IdMascota = v.IdMascota
+            LEFT JOIN Usuarios ven   ON ven.UsuarioId = v.IdVendedor
             INNER JOIN bodegas b     ON b.Id = v.IdBodega
             ${where}
             ORDER BY v.Fecha DESC, v.IdVenta DESC
@@ -58,7 +61,10 @@ router.get('/:id', async (req, res) => {
                 v.IdCliente,
                 CONCAT_WS(' ', c.PrimerNombre, c.SegundoNombre,
                           c.PrimerApellido, c.SegundoApellido) AS NombreCliente,
-                v.IdMascota, m.Nombre AS NombreMascota,
+                v.IdVendedor,
+                CONCAT_WS(' ', ven.PrimerNombre, ven.SegundoNombre,
+                          ven.PrimerApellido, ven.SegundoApellido) AS NombreVendedor,
+                v.TipoPago, v.PorcentajeImpuesto,
                 v.IdBodega, b.NombreBodega,
                 v.Subtotal, v.Descuento, v.Impuesto, v.Total,
                 v.CostoTotal, v.Utilidad,
@@ -67,7 +73,7 @@ router.get('/:id', async (req, res) => {
                 v.UsuarioIdAnulacion, v.FechaAnulacion
             FROM ventas v
             INNER JOIN clientes c    ON c.ClienteId = v.IdCliente
-            LEFT JOIN mascotas m     ON m.IdMascota = v.IdMascota
+            LEFT JOIN Usuarios ven   ON ven.UsuarioId = v.IdVendedor
             INNER JOIN bodegas b     ON b.Id = v.IdBodega
             WHERE v.IdVenta = ?
         `, [req.params.id]);
@@ -92,11 +98,21 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// Calcula el impuesto de una línea según el % global de la venta
+// y deja los totales redondeados a 2 decimales.
+function calcularLinea(base, descuento, pct) {
+    const subLinea = base - descuento;
+    const imp = Math.round(subLinea * pct) / 100;
+    return { subLinea, imp, linea: subLinea + imp };
+}
+
 // =====================================================
 // CREAR VENTA (BORRADOR)  (POST /api/ventas)
-// Body: { NumeroVenta, IdCliente, IdMascota, IdBodega, Fecha, Observaciones,
-//         UsuarioIdCreacion,
-//         Detalle: [{ IdProducto, Cantidad, PrecioUnitario, Descuento, Impuesto }] }
+// El número de venta se genera automáticamente (V-N) por empresa.
+// Body: { IdCliente, IdVendedor, TipoPago, PorcentajeImpuesto, IdBodega,
+//         Fecha, Observaciones,
+//         Detalle: [{ IdProducto, Cantidad, PrecioUnitario, Descuento }] }
+// La empresa y el usuario se toman de la sesión (req.auth).
 // No afecta inventario hasta CONFIRMAR.
 // =====================================================
 router.post('/', async (req, res) => {
@@ -105,22 +121,45 @@ router.post('/', async (req, res) => {
         await conn.beginTransaction();
 
         const {
-            NumeroVenta, IdCliente, IdMascota, IdBodega, Fecha, Observaciones,
-            UsuarioIdCreacion, Detalle
+            IdCliente, IdVendedor, TipoPago, PorcentajeImpuesto, IdBodega,
+            Fecha, Observaciones, Detalle
         } = req.body;
 
-        if (!NumeroVenta || !NumeroVenta.trim())
-            return res.status(400).json({ ok: false, mensaje: 'El número de venta es obligatorio' });
+        // La empresa y el usuario SIEMPRE provienen de la sesión (JWT),
+        // nunca del body.
+        const UsuarioIdCreacion = req.auth?.UsuarioId ?? null;
+        const IdEmpresa = req.auth?.IdEmpresa ?? null;
+
         if (!IdCliente)
             return res.status(400).json({ ok: false, mensaje: 'El cliente es obligatorio' });
+        if (!IdVendedor)
+            return res.status(400).json({ ok: false, mensaje: 'El vendedor es obligatorio' });
+        if (!TipoPago || !TipoPago.trim())
+            return res.status(400).json({ ok: false, mensaje: 'El tipo de pago es obligatorio' });
         if (!IdBodega)
             return res.status(400).json({ ok: false, mensaje: 'La bodega es obligatoria' });
         if (!Detalle || !Detalle.length)
             return res.status(400).json({ ok: false, mensaje: 'Debe agregar al menos un producto' });
 
-        const [duplicado] = await conn.query(`SELECT IdVenta FROM ventas WHERE NumeroVenta = ?`, [NumeroVenta.trim()]);
+        const pct = Number(PorcentajeImpuesto) || 0;
+        if (pct < 0 || pct > 100)
+            return res.status(400).json({ ok: false, mensaje: 'El porcentaje de impuesto debe estar entre 0 y 100' });
+
+        // Número automático secuencial por empresa: V-1, V-2, ...
+        const [seq] = IdEmpresa
+            ? await conn.query(
+                `SELECT IFNULL(MAX(CAST(SUBSTRING_INDEX(NumeroVenta,'-',-1) AS UNSIGNED)), 0) + 1 AS siguiente
+                 FROM ventas WHERE IdEmpresa = ?`, [IdEmpresa])
+            : await conn.query(
+                `SELECT IFNULL(MAX(CAST(SUBSTRING_INDEX(NumeroVenta,'-',-1) AS UNSIGNED)), 0) + 1 AS siguiente
+                 FROM ventas WHERE IdEmpresa IS NULL`);
+        const NumeroVenta = `V-${seq[0].siguiente}`;
+
+        const [duplicado] = IdEmpresa
+            ? await conn.query(`SELECT IdVenta FROM ventas WHERE NumeroVenta = ? AND IdEmpresa = ?`, [NumeroVenta, IdEmpresa])
+            : await conn.query(`SELECT IdVenta FROM ventas WHERE NumeroVenta = ? AND IdEmpresa IS NULL`, [NumeroVenta]);
         if (duplicado.length > 0)
-            return res.status(409).json({ ok: false, mensaje: 'Ya existe una venta con ese número' });
+            return res.status(409).json({ ok: false, mensaje: 'El número de venta ya existe, intente de nuevo' });
 
         let Subtotal = 0, Descuento = 0, Impuesto = 0, Total = 0;
         for (const item of Detalle) {
@@ -135,24 +174,25 @@ router.post('/', async (req, res) => {
             const precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
             const base = item.Cantidad * precio;
             const desc = item.Descuento ?? 0;
-            const imp = item.Impuesto ?? 0;
-            const subLinea = base - desc;
+            const { subLinea, imp, linea } = calcularLinea(base, desc, pct);
             Subtotal += subLinea;
             Descuento += desc;
             Impuesto += imp;
-            Total += subLinea + imp;
+            Total += linea;
         }
 
         const [cabecera] = await conn.query(
             `INSERT INTO ventas (
-                NumeroVenta, IdCliente, IdMascota, IdBodega, Fecha,
+                IdCliente, IdVendedor, TipoPago, PorcentajeImpuesto, IdBodega, Fecha,
+                NumeroVenta,
                 Subtotal, Descuento, Impuesto, Total,
-                CostoTotal, Utilidad, Estado, Observaciones, UsuarioIdCreacion
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 'BORRADOR', ?, ?)`,
+                CostoTotal, Utilidad, Estado, Observaciones, UsuarioIdCreacion, IdEmpresa
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 'BORRADOR', ?, ?, ?)`,
             [
-                NumeroVenta.trim(), IdCliente, IdMascota || null, IdBodega, Fecha || new Date(),
+                IdCliente, IdVendedor, TipoPago, pct, IdBodega, Fecha || new Date(),
+                NumeroVenta,
                 Subtotal, Descuento, Impuesto, Total,
-                Observaciones || null, UsuarioIdCreacion || null
+                Observaciones || null, UsuarioIdCreacion || null, IdEmpresa || null
             ]
         );
         const IdVenta = cabecera.insertId;
@@ -164,23 +204,23 @@ router.post('/', async (req, res) => {
             const precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
             const base = item.Cantidad * precio;
             const desc = item.Descuento ?? 0;
-            const imp = item.Impuesto ?? 0;
-            const subLinea = base - desc;
+            const { imp, linea } = calcularLinea(base, desc, pct);
             await conn.query(
                 `INSERT INTO ventas_detalle (
                     IdVenta, IdProducto, Cantidad, PrecioUnitario,
                     Descuento, Impuesto, Total, CostoUnitario, CostoTotal, Utilidad
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0)`,
-                [
-                    IdVenta, item.IdProducto, item.Cantidad, precio, desc, imp, subLinea + imp
-                ]
+                [IdVenta, item.IdProducto, item.Cantidad, precio, desc, imp, linea]
             );
         }
 
         await conn.commit();
-        res.status(201).json({ ok: true, mensaje: 'Venta creada en estado BORRADOR', IdVenta });
+        res.status(201).json({ ok: true, mensaje: 'Venta creada en estado BORRADOR', IdVenta, NumeroVenta });
     } catch (error) {
         await conn.rollback();
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ ok: false, mensaje: 'El número de venta ya existe, intente de nuevo' });
+        }
         console.error('Error creando venta:', error);
         res.status(500).json({ ok: false, mensaje: 'Error creando venta', error: error.message });
     } finally {
@@ -190,22 +230,32 @@ router.post('/', async (req, res) => {
 
 // =====================================================
 // ACTUALIZAR VENTA (solo BORRADOR)  (PUT /api/ventas/:id)
-// Reemplaza cabecera y detalle.
+// Reemplaza cabecera y detalle. Conserva el número y la empresa actuales.
 // =====================================================
 router.put('/:id', async (req, res) => {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
-        const { NumeroVenta, IdCliente, IdMascota, IdBodega, Fecha, Observaciones, UsuarioIdModificacion, Detalle } = req.body;
+        const { IdCliente, IdVendedor, TipoPago, PorcentajeImpuesto, IdBodega, Fecha, Observaciones, UsuarioIdModificacion, Detalle } = req.body;
         const IdVenta = Number(req.params.id);
 
-        const [actual] = await conn.query(`SELECT Estado FROM ventas WHERE IdVenta = ?`, [IdVenta]);
+        const [actual] = await conn.query(`SELECT Estado, NumeroVenta, IdEmpresa FROM ventas WHERE IdVenta = ?`, [IdVenta]);
         if (actual.length === 0) { await conn.rollback(); return res.status(404).json({ ok: false, mensaje: 'Venta no encontrada' }); }
         if (actual[0].Estado !== 'BORRADOR') { await conn.rollback(); return res.status(409).json({ ok: false, mensaje: 'Solo se pueden editar ventas en BORRADOR' }); }
 
-        if (!NumeroVenta || !Detalle || !Detalle.length)
-            return res.status(400).json({ ok: false, mensaje: 'Número y detalle son obligatorios' });
+        if (!IdCliente)
+            return res.status(400).json({ ok: false, mensaje: 'El cliente es obligatorio' });
+        if (!IdVendedor)
+            return res.status(400).json({ ok: false, mensaje: 'El vendedor es obligatorio' });
+        if (!TipoPago || !TipoPago.trim())
+            return res.status(400).json({ ok: false, mensaje: 'El tipo de pago es obligatorio' });
+        if (!Detalle || !Detalle.length)
+            return res.status(400).json({ ok: false, mensaje: 'Debe agregar al menos un producto' });
+
+        const pct = Number(PorcentajeImpuesto) || 0;
+        if (pct < 0 || pct > 100)
+            return res.status(400).json({ ok: false, mensaje: 'El porcentaje de impuesto debe estar entre 0 y 100' });
 
         let Subtotal = 0, Descuento = 0, Impuesto = 0, Total = 0;
         for (const item of Detalle) {
@@ -216,16 +266,16 @@ router.put('/:id', async (req, res) => {
             const precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
             const base = item.Cantidad * precio;
             const desc = item.Descuento ?? 0;
-            const imp = item.Impuesto ?? 0;
-            const subLinea = base - desc;
-            Subtotal += subLinea; Descuento += desc; Impuesto += imp; Total += subLinea + imp;
+            const { subLinea, imp, linea } = calcularLinea(base, desc, pct);
+            Subtotal += subLinea; Descuento += desc; Impuesto += imp; Total += linea;
         }
 
         await conn.query(
-            `UPDATE ventas SET NumeroVenta=?, IdCliente=?, IdMascota=?, IdBodega=?, Fecha=?,
+            `UPDATE ventas SET NumeroVenta=?, IdCliente=?, IdVendedor=?, TipoPago=?, PorcentajeImpuesto=?,
+                IdBodega=?, Fecha=?,
                 Subtotal=?, Descuento=?, Impuesto=?, Total=?, Observaciones=?
              WHERE IdVenta=?`,
-            [NumeroVenta.trim(), IdCliente, IdMascota || null, IdBodega, Fecha || new Date(), Subtotal, Descuento, Impuesto, Total, Observaciones || null, IdVenta]
+            [actual[0].NumeroVenta, IdCliente, IdVendedor, TipoPago, pct, IdBodega, Fecha || new Date(), Subtotal, Descuento, Impuesto, Total, Observaciones || null, IdVenta]
         );
         await conn.query(`DELETE FROM ventas_detalle WHERE IdVenta = ?`, [IdVenta]);
         for (const item of Detalle) {
@@ -235,14 +285,13 @@ router.put('/:id', async (req, res) => {
             const precio = item.PrecioUnitario ?? producto[0].PrecioVenta;
             const base = item.Cantidad * precio;
             const desc = item.Descuento ?? 0;
-            const imp = item.Impuesto ?? 0;
-            const subLinea = base - desc;
+            const { imp, linea } = calcularLinea(base, desc, pct);
             await conn.query(
                 `INSERT INTO ventas_detalle (
                     IdVenta, IdProducto, Cantidad, PrecioUnitario,
                     Descuento, Impuesto, Total, CostoUnitario, CostoTotal, Utilidad
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0)`,
-                [IdVenta, item.IdProducto, item.Cantidad, precio, desc, imp, subLinea + imp]
+                [IdVenta, item.IdProducto, item.Cantidad, precio, desc, imp, linea]
             );
         }
 
@@ -271,7 +320,8 @@ router.post('/:id/confirmar', async (req, res) => {
         await conn.beginTransaction();
 
         const IdVenta = Number(req.params.id);
-        const { UsuarioIdConfirmacion } = req.body;
+        // El usuario que confirma proviene de la sesión, no del body.
+        const UsuarioIdConfirmacion = req.auth?.UsuarioId ?? null;
 
         const [venta] = await conn.query(
             `SELECT IdVenta, IdBodega, Estado FROM ventas WHERE IdVenta = ? FOR UPDATE`,
@@ -297,6 +347,7 @@ router.post('/:id/confirmar', async (req, res) => {
                 IdDocumento: IdVenta,
                 cantidad: item.Cantidad,
                 UsuarioId: UsuarioIdConfirmacion,
+                IdEmpresa: req.auth?.IdEmpresa ?? null,
                 Observaciones: 'Salida por venta confirmada'
             });
 
@@ -348,7 +399,9 @@ router.post('/:id/anular', async (req, res) => {
         await conn.beginTransaction();
 
         const IdVenta = Number(req.params.id);
-        const { UsuarioIdAnulacion, MotivoAnulacion } = req.body;
+        // El usuario que anula proviene de la sesión, no del body.
+        const UsuarioIdAnulacion = req.auth?.UsuarioId ?? null;
+        const { MotivoAnulacion } = req.body;
 
         const [venta] = await conn.query(
             `SELECT IdVenta, IdBodega, Estado FROM ventas WHERE IdVenta = ? FOR UPDATE`,
@@ -373,6 +426,7 @@ router.post('/:id/anular', async (req, res) => {
                 costoUnitario: item.CostoUnitario,
                 costoTotal: item.Cantidad * item.CostoUnitario,
                 UsuarioId: UsuarioIdAnulacion,
+                IdEmpresa: req.auth?.IdEmpresa ?? null,
                 Observaciones: MotivoAnulacion || 'Anulación de venta'
             });
             movimientos.push(entrada);

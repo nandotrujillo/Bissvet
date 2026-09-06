@@ -235,6 +235,13 @@ th {
   border-color: #1976d2;
 }
 
+.campo.info-numero .num-auto {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #888;
+  line-height: 1.4;
+}
+
 .detalle-titulo {
   font-weight: 600;
   margin-bottom: 10px;

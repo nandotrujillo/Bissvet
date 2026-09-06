@@ -7,6 +7,12 @@
 // transacción manejada por el caller.
 // ============================================================================
 
+// Valor por defecto cuando no llega la empresa: se completa con el IdEmpresa
+// que remite la operación (ventas, compras, traslados, ajustes, inventario).
+function conEmpresa(IdEmpresa) {
+    return IdEmpresa ?? null;
+}
+
 // Obtiene/crea el registro de inventario (existencias) de un producto+bodega.
 // Devuelve { id, cantidad, costoPromedio } o null si el producto o bodega no
 // existen.
@@ -137,6 +143,7 @@ async function registrarEntrada(
         costoUnitario,
         costoTotal,
         UsuarioId,
+        IdEmpresa,
         Observaciones
     }
 ) {
@@ -152,16 +159,16 @@ async function registrarEntrada(
          (Fecha, IdProducto, IdBodega, TipoMovimiento, DocumentoTipo, IdDocumento,
           EntradaCantidad, EntradaCostoUnitario, EntradaCostoTotal,
           SalidaCantidad, SalidaCostoUnitario, SalidaCostoTotal,
-          SaldoCantidad, CostoPromedio, SaldoValor, UsuarioId, Observaciones)
+          SaldoCantidad, CostoPromedio, SaldoValor, UsuarioId, IdEmpresa, Observaciones)
          VALUES (NOW(), ?, ?, ?, ?, ?,
                  ?, ?, ?,
                  0, 0, 0,
-                 ?, ?, ?, ?, ?)`,
+                 ?, ?, ?, ?, ?, ?)`,
         [
             IdProducto, IdBodega, TipoMovimiento, DocumentoTipo, IdDocumento,
             Number(cantidad), Number(costoUnitario), Number(costoTotal),
             saldoNuevo, estado.CostoPromedio, saldoValor,
-            UsuarioId || null, Observaciones || null
+            UsuarioId || null, conEmpresa(IdEmpresa), Observaciones || null
         ]
     );
 
@@ -188,6 +195,7 @@ async function registrarSalida(
         IdDocumento,
         cantidad,
         UsuarioId,
+        IdEmpresa,
         Observaciones
     }
 ) {
@@ -216,16 +224,16 @@ async function registrarSalida(
          (Fecha, IdProducto, IdBodega, TipoMovimiento, DocumentoTipo, IdDocumento,
           EntradaCantidad, EntradaCostoUnitario, EntradaCostoTotal,
           SalidaCantidad, SalidaCostoUnitario, SalidaCostoTotal,
-          SaldoCantidad, CostoPromedio, SaldoValor, UsuarioId, Observaciones)
+          SaldoCantidad, CostoPromedio, SaldoValor, UsuarioId, IdEmpresa, Observaciones)
          VALUES (NOW(), ?, ?, ?, ?, ?,
                  0, 0, 0,
                  ?, ?, ?,
-                 ?, ?, ?, ?, ?)`,
+                 ?, ?, ?, ?, ?, ?)`,
         [
             IdProducto, IdBodega, TipoMovimiento, DocumentoTipo, IdDocumento,
             cantidadNum, costoUnitario, costoTotal,
             saldoNuevo, costoUnitario, saldoValor,
-            UsuarioId || null, Observaciones || null
+            UsuarioId || null, conEmpresa(IdEmpresa), Observaciones || null
         ]
     );
 
@@ -258,6 +266,7 @@ async function revertirEntrada(
         cantidad,
         costoUnitario,
         UsuarioId,
+        IdEmpresa,
         Observaciones
     }
 ) {
@@ -301,16 +310,16 @@ async function revertirEntrada(
          (Fecha, IdProducto, IdBodega, TipoMovimiento, DocumentoTipo, IdDocumento,
           EntradaCantidad, EntradaCostoUnitario, EntradaCostoTotal,
           SalidaCantidad, SalidaCostoUnitario, SalidaCostoTotal,
-          SaldoCantidad, CostoPromedio, SaldoValor, UsuarioId, Observaciones)
+          SaldoCantidad, CostoPromedio, SaldoValor, UsuarioId, IdEmpresa, Observaciones)
          VALUES (NOW(), ?, ?, ?, ?, ?,
                  0, 0, 0,
                  ?, ?, ?,
-                 ?, ?, ?, ?, ?)`,
+                 ?, ?, ?, ?, ?, ?)`,
         [
             IdProducto, IdBodega, TipoMovimiento, DocumentoTipo, IdDocumento,
             Number(cantidad), Number(costoUnitario), costoTotalSalida,
             saldoNuevo, nuevoCostoPromedio, saldoValor,
-            UsuarioId || null, Observaciones || null
+            UsuarioId || null, conEmpresa(IdEmpresa), Observaciones || null
         ]
     );
 

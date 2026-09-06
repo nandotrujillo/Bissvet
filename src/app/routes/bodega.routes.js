@@ -117,7 +117,6 @@ router.post('/', async (req, res) => {
         const {
             CodigoBodega,
             NombreBodega,
-            IdEmpresa,
             Estatus,
             exAuxiliar,
             Descripcion,
@@ -125,6 +124,8 @@ router.post('/', async (req, res) => {
             Responsable,
             Activo
         } = req.body;
+        // La empresa proviene de la sesión, no del body.
+        const IdEmpresa = req.auth ? req.auth.IdEmpresa : null;
 
 
         if (!CodigoBodega || !CodigoBodega.trim()) {
@@ -220,7 +221,6 @@ router.put('/:id', async (req, res) => {
         const {
             CodigoBodega,
             NombreBodega,
-            IdEmpresa,
             Estatus,
             exAuxiliar,
             Descripcion,
@@ -228,6 +228,8 @@ router.put('/:id', async (req, res) => {
             Responsable,
             Activo
         } = req.body;
+        // La empresa proviene de la sesión, no del body.
+        const IdEmpresa = req.auth ? req.auth.IdEmpresa : null;
 
 
         if (!CodigoBodega || !CodigoBodega.trim()) {

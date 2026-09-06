@@ -7,7 +7,7 @@ import { Producto } from '../../Models/producto';
 
 import { VentasService } from '../../Services/ventas.service';
 import { ClientesService } from '../../Services/clientes.service';
-import { MascotasService } from '../../Services/mascotas.service';
+import { UsuarioService } from '../../Services/usuario.service';
 import { BodegaService } from '../../Services/Bodega.service';
 import { ProductosService } from '../../Services/productos.service';
 
@@ -25,7 +25,7 @@ export class VentasComponent implements OnInit {
 
   ventas: any[] = [];
   clientes: any[] = [];
-  mascotas: any[] = [];
+  vendedores: any[] = [];
   bodegas: Bodega[] = [];
   productos: Producto[] = [];
 
@@ -49,7 +49,7 @@ export class VentasComponent implements OnInit {
   constructor(
     private ventasService: VentasService,
     private clientesService: ClientesService,
-    private mascotasService: MascotasService,
+    private usuarioService: UsuarioService,
     private bodegaService: BodegaService,
     private productosService: ProductosService
   ) {}
@@ -57,16 +57,17 @@ export class VentasComponent implements OnInit {
   ngOnInit(): void {
     this.cargarVentas();
     this.cargarClientes();
-    this.cargarMascotas();
+    this.cargarVendedores();
     this.cargarBodegas();
     this.cargarProductos();
   }
 
   nuevaVenta(): any {
     return {
-      NumeroVenta: '',
       IdCliente: 0,
-      IdMascota: 0,
+      IdVendedor: 0,
+      TipoPago: '',
+      PorcentajeImpuesto: 0,
       IdBodega: 0,
       Fecha: new Date().toISOString().slice(0, 10),
       Observaciones: ''
@@ -74,11 +75,17 @@ export class VentasComponent implements OnInit {
   }
 
   nuevoItem(): any {
-    return { IdProducto: 0, Cantidad: 1, PrecioUnitario: 0, Descuento: 0, Impuesto: 0 };
+    return { IdProducto: 0, Cantidad: 1, PrecioUnitario: 0, Descuento: 0 };
   }
 
   nombreCompletoCliente(c: any): string {
     return [c.PrimerNombre, c.SegundoNombre, c.PrimerApellido, c.SegundoApellido]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  nombreVendedor(u: any): string {
+    return [u.PrimerNombre, u.SegundoNombre, u.PrimerApellido, u.SegundoApellido]
       .filter(Boolean)
       .join(' ');
   }
@@ -108,12 +115,12 @@ export class VentasComponent implements OnInit {
     });
   }
 
-  cargarMascotas(): void {
-    this.mascotasService.listar().subscribe({
-      next: (r: any) => { this.mascotas = r?.datos ?? []; },
+  cargarVendedores(): void {
+    this.usuarioService.obtenerUsuarios().subscribe({
+      next: (r: any) => { this.vendedores = r?.datos ?? []; },
       error: (e: any) => {
-        console.error('Error cargando mascotas:', e);
-        this.error = 'No fue posible cargar las mascotas.';
+        console.error('Error cargando vendedores:', e);
+        this.error = 'No fue posible cargar los vendedores.';
       }
     });
   }
@@ -142,13 +149,21 @@ export class VentasComponent implements OnInit {
   // TOTALES
   // ==================================================
 
+  // Impuesto por línea: (importe línea) * % IVA / 100
+  impuestoLinea(item: any): number {
+    const base = (Number(item.Cantidad) || 0) * (Number(item.PrecioUnitario) || 0);
+    const desc = Number(item.Descuento) || 0;
+    const pct = Number(this.venta.PorcentajeImpuesto) || 0;
+    return Math.round((base - desc) * pct) / 100;
+  }
+
   calcularTotales(): any {
     let Subtotal = 0, Descuento = 0, Impuesto = 0, Total = 0;
     for (const item of this.detalle) {
       const base = (Number(item.Cantidad) || 0) * (Number(item.PrecioUnitario) || 0);
       const desc = Number(item.Descuento) || 0;
-      const imp = Number(item.Impuesto) || 0;
       const subLinea = base - desc;
+      const imp = this.impuestoLinea(item);
       Subtotal += subLinea;
       Descuento += desc;
       Impuesto += imp;
@@ -163,6 +178,16 @@ export class VentasComponent implements OnInit {
 
   agregarItem(): void {
     this.detalle.push(this.nuevoItem());
+  }
+
+  // Al elegir un producto se carga automáticamente su precio de venta.
+  onProductoChange(item: any): void {
+    const p = this.productos.find(x => x.IdProducto === item.IdProducto);
+    if (p) {
+      item.PrecioUnitario = p.PrecioVenta ?? 0;
+    } else {
+      item.PrecioUnitario = 0;
+    }
   }
 
   quitarItem(index: number): void {
@@ -186,9 +211,10 @@ export class VentasComponent implements OnInit {
         const datos = r?.datos ?? {};
         this.IdVentaEdicion = venta.IdVenta;
         this.venta = {
-          NumeroVenta: datos.NumeroVenta,
           IdCliente: datos.IdCliente,
-          IdMascota: datos.IdMascota,
+          IdVendedor: datos.IdVendedor || 0,
+          TipoPago: datos.TipoPago || '',
+          PorcentajeImpuesto: Number(datos.PorcentajeImpuesto) || 0,
           IdBodega: datos.IdBodega,
           Fecha: (datos.Fecha || '').slice(0, 10),
           Observaciones: datos.Observaciones
@@ -197,8 +223,7 @@ export class VentasComponent implements OnInit {
           IdProducto: d.IdProducto,
           Cantidad: d.Cantidad,
           PrecioUnitario: d.PrecioUnitario,
-          Descuento: d.Descuento,
-          Impuesto: d.Impuesto
+          Descuento: d.Descuento
         }));
         if (!this.detalle.length) { this.detalle = [this.nuevoItem()]; }
         this.editando = true;
@@ -229,12 +254,16 @@ export class VentasComponent implements OnInit {
     this.mensaje = '';
     this.error = '';
 
-    if (!this.venta.NumeroVenta || !this.venta.NumeroVenta.trim()) {
-      this.error = 'El número de venta es obligatorio.';
-      return;
-    }
     if (!this.venta.IdCliente) {
       this.error = 'Debe seleccionar un cliente.';
+      return;
+    }
+    if (!this.venta.IdVendedor) {
+      this.error = 'Debe seleccionar un vendedor.';
+      return;
+    }
+    if (!this.venta.TipoPago || !this.venta.TipoPago.trim()) {
+      this.error = 'Debe seleccionar el tipo de pago.';
       return;
     }
     if (!this.venta.IdBodega) {
@@ -251,14 +280,19 @@ export class VentasComponent implements OnInit {
       if (item.PrecioUnitario === undefined || item.PrecioUnitario < 0) { this.error = 'El precio unitario es inválido.'; return; }
     }
 
+    const IdEmpresa = Number(localStorage.getItem('IdEmpresa')) || null;
+    const UsuarioId = Number(localStorage.getItem('UsuarioId')) || null;
+
     const body: any = {
-      NumeroVenta: this.venta.NumeroVenta,
       IdCliente: this.venta.IdCliente,
-      IdMascota: this.venta.IdMascota || null,
+      IdVendedor: this.venta.IdVendedor,
+      TipoPago: this.venta.TipoPago,
+      PorcentajeImpuesto: this.venta.PorcentajeImpuesto,
       IdBodega: this.venta.IdBodega,
       Fecha: this.venta.Fecha,
       Observaciones: this.venta.Observaciones,
-      UsuarioIdCreacion: null,
+      UsuarioIdCreacion: UsuarioId,
+      IdEmpresa,
       Detalle: this.detalle
     };
 
@@ -282,7 +316,7 @@ export class VentasComponent implements OnInit {
 
       this.ventasService.crear(body).subscribe({
         next: (respuesta: any) => {
-          this.mensaje = 'Venta creada en estado BORRADOR (Id ' + respuesta.IdVenta + ').';
+          this.mensaje = 'Venta ' + (respuesta.NumeroVenta || ('Id ' + respuesta.IdVenta)) + ' creada en estado BORRADOR.';
           this.cargarVentas();
           this.cancelar();
         },
@@ -323,7 +357,7 @@ export class VentasComponent implements OnInit {
 
     if (!confirmar) { return; }
 
-    this.ventasService.confirmar(venta.IdVenta, { UsuarioIdConfirmacion: null }).subscribe({
+    this.ventasService.confirmar(venta.IdVenta, { UsuarioIdConfirmacion: Number(localStorage.getItem('UsuarioId')) || null }).subscribe({
       next: () => {
         this.mensaje = 'Venta confirmada, inventario actualizado.';
         this.cargarVentas();
@@ -341,7 +375,7 @@ export class VentasComponent implements OnInit {
 
     if (motivo === null) { return; }
 
-    this.ventasService.anular(venta.IdVenta, { UsuarioIdAnulacion: null, MotivoAnulacion: motivo }).subscribe({
+    this.ventasService.anular(venta.IdVenta, { UsuarioIdAnulacion: Number(localStorage.getItem('UsuarioId')) || null, MotivoAnulacion: motivo }).subscribe({
       next: () => {
         this.mensaje = 'Venta anulada, inventario restaurado.';
         this.cargarVentas();

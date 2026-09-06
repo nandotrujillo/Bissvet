@@ -325,6 +325,9 @@ CREATE TABLE ventas (
   IdCliente            INT            NOT NULL,
   IdMascota            INT            NULL,
   IdBodega             INT            NOT NULL,
+  IdVendedor           INT            NULL,
+  TipoPago             VARCHAR(50)    NULL,
+  PorcentajeImpuesto   DECIMAL(5,2)   NOT NULL DEFAULT 0,
   Subtotal             DECIMAL(18,4)  NOT NULL DEFAULT 0,
   Descuento            DECIMAL(18,4)  NOT NULL DEFAULT 0,
   Impuesto             DECIMAL(18,4)  NOT NULL DEFAULT 0,
@@ -339,19 +342,24 @@ CREATE TABLE ventas (
   FechaConfirmacion    DATETIME       NULL,
   UsuarioIdAnulacion   INT            NULL,
   FechaAnulacion       DATETIME       NULL,
+  IdEmpresa            INT            NULL,
   PRIMARY KEY (IdVenta),
-  UNIQUE KEY uk_venta_numero (NumeroVenta),
+  UNIQUE KEY uk_venta_numero_empresa (NumeroVenta, IdEmpresa),
   KEY ix_venta_cliente (IdCliente),
   KEY ix_venta_mascota (IdMascota),
   KEY ix_venta_bodega (IdBodega),
+  KEY ix_venta_vendedor (IdVendedor),
   KEY ix_venta_fecha (Fecha),
   KEY ix_venta_estado (Estado),
+  KEY ix_venta_idempresa (IdEmpresa),
   CONSTRAINT fk_venta_cliente FOREIGN KEY (IdCliente)
     REFERENCES clientes (ClienteId),
   CONSTRAINT fk_venta_mascota FOREIGN KEY (IdMascota)
     REFERENCES mascotas (IdMascota),
   CONSTRAINT fk_venta_bodega FOREIGN KEY (IdBodega)
-    REFERENCES bodegas (Id)
+    REFERENCES bodegas (Id),
+  CONSTRAINT fk_venta_idempresa FOREIGN KEY (IdEmpresa)
+    REFERENCES empresas (IdEmpresa)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Detalle de venta: guarda CostoUnitario congelado del momento de la venta
