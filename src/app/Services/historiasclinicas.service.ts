@@ -33,4 +33,8 @@ export class HistoriasClinicasService {
   cerrar(id: number, usuarioId: number): Observable<any> {
     return this.http.put(`${this.apiUrl}/${id}/cerrar`, { UsuarioIdModificacion: usuarioId });
   }
+
+  imprimirPDF(id: number): string {
+    return `${this.apiUrl}/${id}/pdf`;
+  }
 }

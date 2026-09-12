@@ -64,6 +64,11 @@ export class ClientesComponent
   textoBusqueda = '';
 
 
+  mensaje = '';
+
+  error = '';
+
+
   constructor(
     private clientesService: ClientesService,
 
@@ -224,6 +229,10 @@ export class ClientesComponent
 
   guardar(): void {
 
+    this.mensaje = '';
+
+    this.error = '';
+
     if (!this.validar()) {
 
       return;
@@ -243,9 +252,8 @@ export class ClientesComponent
 
           next: () => {
 
-            alert(
-              'Cliente actualizado correctamente'
-            );
+            this.mensaje =
+              'Cliente actualizado correctamente';
 
             this.cargarClientes();
 
@@ -257,9 +265,9 @@ export class ClientesComponent
 
             console.error(error);
 
-            alert(
-              'Error actualizando cliente'
-            );
+            this.error =
+              error?.error?.mensaje ||
+              'No fue posible actualizar el cliente';
 
           }
 
@@ -275,9 +283,8 @@ export class ClientesComponent
 
           next: () => {
 
-            alert(
-              'Cliente creado correctamente'
-            );
+            this.mensaje =
+              'Cliente creado correctamente';
 
             this.cargarClientes();
 
@@ -289,9 +296,9 @@ export class ClientesComponent
 
             console.error(error);
 
-            alert(
-              'Error creando cliente'
-            );
+            this.error =
+              error?.error?.mensaje ||
+              'No fue posible crear el cliente';
 
           }
 
@@ -307,6 +314,10 @@ export class ClientesComponent
   // =====================================
 
   eliminar(cliente: Cliente): void {
+
+    this.mensaje = '';
+
+    this.error = '';
 
     if (!cliente.ClienteId) {
 
@@ -332,9 +343,8 @@ export class ClientesComponent
 
         next: () => {
 
-          alert(
-            'Cliente eliminado correctamente'
-          );
+          this.mensaje =
+            'Cliente eliminado correctamente';
 
           this.cargarClientes();
 
@@ -344,9 +354,9 @@ export class ClientesComponent
 
           console.error(error);
 
-          alert(
-            'Error eliminando cliente'
-          );
+          this.error =
+            error?.error?.mensaje ||
+            'No fue posible eliminar el cliente';
 
         }
 
@@ -379,9 +389,8 @@ export class ClientesComponent
 
     if (!this.cliente.NumeroDocumento) {
 
-      alert(
-        'Digite el número de documento'
-      );
+      this.error =
+        'Digite el número de documento';
 
       return false;
 
@@ -390,9 +399,8 @@ export class ClientesComponent
 
     if (!this.cliente.PrimerNombre) {
 
-      alert(
-        'Digite el primer nombre'
-      );
+      this.error =
+        'Digite el primer nombre';
 
       return false;
 
@@ -401,9 +409,8 @@ export class ClientesComponent
 
     if (!this.cliente.PrimerApellido) {
 
-      alert(
-        'Digite el primer apellido'
-      );
+      this.error =
+        'Digite el primer apellido';
 
       return false;
 

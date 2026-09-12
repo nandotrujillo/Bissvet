@@ -41,9 +41,10 @@ export class CajaComponent implements OnInit {
   valorEntregado: number | null = null;
 
   // Movimientos de jornada
-  mostrarMovimientos = false;
-  movimientos: any[] = [];
   movimientosJornada: any = null;
+  movimientos: any[] = [];
+  filtroOrigen = '';
+  movimientosCargando = false;
 
   // Arqueo
   mostrarArqueo = false;
@@ -124,6 +125,13 @@ export class CajaComponent implements OnInit {
         this.jornadas = r.datos || [];
         this.jornadaAbierta = this.jornadas.find(j => j.EstadoJornada === 'ABIERTA') || null;
         this.cargando = false;
+        const inicial = this.jornadaAbierta || this.jornadas[0] || null;
+        if (inicial && (!this.movimientosJornada || !this.jornadas.some(j => j.Id === this.movimientosJornada.Id))) {
+          this.seleccionarJornada(inicial);
+        } else if (this.movimientosJornada) {
+          const vigente = this.jornadas.find(j => j.Id === this.movimientosJornada.Id);
+          this.movimientosJornada = vigente || null;
+        }
       },
       error: () => {
         this.cargando = false;
@@ -227,23 +235,56 @@ export class CajaComponent implements OnInit {
   // VER MOVIMIENTOS DE UNA JORNADA
   // =====================================================
 
-  verMovimientos(jornada: any): void {
+  esJornadaSeleccionada(jornada: any): boolean {
+    return !!this.movimientosJornada && this.movimientosJornada.Id === jornada.Id;
+  }
+
+  seleccionarJornada(jornada: any): void {
+    if (!jornada || (this.movimientosJornada && this.movimientosJornada.Id === jornada.Id)) {
+      return;
+    }
     this.movimientosJornada = jornada;
     this.movimientos = [];
-    this.mostrarMovimientos = true;
+    this.filtroOrigen = '';
+    this.movimientosCargando = true;
     this.cajaService.obtenerMovimientos(jornada.Id).subscribe({
       next: (r) => {
         this.movimientos = r.datos || [];
+        this.movimientosCargando = false;
       },
       error: () => {
         this.movimientos = [];
+        this.movimientosCargando = false;
+        this.error = 'No fue posible consultar los movimientos.';
       }
     });
   }
 
+  movimientosFiltrados(): any[] {
+    if (!this.filtroOrigen) {
+      return this.movimientos;
+    }
+    return this.movimientos.filter(m => m.Origen === this.filtroOrigen);
+  }
+
+  tipoMovimiento(tipoId: number | null): any {
+    return this.tipos.find(t => t.id === tipoId) || null;
+  }
+
+  totalIngresosMov(): number {
+    return this.movimientosFiltrados()
+      .filter(m => m.Signo === '+')
+      .reduce((acc, m) => acc + Number(m.ValorMov), 0);
+  }
+
+  totalEgresosMov(): number {
+    return this.movimientosFiltrados()
+      .filter(m => m.Signo === '-')
+      .reduce((acc, m) => acc + Number(m.ValorMov), 0);
+  }
+
   saldoMovimientos(): number {
-    return this.movimientos.reduce((acc, m) =>
-      acc + (m.Signo === '+' ? Number(m.ValorMov) : -Number(m.ValorMov)), 0);
+    return this.totalIngresosMov() - this.totalEgresosMov();
   }
 
   // =====================================================
@@ -293,7 +334,6 @@ export class CajaComponent implements OnInit {
     this.mostrarApertura = false;
     this.mostrarMovimiento = false;
     this.mostrarCierre = false;
-    this.mostrarMovimientos = false;
     this.mostrarArqueo = false;
   }
 }

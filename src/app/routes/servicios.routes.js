@@ -217,7 +217,21 @@ router.put('/:id', async (req, res) => {
         }
 
 
-        const [resultado] = await pool.query(`
+        const [existe] = await pool.query(`
+            SELECT IdServicio FROM servicios
+            WHERE IdServicio = ? AND IdEmpresa = ?
+        `, [id, req.auth.IdEmpresa]);
+
+        if (existe.length === 0) {
+
+            return res.status(404).json({
+                ok: false,
+                mensaje: 'Servicio no encontrado'
+            });
+
+        }
+
+        await pool.query(`
             UPDATE servicios
 
             SET
@@ -242,16 +256,6 @@ router.put('/:id', async (req, res) => {
             req.auth.IdEmpresa
 
         ]);
-
-
-        if (resultado.affectedRows === 0) {
-
-            return res.status(404).json({
-                ok: false,
-                mensaje: 'Servicio no encontrado'
-            });
-
-        }
 
 
         res.json({

@@ -32,6 +32,12 @@
   font-size: 13px;
 }
 
+.encabezado-acciones {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 
 /* =====================================================
    MENSAJES

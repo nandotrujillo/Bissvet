@@ -77,6 +77,13 @@
         Filtrar
       </button>
 
+      <button
+        class="btn-exportar"
+        (click)="exportarCSV()"
+        title="Exportar las compras filtradas a CSV (Excel)">
+        ⬇ Exportar CSV
+      </button>
+
     </div>
 
 
@@ -236,7 +243,12 @@
         <input
           type="text"
           [(ngModel)]="compra.Numero"
-          placeholder="Ej: C-0001">
+          readonly
+          placeholder="Se genera automáticamente">
+
+        <small>
+          El número se asigna automáticamente al guardar la compra.
+        </small>
 
       </div>
 
@@ -303,6 +315,46 @@
 
         <small class="ayuda-campo">
           En el crédito podrá definir cuotas / cuentas por pagar al confirmar.
+        </small>
+
+      </div>
+
+      <div class="campo">
+
+        <label>Tipo de documento (opcional)</label>
+
+        <input
+          type="text"
+          list="lista-tipos-documento"
+          [(ngModel)]="compra.TipoDocumento"
+          placeholder="Ej. Factura, Nota crédito">
+
+        <datalist id="lista-tipos-documento">
+          <option value="Factura"></option>
+          <option value="Factura Electrónica"></option>
+          <option value="Nota Crédito"></option>
+          <option value="Nota Débito"></option>
+          <option value="Recibo de caja"></option>
+          <option value="Otro"></option>
+        </datalist>
+
+        <small class="ayuda-campo">
+          Se usa para exportar a SIIGO / NovaSoft.
+        </small>
+
+      </div>
+
+      <div class="campo">
+
+        <label>Número documento proveedor (opcional)</label>
+
+        <input
+          type="text"
+          [(ngModel)]="compra.NumeroDocumentoProveedor"
+          placeholder="Número de la factura o cruce">
+
+        <small class="ayuda-campo">
+          Número del documento del proveedor para SIIGO / NovaSoft.
         </small>
 
       </div>
@@ -516,6 +568,14 @@
           {{ detalleVista.SaldoPendiente | currency }}
         </span>
 
+      </p>
+
+      <p *ngIf="detalleVista.TipoDocumento">
+        <strong>Tipo de documento:</strong> {{ detalleVista.TipoDocumento }}
+      </p>
+
+      <p *ngIf="detalleVista.NumeroDocumentoProveedor">
+        <strong>Número documento proveedor:</strong> {{ detalleVista.NumeroDocumentoProveedor }}
       </p>
 
       <p><strong>Estado:</strong>
@@ -737,7 +797,9 @@
         <div>
           <strong>Método de pago:</strong>
 
-          <select [(ngModel)]="confirmandoCompra.MetodoPago">
+          <select
+            [(ngModel)]="confirmandoCompra.MetodoPago"
+            (ngModelChange)="onMetodoPagoChange($event)">
 
             <option value="CONTADO">Contado</option>
             <option value="CREDITO">Crédito (cuotas)</option>
@@ -762,7 +824,8 @@
           step="0.01"
           min="0"
           [max]="confirmandoCompra.Total"
-          [(ngModel)]="confirmandoCompra.PagoInicial">
+          [(ngModel)]="confirmandoCompra.PagoInicial"
+          (ngModelChange)="onPagoInicialChange()">
 
       </div>
 

@@ -29,6 +29,7 @@ router.get('/', async (req, res) => {
                 c.IdBodega, b.NombreBodega,
                 c.Subtotal, c.Descuento, c.Impuesto, c.Total,
                 c.MetodoPago, c.SaldoPendiente,
+                c.TipoDocumento, c.NumeroDocumentoProveedor,
                 c.Observaciones, c.UsuarioIdCreacion,
                 c.FechaCreacion, c.FechaConfirmacion, c.FechaAnulacion,
                 (SELECT COUNT(*) FROM compras_detalle cd WHERE cd.IdCompra = c.IdCompra) AS TotalItems,
@@ -58,6 +59,7 @@ router.get('/:id', async (req, res) => {
                 c.IdBodega, b.NombreBodega,
                 c.Subtotal, c.Descuento, c.Impuesto, c.Total,
                 c.MetodoPago, c.SaldoPendiente,
+                c.TipoDocumento, c.NumeroDocumentoProveedor,
                 c.Observaciones, c.UsuarioIdCreacion, c.FechaCreacion,
                 c.UsuarioIdConfirmacion, c.FechaConfirmacion,
                 c.UsuarioIdAnulacion, c.FechaAnulacion
@@ -115,14 +117,26 @@ router.post('/', async (req, res) => {
 
         const {
             Numero, IdProveedor, IdBodega, Fecha, Observaciones,
-            MetodoPago, Detalle
+            MetodoPago, TipoDocumento, NumeroDocumentoProveedor, Detalle
         } = req.body;
         // Usuario y empresa provienen de la sesión, no del body.
         const UsuarioIdCreacion = req.auth?.UsuarioId ?? null;
         const IdEmpresa = req.auth?.IdEmpresa ?? null;
 
-        if (!Numero || !Numero.trim())
-            return res.status(400).json({ ok: false, mensaje: 'El número de documento es obligatorio' });
+        // Número de documento: si no se envía, se genera automáticamente (C-N).
+        let numeroFinal = Numero;
+        if (!numeroFinal || !numeroFinal.trim()) {
+            const [seq] = await conn.query(
+                `SELECT IFNULL(MAX(CAST(SUBSTRING_INDEX(Numero,'-',-1) AS UNSIGNED)), 0) + 1 AS siguiente
+                 FROM compras
+                 WHERE IdEmpresa = ? AND Numero LIKE 'C-%'
+                   AND SUBSTRING_INDEX(Numero,'-',-1) REGEXP '^[0-9]+$'`,
+                [IdEmpresa]
+            );
+            numeroFinal = `C-${seq[0].siguiente}`;
+        } else {
+            numeroFinal = numeroFinal.trim();
+        }
         if (!IdProveedor)
             return res.status(400).json({ ok: false, mensaje: 'El proveedor es obligatorio' });
         if (!IdBodega)
@@ -133,7 +147,7 @@ router.post('/', async (req, res) => {
         // Verificar duplicado de número (dentro de la misma empresa)
         const [duplicado] = await conn.query(
             `SELECT IdCompra FROM compras WHERE Numero = ? AND IdEmpresa = ?`,
-            [Numero.trim(), IdEmpresa]
+            [numeroFinal, IdEmpresa]
         );
         if (duplicado.length > 0)
             return res.status(409).json({ ok: false, mensaje: 'Ya existe una compra con ese número' });
@@ -158,14 +172,18 @@ router.post('/', async (req, res) => {
         const [cabecera] = await conn.query(
             `INSERT INTO compras (
                 Numero, IdProveedor, IdBodega, Fecha, Subtotal, Descuento,
-                Impuesto, Total, MetodoPago, SaldoPendiente, Estado, Observaciones,
+                Impuesto, Total, MetodoPago, SaldoPendiente,
+                TipoDocumento, NumeroDocumentoProveedor,
+                Estado, Observaciones,
                 UsuarioIdCreacion, IdEmpresa
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'BORRADOR', ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'BORRADOR', ?, ?, ?)`,
             [
-                Numero.trim(), IdProveedor, IdBodega, Fecha || new Date(),
+                numeroFinal, IdProveedor, IdBodega, Fecha || new Date(),
                 Subtotal, Descuento, Impuesto, Total,
                 MetodoPago === 'CREDITO' ? 'CREDITO' : 'CONTADO',
                 MetodoPago === 'CREDITO' ? Total : 0,
+                (TipoDocumento || '').trim() || null,
+                (NumeroDocumentoProveedor || '').trim() || null,
                 Observaciones || null, UsuarioIdCreacion, IdEmpresa
             ]
         );
@@ -190,7 +208,7 @@ router.post('/', async (req, res) => {
         }
 
         await conn.commit();
-        res.status(201).json({ ok: true, mensaje: 'Compra creada en estado BORRADOR', IdCompra });
+        res.status(201).json({ ok: true, mensaje: 'Compra creada en estado BORRADOR', IdCompra, Numero: numeroFinal });
     } catch (error) {
         await conn.rollback();
         console.error('Error creando compra:', error);
@@ -209,7 +227,7 @@ router.put('/:id', async (req, res) => {
     try {
         await conn.beginTransaction();
 
-        const { Numero, IdProveedor, IdBodega, Fecha, Observaciones, MetodoPago, UsuarioIdModificacion, Detalle } = req.body;
+        const { Numero, IdProveedor, IdBodega, Fecha, Observaciones, MetodoPago, TipoDocumento, NumeroDocumentoProveedor, UsuarioIdModificacion, Detalle } = req.body;
         const IdCompra = Number(req.params.id);
 
         const [actual] = await conn.query(`SELECT Estado FROM compras WHERE IdCompra = ?`, [IdCompra]);
@@ -234,10 +252,14 @@ router.put('/:id', async (req, res) => {
         await conn.query(
             `UPDATE compras SET Numero=?, IdProveedor=?, IdBodega=?, Fecha=?,
                 Subtotal=?, Descuento=?, Impuesto=?, Total=?,
-                MetodoPago=?, SaldoPendiente=?, Observaciones=?
+                MetodoPago=?, SaldoPendiente=?, Observaciones=?,
+                TipoDocumento=?, NumeroDocumentoProveedor=?
              WHERE IdCompra=?`,
             [Numero.trim(), IdProveedor, IdBodega, Fecha || new Date(), Subtotal, Descuento, Impuesto, Total,
-             metodo, metodo === 'CREDITO' ? Total : 0, Observaciones || null, IdCompra]
+             metodo, metodo === 'CREDITO' ? Total : 0, Observaciones || null,
+             (TipoDocumento || '').trim() || null,
+             (NumeroDocumentoProveedor || '').trim() || null,
+             IdCompra]
         );
         await conn.query(`DELETE FROM compras_detalle WHERE IdCompra = ?`, [IdCompra]);
         for (const item of Detalle) {

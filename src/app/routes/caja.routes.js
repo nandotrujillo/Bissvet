@@ -171,7 +171,12 @@ router.get('/:id/movimientos', async (req, res) => {
                 d.idProveedor, d.NroDocumentoProveedor,
                 d.UsuarioIdCreacion,
                 CONCAT_WS(' ', u.PrimerNombre, u.SegundoNombre,
-                          u.PrimerApellido, u.SegundoApellido) AS NombreUsuario
+                          u.PrimerApellido, u.SegundoApellido) AS NombreUsuario,
+                CASE
+                    WHEN t.Ventas = 1 THEN 'VENTA'
+                    WHEN t.Gastos = 1 OR d.NroDocumentoProveedor IS NOT NULL THEN 'COMPRA'
+                    ELSE 'MANUAL'
+                END AS Origen
             FROM cajeromovdet d
             INNER JOIN tipomovcaja t ON d.TipoMov = t.id
             LEFT JOIN Usuarios u ON u.UsuarioId = d.UsuarioIdCreacion

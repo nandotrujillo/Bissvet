@@ -39,6 +39,22 @@
   border-radius: 6px;
 }
 
+.mensaje {
+  padding: 12px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+}
+
+.exito {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.error {
+  background: #ffebee;
+  color: #c62828;
+}
+
 .tabla-container {
   background: white;
   border-radius: 8px;

@@ -294,6 +294,96 @@ tbody tr:hover {
   filter: brightness(0.95);
 }
 
+tbody tr.fila-seleccionada {
+  background: #eff6ff;
+  border-left: 4px solid #2563eb;
+}
+
+tbody tr.fila-seleccionada:hover {
+  background: #eff6ff;
+}
+
+/* PANEL MOVIMIENTOS */
+
+.panel-movimientos {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.panel-movimientos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.panel-movimientos-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 19px;
+}
+
+.panel-movimientos-header p {
+  margin: 5px 0 0;
+  color: #6b7280;
+}
+
+.panel-movimientos-header .estado {
+  vertical-align: middle;
+}
+
+.panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.panel-controls select {
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  font-size: 14px;
+  background: white;
+}
+
+/* BADGES ORIGEN */
+
+.badge.origen {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.badge.origen-venta {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge.origen-compra {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge.origen-manual {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* TOTALES MOVIMIENTOS */
+
+.fila-total-saldo {
+  background: #f0fdf4;
+}
+
+.fila-total-saldo td {
+  font-size: 14px;
+}
+
 /* SIN DATOS */
 
 .sin-datos {

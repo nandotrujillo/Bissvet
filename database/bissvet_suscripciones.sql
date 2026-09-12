@@ -85,22 +85,32 @@ CREATE TABLE IF NOT EXISTS plan_modulos (
   COMMENT='RF-MON-004: módulos incluidos en cada plan';
 
 -- Mapeo de módulos por plan (idempotente)
+-- BÁSICO:  operacional (Punto de Venta, Inventario, Compras, Servicios)
+-- PROFESIONAL: + clínico (Mascotas, Citas, Veterinarios, Historia Clínica)
+-- EMPRESARIAL: + Caja + módulos nuevos (CATEGORIAS_SERVICIO)
 INSERT IGNORE INTO plan_modulos (IdPlan, IdModulo)
 SELECT p.IdPlan, m.idModulos
 FROM planes p
 INNER JOIN modulos m ON 1 = 1
 WHERE
   (p.CodigoPlan = 'BASICO' AND m.Codigo IN (
-     'SEGURIDAD','EMPRESAS','USUARIOS','CLIENTES','MASCOTAS','CITAS','SERVICIOS','REPORTES'))
+     'SEGURIDAD','EMPRESAS','USUARIOS','CLIENTES',
+     'PRODUCTOS','BODEGAS','INVENTARIOS','COMPRAS','VENTAS',
+     'SERVICIOS','REPORTES'))
   OR
   (p.CodigoPlan = 'PROFESIONAL' AND m.Codigo IN (
-     'SEGURIDAD','EMPRESAS','USUARIOS','CLIENTES','MASCOTAS','CITAS','SERVICIOS','REPORTES',
-     'VETERINARIOS','HISTORIA_CLINICA','PRODUCTOS','BODEGAS','INVENTARIOS','VENTAS','AUDITORIA'))
+     'SEGURIDAD','EMPRESAS','USUARIOS','CLIENTES',
+     'PRODUCTOS','BODEGAS','INVENTARIOS','COMPRAS','VENTAS',
+     'SERVICIOS','REPORTES',
+     'MASCOTAS','CITAS','VETERINARIOS','HISTORIA_CLINICA','AUDITORIA'))
   OR
   (p.CodigoPlan = 'EMPRESARIAL' AND m.Codigo IN (
-     'SEGURIDAD','EMPRESAS','USUARIOS','CLIENTES','MASCOTAS','CITAS','SERVICIOS','REPORTES',
-     'VETERINARIOS','HISTORIA_CLINICA','PRODUCTOS','BODEGAS','INVENTARIOS','VENTAS','AUDITORIA',
-     'COMPRAS','CAJA'));
+     'SEGURIDAD','EMPRESAS','USUARIOS','CLIENTES',
+     'PRODUCTOS','BODEGAS','INVENTARIOS','COMPRAS','VENTAS',
+     'SERVICIOS','REPORTES',
+     'MASCOTAS','CITAS','VETERINARIOS','HISTORIA_CLINICA','AUDITORIA',
+     'CAJA',
+     'CATEGORIAS_SERVICIO'));
 
 -- =============================================================================
 -- FASE 3 - LÍMITES DE PLANES (modelo extensible: PLAN -> PLAN_LIMITES -> TIPO_LIMITE)

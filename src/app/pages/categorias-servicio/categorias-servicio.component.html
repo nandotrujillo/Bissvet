@@ -1,0 +1,92 @@
+<div class="categorias-container">
+
+  <div class="titulo">
+    <div>
+      <h2>📂 Categorías de Servicio</h2>
+      <p>Administración de categorías para agrupar servicios</p>
+    </div>
+    <button class="btn-nuevo" (click)="nueva()">+ Nueva Categoría</button>
+  </div>
+
+  <!-- MENSAJES -->
+  <div class="mensaje exito" *ngIf="mensaje">{{ mensaje }}</div>
+  <div class="mensaje error" *ngIf="error">{{ error }}</div>
+
+  <!-- FORMULARIO -->
+  <div class="formulario" *ngIf="mostrarFormulario">
+    <h3>{{ editando ? 'Editar Categoría' : 'Nueva Categoría' }}</h3>
+
+    <div class="form-grid">
+      <div class="campo">
+        <label>Nombre *</label>
+        <input
+          type="text"
+          [(ngModel)]="categoria.Nombre"
+          maxlength="100"
+          placeholder="Nombre de la categoría">
+      </div>
+
+      <div class="campo">
+        <label>Estado</label>
+        <select [(ngModel)]="categoria.Activo">
+          <option [ngValue]="true">Activo</option>
+          <option [ngValue]="false">Inactivo</option>
+        </select>
+      </div>
+
+      <div class="campo campo-completo">
+        <label>Descripción</label>
+        <textarea
+          [(ngModel)]="categoria.Descripcion"
+          maxlength="250"
+          rows="3"
+          placeholder="Descripción de la categoría">
+        </textarea>
+      </div>
+    </div>
+
+    <div class="acciones-formulario">
+      <button class="btn-guardar" (click)="guardar()">
+        {{ editando ? 'Actualizar' : 'Guardar' }}
+      </button>
+      <button class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- LISTADO -->
+  <div class="tabla-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of categorias">
+          <td>{{ item.IdCategoriaServicio }}</td>
+          <td>{{ item.Nombre }}</td>
+          <td>{{ item.Descripcion || '-' }}</td>
+          <td>
+            <span class="estado" [class.inactivo]="!item.Activo">
+              {{ item.Activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td class="acciones">
+            <button class="btn-editar" (click)="editar(item)">Editar</button>
+            <button class="btn-eliminar" (click)="eliminar(item)">Eliminar</button>
+          </td>
+        </tr>
+        <tr *ngIf="categorias.length === 0">
+          <td colspan="5" class="sin-registros">
+            No existen categorías registradas.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

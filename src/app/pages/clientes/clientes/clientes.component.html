@@ -24,6 +24,26 @@
   </div>
 
 
+  <!-- MENSAJES -->
+
+  <div
+    class="mensaje exito"
+    *ngIf="mensaje">
+
+    {{ mensaje }}
+
+  </div>
+
+
+  <div
+    class="mensaje error"
+    *ngIf="error">
+
+    {{ error }}
+
+  </div>
+
+
   <!-- BUSCADOR -->
 
   <div class="barra-busqueda">

@@ -13,9 +13,14 @@
       <h1>Historia Clínica Veterinaria</h1>
       <p>Consulta y registro completo de las atenciones clínicas del paciente</p>
     </div>
-    <button *ngIf="mascotaSeleccionada" class="btn-secundario" (click)="mascotaSeleccionada = null; textoBusqueda = ''">
-      Cambiar Mascota
-    </button>
+    <div class="encabezado-acciones">
+      <button *ngIf="mascotaSeleccionada && historiaSeleccionadaId" class="btn-secundario" (click)="imprimirPDF()">
+        🖨️ Imprimir PDF
+      </button>
+      <button *ngIf="mascotaSeleccionada" class="btn-secundario" (click)="mascotaSeleccionada = null; textoBusqueda = ''">
+        Cambiar Mascota
+      </button>
+    </div>
   </div>
 
   <!-- =========================================== -->
@@ -116,6 +121,7 @@
     <button class="pestana" [class.activa]="seccionActiva === 'cirugia'" (click)="seleccionarSeccion('cirugia')">Cirugía</button>
     <button class="pestana" [class.activa]="seccionActiva === 'controles'" (click)="seleccionarSeccion('controles')">Controles</button>
     <button class="pestana" [class.activa]="seccionActiva === 'antecedentes'" (click)="seleccionarSeccion('antecedentes')">Antecedentes</button>
+    <button class="pestana" [class.activa]="seccionActiva === 'archivos'" (click)="seleccionarSeccion('archivos')">Archivos</button>
     <button class="pestana" [class.activa]="seccionActiva === 'historia'" (click)="seleccionarSeccion('historia')">Historia</button>
   </div>
 
@@ -739,6 +745,77 @@
       <div class="formulario-botones">
         <button class="btn-guardar" (click)="guardarAntecedentes()">Guardar Antecedentes</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- SECCION ARCHIVOS -->
+  <!-- ========================================= -->
+  <div *ngIf="mascotaSeleccionada && seccionActiva === 'archivos'" class="seccion">
+    <div class="seccion-titulo">
+      <h3>Archivos</h3>
+      <p>Documentos y anexos de la historia clínica</p>
+    </div>
+
+    <div class="formulario-card">
+      <div class="formulario-header">
+        <h2>Subir Archivo</h2>
+        <p>Adjunte exámenes, imágenes o documentos relacionados con la atención</p>
+      </div>
+      <div class="formulario-body">
+        <div class="formulario-grid">
+          <div class="campo">
+            <label>Archivo *</label>
+            <input type="file" (change)="onArchivoSeleccionado($event)" />
+          </div>
+          <div class="campo">
+            <label>Tipo</label>
+            <select [(ngModel)]="tipoArchivoNuevo">
+              <option value="Documento">Documento</option>
+              <option value="Imagen">Imagen</option>
+              <option value="PDF">PDF</option>
+              <option value="Hoja de cálculo">Hoja de cálculo</option>
+              <option value="Lab">Resultado de laboratorio</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="campo campo-completo">
+            <label>Descripción</label>
+            <input type="text" [(ngModel)]="descripcionArchivoNueva" placeholder="Descripción opcional" />
+          </div>
+        </div>
+      </div>
+      <div class="formulario-botones">
+        <button class="btn-guardar" (click)="subirArchivo()" [disabled]="subiendoArchivo">
+          {{ subiendoArchivo ? 'Subiendo...' : 'Subir Archivo' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="tabla-card mt-25">
+      <table>
+        <thead>
+          <tr><th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Descripción</th><th>Fecha</th><th class="col-acciones"></th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of archivos">
+            <td>{{ a.NombreArchivo }}</td>
+            <td>
+              <span class="estado pendiente">{{ a.TipoArchivo || 'Documento' }}</span>
+            </td>
+            <td>{{ formatearTamano(a.TamanoBytes) }}</td>
+            <td>{{ a.Descripcion || '-' }}</td>
+            <td>{{ a.FechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</td>
+            <td class="col-acciones">
+              <button class="btn-editar btn-pequeno" title="Descargar" (click)="descargarArchivo(a)">⬇</button>
+              <button class="btn-eliminar btn-pequeno" title="Eliminar" (click)="eliminarArchivo(a)">✕</button>
+            </td>
+          </tr>
+          <tr *ngIf="archivos.length === 0">
+            <td colspan="6" class="sin-datos">No se han adjuntado archivos a esta historia clínica</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 

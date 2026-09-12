@@ -43,6 +43,31 @@
   background: #1d4ed8;
 }
 
+.btn-nuevo:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+
+/* CUPO DEL PLAN */
+
+.cupo-plan {
+  background: #eff6ff;
+  color: #1e40af;
+  padding: 12px 15px;
+  border-radius: 7px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.cupo-plan .cupo-lleno {
+  color: #991b1b;
+}
+
+.cupo-plan .cupo-lleno strong {
+  color: #991b1b;
+}
+
 
 /* MENSAJES */
 

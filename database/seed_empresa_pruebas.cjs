@@ -4,7 +4,7 @@
 // Crea:
 //   1. Empresa "Veterinaria Pruebas SAS" (IdEmpresa 2)
 //   2. Suscripción PLAN EMPRESARIAL (3) en estado ACTIVA -> acceso a todos
-//      los módulos operativos (4-20) + Tipos de Pago (21)
+//      los módulos operativos + clínicos + CAJA
 //   3. Usuario admin2 (mismo password que "admin": copia su hash bcrypt),
 //      perfil Administrador (1) + rol ADMINISTRADOR (1)
 //   4. Catálogos operativos de la empresa: bodega, sede, proveedor,

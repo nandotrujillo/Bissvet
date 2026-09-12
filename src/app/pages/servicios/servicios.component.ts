@@ -121,8 +121,18 @@ export class ServiciosComponent implements OnInit {
 
   editar(servicio: Servicio): void {
 
+    const idCategoria =
+      servicio.IdCategoriaServicio != null
+        ? Number(servicio.IdCategoriaServicio)
+        : null;
+
     this.servicio = {
-      ...servicio
+      IdServicio: servicio.IdServicio,
+      IdCategoriaServicio: idCategoria,
+      Nombre: servicio.Nombre,
+      Descripcion: servicio.Descripcion || '',
+      Precio: Number(servicio.Precio) || 0,
+      Activo: servicio.Activo === 0 ? 0 : 1
     };
 
     this.editando = true;
@@ -154,10 +164,26 @@ export class ServiciosComponent implements OnInit {
       return;
     }
 
+    const precio = Number(this.servicio.Precio);
+
+    if (isNaN(precio) || precio < 0) {
+
+      this.error = 'El precio debe ser un número válido mayor o igual a 0.';
+      return;
+    }
+
+    const body: any = {
+      IdCategoriaServicio: this.servicio.IdCategoriaServicio,
+      Nombre: this.servicio.Nombre.trim(),
+      Descripcion: this.servicio.Descripcion,
+      Precio: precio,
+      Activo: this.servicio.Activo
+    };
+
     if (this.editando && this.servicio.IdServicio) {
 
       this.serviciosService
-        .actualizar(this.servicio.IdServicio, this.servicio)
+        .actualizar(this.servicio.IdServicio, body)
         .subscribe({
 
           next: () => {
@@ -185,7 +211,7 @@ export class ServiciosComponent implements OnInit {
     } else {
 
       this.serviciosService
-        .crear(this.servicio)
+        .crear(body)
         .subscribe({
 
           next: () => {

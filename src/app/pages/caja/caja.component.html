@@ -215,7 +215,9 @@
       <tbody>
 
         <tr
-          *ngFor="let j of filtrar()">
+          *ngFor="let j of filtrar()"
+          (click)="seleccionarJornada(j)"
+          [class.fila-seleccionada]="esJornadaSeleccionada(j)">
 
           <td>{{ j.Id }}</td>
 
@@ -252,7 +254,7 @@
               *ngIf="puedeConsultar"
               class="btn-icono"
               title="Ver movimientos"
-              (click)="verMovimientos(j)">
+              (click)="seleccionarJornada(j)">
 
               🧾
 
@@ -285,6 +287,227 @@
       </tbody>
 
     </table>
+
+  </div>
+
+
+  <!-- PANEL MOVIMIENTOS DE LA JORNADA SELECCIONADA -->
+
+  <div
+    class="panel-movimientos"
+    *ngIf="movimientosJornada">
+
+    <div class="panel-movimientos-header">
+
+      <div>
+
+        <h3>
+          Movimientos · Caja Nº {{ movimientosJornada.cajaMesa }}
+        </h3>
+
+        <p>
+          {{ movimientosJornada.diaProceso | date:'dd/MM/yyyy' }}
+          ·
+          <span
+            class="estado"
+            [class.abierta]="movimientosJornada.EstadoJornada === 'ABIERTA'"
+            [class.cerrada]="movimientosJornada.EstadoJornada === 'CERRADA'">
+
+            {{ movimientosJornada.EstadoJornada }}
+
+          </span>
+
+        </p>
+
+      </div>
+
+      <div class="panel-controls">
+
+        <select [(ngModel)]="filtroOrigen">
+
+          <option value="">
+            Todos los orígenes
+          </option>
+
+          <option value="VENTA">
+            Ventas
+          </option>
+
+          <option value="COMPRA">
+            Compras / gastos
+          </option>
+
+          <option value="MANUAL">
+            Movimientos manuales
+          </option>
+
+        </select>
+
+        <span class="contador">
+          {{ movimientosFiltrados().length }}
+          movimiento(s)
+        </span>
+
+      </div>
+
+    </div>
+
+    <div
+      class="mensaje error"
+      *ngIf="error">
+
+      {{ error }}
+
+    </div>
+
+    <div class="tabla-card">
+
+      <table class="tabla-movimientos">
+
+        <thead>
+
+          <tr>
+
+            <th>Hora</th>
+
+            <th>Tipo</th>
+
+            <th>Origen</th>
+
+            <th>Descripción</th>
+
+            <th>Responsable</th>
+
+            <th class="texto-derecha">Valor</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          <tr
+            *ngFor="let m of movimientosFiltrados()">
+
+            <td>{{ m.FechaRegistro | date:'HH:mm' }}</td>
+
+            <td>
+              <span
+                class="badge"
+                [class.ingreso]="m.Signo === '+'"
+                [class.egreso]="m.Signo === '-'">
+
+                {{ m.DescTipoMovCaja }}
+
+              </span>
+            </td>
+
+            <td>
+              <span
+                class="badge origen"
+                [class.origen-venta]="m.Origen === 'VENTA'"
+                [class.origen-compra]="m.Origen === 'COMPRA'"
+                [class.origen-manual]="m.Origen === 'MANUAL'">
+
+                {{ m.Origen }}
+
+              </span>
+            </td>
+
+            <td>{{ m.DescMov }}</td>
+
+            <td>{{ m.NombreUsuario || '-' }}</td>
+
+            <td
+              class="texto-derecha"
+              [class.celda-ingreso]="m.Signo === '+'"
+              [class.celda-egreso]="m.Signo === '-'">
+
+              {{ m.Signo === '+' ? '+' : '-' }}
+              $ {{ formatValor(m.ValorMov) }}
+
+            </td>
+
+          </tr>
+
+          <tr
+            *ngIf="movimientosFiltrados().length === 0 && !movimientosCargando">
+
+            <td
+              colspan="6"
+              class="sin-datos">
+
+              Esta jornada no tiene movimientos
+              {{ filtroOrigen ? 'de este origen' : '' }}.
+
+            </td>
+
+          </tr>
+
+          <tr
+            *ngIf="movimientosFiltrados().length === 0 && movimientosCargando">
+
+            <td
+              colspan="6"
+              class="sin-datos">
+
+              Cargando movimientos...
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+        <tfoot
+          *ngIf="movimientosFiltrados().length > 0">
+
+          <tr>
+
+            <td>Total ingresos</td>
+
+            <td colspan="4"></td>
+
+            <td class="texto-derecha celda-ingreso">
+              + $ {{ formatValor(totalIngresosMov()) }}
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>Total egresos</td>
+
+            <td colspan="4"></td>
+
+            <td class="texto-derecha celda-egreso">
+              - $ {{ formatValor(totalEgresosMov()) }}
+            </td>
+
+          </tr>
+
+          <tr class="fila-total-saldo">
+
+            <td><strong>Saldo de la jornada</strong></td>
+
+            <td colspan="4"></td>
+
+            <td class="texto-derecha">
+
+              <strong>
+                {{ saldoMovimientos() >= 0 ? '+' : '-' }}
+                $ {{ formatValor(Math.abs(saldoMovimientos())) }}
+              </strong>
+
+            </td>
+
+          </tr>
+
+        </tfoot>
+
+      </table>
+
+    </div>
 
   </div>
 
@@ -576,133 +799,6 @@
         </button>
 
       </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- MODAL MOVIMIENTOS DE JORNADA -->
-
-  <div
-    class="modal-overlay"
-    *ngIf="mostrarMovimientos">
-
-    <div class="modal-card modal-ancha">
-
-      <div class="modal-header">
-
-        <h2>
-          Movimientos · Caja
-          {{ movimientosJornada?.cajaMesa }}
-        </h2>
-
-        <button
-          class="btn-cerrar"
-          (click)="cerrarModales()">
-
-          ✕
-
-        </button>
-
-      </div>
-
-      <p class="modal-subtitulo">
-        {{ movimientosJornada?.diaProceso | date:'dd/MM/yyyy' }}
-      </p>
-
-      <table class="tabla-movimientos">
-
-        <thead>
-
-          <tr>
-
-            <th>Hora</th>
-
-            <th>Tipo</th>
-
-            <th>Descripción</th>
-
-            <th class="texto-derecha">Valor</th>
-
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          <tr
-            *ngFor="let m of movimientos">
-
-            <td>{{ m.FechaRegistro | date:'HH:mm' }}</td>
-
-            <td>
-              <span
-                class="badge"
-                [class.ingreso]="m.Signo === '+'"
-                [class.egreso]="m.Signo === '-'">
-
-                {{ m.DescTipoMovCaja }}
-
-              </span>
-            </td>
-
-            <td>{{ m.DescMov }}</td>
-
-            <td
-              class="texto-derecha"
-              [class.celda-ingreso]="m.Signo === '+'"
-              [class.celda-egreso]="m.Signo === '-'">
-
-              {{ m.Signo === '+' ? '+' : '-' }}
-              $ {{ formatValor(m.ValorMov) }}
-
-            </td>
-
-          </tr>
-
-          <tr
-            *ngIf="movimientos.length === 0">
-
-            <td
-              colspan="4"
-              class="sin-datos">
-
-              Esta jornada no tiene movimientos.
-
-            </td>
-
-          </tr>
-
-        </tbody>
-
-        <tfoot
-          *ngIf="movimientos.length > 0">
-
-          <tr>
-
-            <td
-              colspan="3"
-              class="texto-derecha">
-
-              <strong>Saldo movimientos</strong>
-
-            </td>
-
-            <td class="texto-derecha">
-
-              <strong>
-                {{ saldoMovimientos() >= 0 ? '+' : '-' }}
-                $ {{ formatValor(Math.abs(saldoMovimientos())) }}
-              </strong>
-
-            </td>
-
-          </tr>
-
-        </tfoot>
-
-      </table>
 
     </div>
 

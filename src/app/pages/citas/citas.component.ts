@@ -86,6 +86,8 @@ private readonly ID_CATEGORIA_CITAS = 1;
 
   mensaje = '';
 
+  imprimiendo = false;
+
   // ¿El usuario autenticado puede facturar servicios desde citas?
   puedeFacturarServicios = false;
 
@@ -931,11 +933,46 @@ cargarServiciosCitas(): void {
           });
         }
         this.cargarCitas();
+        this.imprimirFactura(IdVenta);
       },
       error: (e: any) => {
         this.error =
           e.error?.mensaje ||
           'La venta se generó pero no fue posible confirmar la facturación.';
+      }
+    });
+
+  }
+
+
+  // =====================================================
+  // IMPRIMIR FACTURA DE CITA
+  // Descarga el PDF generado por la venta asociada a la cita.
+  // =====================================================
+
+  imprimirFactura(IdVenta: number): void {
+
+    if (this.imprimiendo) { return; }
+
+    this.imprimiendo = true;
+
+    this.ventasService.imprimir(IdVenta).subscribe({
+      next: (blob: Blob) => {
+        this.imprimiendo = false;
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.download = `factura_cita_${IdVenta}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.imprimiendo = false;
+        this.error =
+          'No fue posible generar el PDF. Puede imprimirla desde el módulo de Ventas.';
       }
     });
 

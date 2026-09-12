@@ -39,4 +39,8 @@ export class VentasService {
   eliminar(id: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/${id}`);
   }
+
+  imprimir(id: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${id}/imprimir`, { responseType: 'blob' });
+  }
 }

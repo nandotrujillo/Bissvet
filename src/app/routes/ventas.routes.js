@@ -5,6 +5,8 @@ const invBusiness = require('../services/inventarioBusiness');
 const cajaBusiness = require('../services/cajaBusiness');
 const parametrosBusiness = require('../services/parametrosBusiness');
 const { authorize, obtenerPermisosUsuario } = require('../../middleware/authorize');
+const { registrarAuditoria } = require('../../middleware/auditoria.js');
+const PDFDocument = require('pdfkit');
 
 // Verifica si el usuario tiene un permiso concreto (perfil + rol + usuario,
 // con precedencia DENEGAR > PERMITIR, igual que el middleware authorize).
@@ -12,6 +14,19 @@ async function tienePermiso(UsuarioId, IdPerfil, codigo) {
     if (!UsuarioId) return false;
     const permisos = await obtenerPermisosUsuario(UsuarioId, IdPerfil);
     return permisos.get(codigo) === true;
+}
+
+function obtenerIP(req) {
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+        || req.socket?.remoteAddress
+        || req.ip
+        || null;
+}
+
+// Formatea un número COP sin símbolo (para el PDF).
+function formatoCOP(v) {
+    const n = Number(v || 0);
+    return n.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 // =====================================================
@@ -668,6 +683,179 @@ router.delete('/:id', async (req, res) => {
         res.status(500).json({ ok: false, mensaje: 'Error eliminando venta', error: error.message });
     } finally {
         conn.release();
+    }
+});
+
+// =====================================================
+// IMPRIMIR VENTA (PDF)  (GET /api/ventas/:id/imprimir)
+// Genera la factura de una venta (CONFIRMADA o BORRADOR) en PDF con datos
+// de la empresa, cabecera, detalle y totales. Aislada por empresa.
+// =====================================================
+router.get('/:id/imprimir', authorize('VENTAS.IMPRIMIR'), async (req, res) => {
+    try {
+        const IdVenta = Number(req.params.id);
+
+        const [cabecera] = await pool.query(`
+            SELECT
+                v.IdVenta, v.NumeroVenta, v.Fecha, v.Estado,
+                v.IdCliente,
+                CONCAT_WS(' ', c.PrimerNombre, c.SegundoNombre,
+                          c.PrimerApellido, c.SegundoApellido) AS NombreCliente,
+                v.IdVendedor,
+                CONCAT_WS(' ', ven.PrimerNombre, ven.SegundoNombre,
+                          ven.PrimerApellido, ven.SegundoApellido) AS NombreVendedor,
+                v.TipoPago, v.PorcentajeImpuesto,
+                v.IdBodega, b.NombreBodega,
+                v.Subtotal, v.Descuento, v.Impuesto, v.Total,
+                v.Observaciones
+            FROM ventas v
+            INNER JOIN clientes c    ON c.ClienteId = v.IdCliente
+            LEFT JOIN Usuarios ven   ON ven.UsuarioId = v.IdVendedor
+            INNER JOIN bodegas b     ON b.Id = v.IdBodega
+            WHERE v.IdVenta = ? AND v.IdEmpresa = ?
+        `, [IdVenta, req.auth.IdEmpresa]);
+        if (cabecera.length === 0)
+            return res.status(404).json({ ok: false, mensaje: 'Venta no encontrada' });
+
+        const [detalle] = await pool.query(`
+            SELECT
+                COALESCE(p.NombreProducto, s.Nombre) AS DescripcionItem,
+                vd.Cantidad, vd.PrecioUnitario, vd.Descuento, vd.Impuesto, vd.Total
+            FROM ventas_detalle vd
+            LEFT JOIN productos p ON p.IdProducto = vd.IdProducto
+            LEFT JOIN servicios s ON s.IdServicio = vd.IdServicio
+            WHERE vd.IdVenta = ? AND vd.IdEmpresa = ?
+        `, [IdVenta, req.auth.IdEmpresa]);
+
+        const [emp] = await pool.query(
+            `SELECT NombreComercial, RazonSocial, Nit, Direccion, Telefono, Correo
+             FROM empresas WHERE IdEmpresa = ?`,
+            [req.auth.IdEmpresa]
+        );
+        const e = emp[0] || {};
+
+        const doc = new PDFDocument({ margin: 35 });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition',
+            `attachment; filename="factura_${cabecera[0].NumeroVenta}.pdf"`);
+        doc.pipe(res);
+
+        const derecha = 150;
+
+        // Encabezado factura
+        doc.fontSize(18).fillColor('#1f2937').text(e.NombreComercial || 'BissVet', { align: 'left' });
+        doc.fontSize(9).fillColor('#6b7280');
+        if (e.Direccion) doc.text(`Dirección: ${e.Direccion}`);
+        if (e.Telefono) doc.text(`Teléfono: ${e.Telefono}`);
+        if (e.Nit) doc.text(`NIT: ${e.Nit}`);
+        doc.moveDown(0.2);
+        doc.fillColor('#2563eb').fontSize(15).text('FACTURA DE VENTA', { align: 'right' });
+        doc.fillColor('#374151').fontSize(10).text(cabecera[0].NumeroVenta, { align: 'right' });
+        doc.moveDown();
+
+        doc.moveTo(35, doc.y).lineTo(doc.page.width - 35, doc.y)
+           .lineWidth(1).strokeColor('#2563eb').stroke();
+        doc.moveDown(0.5);
+
+        // Datos del documento
+        const detFecha = new Date(cabecera[0].Fecha).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+        doc.fontSize(10).fillColor('#111827');
+        doc.text(`Cliente: ${cabecera[0].NombreCliente || '-'}`, { continued: false });
+        doc.text(`Fecha: ${detFecha}`);
+        doc.text(`Vendedor: ${cabecera[0].NombreVendedor || '-'}`);
+        doc.text(`Tipo de pago: ${cabecera[0].TipoPago || '-'}`);
+        doc.text(`Bodega: ${cabecera[0].NombreBodega || '-'}`);
+        doc.text(`Estado: ${cabecera[0].Estado}`);
+        doc.moveDown();
+
+        // Tabla de detalle
+        const colX = {
+            concepto: 35,
+            cantidad: 282,
+            precio: 322,
+            descuento: 388,
+            impuesto: 447,
+            total: 500
+        };
+        const dibujarCabeceraTabla = () => {
+            const yCab = doc.y;
+            doc.rect(35, yCab, doc.page.width - 70, 18).fill('#1f2937');
+            doc.fillColor('white').fontSize(8);
+            doc.text('Concepto', colX.concepto + 3, yCab + 5, { lineBreak: false });
+            doc.text('Cant.', colX.cantidad + 3, yCab + 5, { lineBreak: false });
+            doc.text('Valor', colX.precio + 3, yCab + 5, { width: 62, align: 'right', lineBreak: false });
+            doc.text('Desc.', colX.descuento + 3, yCab + 5, { width: 55, align: 'right', lineBreak: false });
+            doc.text('IVA', colX.impuesto + 3, yCab + 5, { width: 50, align: 'right', lineBreak: false });
+            doc.text('Total', colX.total + 3, yCab + 5, { width: 72, align: 'right', lineBreak: false });
+            doc.y = yCab + 22;
+        };
+        dibujarCabeceraTabla();
+
+        doc.fillColor('#111827').fontSize(9);
+        for (const it of detalle) {
+            if (doc.y > doc.page.height - 80) {
+                doc.addPage();
+                dibujarCabeceraTabla();
+            }
+            const yFila = doc.y + 3;
+            doc.text(String(it.DescripcionItem || 'S/N'), colX.concepto, yFila, { width: 240, lineBreak: false });
+            doc.text(String(it.Cantidad), colX.cantidad + 3, yFila, { width: 36, lineBreak: false });
+            doc.text(formatoCOP(it.PrecioUnitario), colX.precio + 3, yFila, { width: 62, align: 'right', lineBreak: false });
+            doc.text(formatoCOP(it.Descuento), colX.descuento + 3, yFila, { width: 55, align: 'right', lineBreak: false });
+            doc.text(formatoCOP(it.Impuesto), colX.impuesto + 3, yFila, { width: 50, align: 'right', lineBreak: false });
+            doc.text(formatoCOP(it.Total), colX.total + 3, yFila, { width: 72, align: 'right', lineBreak: false });
+            doc.y = yFila + 14;
+        }
+
+        doc.moveDown(0.5);
+        doc.moveTo(35, doc.y).lineTo(doc.page.width - 35, doc.y)
+           .lineWidth(0.5).strokeColor('#d1d5db').stroke();
+        doc.moveDown(0.5);
+
+        const filaTotal = (label, valor, color) => {
+            const y0 = doc.y;
+            doc.fontSize(10).fillColor('#374151').text(label, colX.precio, y0, { width: 180, align: 'left', lineBreak: false });
+            doc.fontSize(10).fillColor(color || '#111827').text(`$ ${formatoCOP(valor)}`, colX.total, y0, { width: 72, align: 'right', lineBreak: false });
+            doc.y = y0 + 14;
+        };
+        filaTotal('Subtotal:', cabecera[0].Subtotal);
+        filaTotal('Descuento:', `- ${formatoCOP(cabecera[0].Descuento)}`);
+        filaTotal('IVA:', cabecera[0].Impuesto);
+        const yTotal = doc.y;
+        doc.fontSize(12).fillColor('#1f2937').text('TOTAL:', colX.precio, yTotal, { width: 180, align: 'left', lineBreak: false });
+        doc.fontSize(13).fillColor('#16a34a').text(`$ ${formatoCOP(cabecera[0].Total)}`, colX.total, yTotal, { width: 72, align: 'right', lineBreak: false });
+        doc.y = yTotal + 18;
+        doc.x = 35;
+
+        doc.moveDown(1);
+        if (cabecera[0].Observaciones) {
+            doc.fontSize(8).fillColor('#6b7280').text(`Observaciones: ${cabecera[0].Observaciones}`, 35, doc.y, { width: doc.page.width - 70 });
+        }
+        doc.moveDown(1);
+        doc.fontSize(7).fillColor('#9ca3af').text(
+            `Generado por BissVet el ${new Date().toLocaleString('es-CO')}. Documento de venta ${cabecera[0].NumeroVenta}.`,
+            35, doc.y, { width: doc.page.width - 70, align: 'center' }
+        );
+
+        await registrarAuditoria({
+            IdEmpresa: req.auth.IdEmpresa,
+            UsuarioId: req.auth.UsuarioId,
+            Tabla: 'ventas',
+            RegistroId: IdVenta,
+            Accion: 'IMPRIMIR',
+            DireccionIP: obtenerIP(req),
+            DatosNuevos: { NumeroVenta: cabecera[0].NumeroVenta, formato: 'pdf' },
+            Descripcion: `Impresión de factura ${cabecera[0].NumeroVenta}`
+        });
+
+        doc.end();
+    } catch (error) {
+        console.error('Error imprimiendo venta:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ ok: false, mensaje: 'Error generando la factura', error: error.message });
+        } else {
+            res.end();
+        }
     }
 });
 

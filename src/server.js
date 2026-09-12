@@ -187,6 +187,9 @@ app.use('/api/caja', autorizarModulo('CAJA'), cajaRoutes);
 const reportesRoutes = require('./app/routes/reportes.routes');
 app.use('/api/reportes', autorizarModulo('REPORTES'), reportesRoutes);
 
+const dashboardRoutes = require('./app/routes/dashboard.routes');
+app.use('/api/dashboard', autorizarModulo('REPORTES'), dashboardRoutes);
+
 // ============================================
 // RUTAS MÓDULO MONETIZACIÓN (PLANES / SUSCRIPCIONES)
 // ============================================

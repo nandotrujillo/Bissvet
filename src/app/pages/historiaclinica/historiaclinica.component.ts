@@ -130,6 +130,10 @@ export class HistoriaClinicaComponent implements OnInit {
   // SECCION ARCHIVOS
   // =====================================================
   archivos: any[] = [];
+  archivoSeleccionado: File | null = null;
+  tipoArchivoNuevo = 'Documento';
+  descripcionArchivoNueva = '';
+  subiendoArchivo = false;
 
   // =====================================================
   // UI STATE
@@ -951,6 +955,107 @@ export class HistoriaClinicaComponent implements OnInit {
     });
   }
 
+  onArchivoSeleccionado(event: any): void {
+    const file = event.target?.files?.[0];
+    this.archivoSeleccionado = file || null;
+    if (file) {
+      this.tipoArchivoNuevo = this.detectarTipoArchivo(file.type, file.name);
+    }
+  }
+
+  detectarTipoArchivo(mime: string, nombre: string): string {
+    const ext = (nombre.split('.').pop() || '').toLowerCase();
+    const tiposImagen = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
+    if (tiposImagen.includes(mime) || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) return 'Imagen';
+    if (mime === 'application/pdf' || ext === 'pdf') return 'PDF';
+    if (['doc', 'docx'].includes(ext)) return 'Documento';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return 'Hoja de cálculo';
+    return 'Documento';
+  }
+
+  subirArchivo(): void {
+    this.error = '';
+    this.mensaje = '';
+
+    if (!this.historiaSeleccionadaId) {
+      this.error = 'Debe abrir una historia clínica.';
+      return;
+    }
+    if (!this.archivoSeleccionado) {
+      this.error = 'Debe seleccionar un archivo.';
+      return;
+    }
+
+    this.subiendoArchivo = true;
+    this.archivosService
+      .subirArchivo(
+        this.historiaSeleccionadaId,
+        this.archivoSeleccionado,
+        this.tipoArchivoNuevo,
+        this.descripcionArchivoNueva
+      )
+      .subscribe({
+        next: () => {
+          this.mensaje = 'Archivo subido correctamente.';
+          this.archivoSeleccionado = null;
+          this.descripcionArchivoNueva = '';
+          this.tipoArchivoNuevo = 'Documento';
+          this.subiendoArchivo = false;
+          this.cargarArchivos(this.historiaSeleccionadaId!);
+        },
+        error: (err: any) => {
+          console.error('Error subiendo archivo:', err);
+          this.error = err.error?.mensaje || 'Error subiendo el archivo.';
+          this.subiendoArchivo = false;
+        }
+      });
+  }
+
+  descargarArchivo(archivo: any): void {
+    if (!archivo.IdArchivo) return;
+    this.archivosService.descargar(archivo.IdArchivo).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = archivo.NombreArchivo || 'archivo';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err: any) => {
+        console.error('Error descargando archivo:', err);
+        this.error = 'No fue posible descargar el archivo.';
+      }
+    });
+  }
+
+  eliminarArchivo(archivo: any): void {
+    if (!archivo.IdArchivo) return;
+    if (!confirm(`¿Eliminar el archivo "${archivo.NombreArchivo}"?`)) return;
+    this.archivosService.eliminar(archivo.IdArchivo).subscribe({
+      next: () => {
+        this.mensaje = 'Archivo eliminado correctamente.';
+        if (this.historiaSeleccionadaId) {
+          this.cargarArchivos(this.historiaSeleccionadaId);
+        }
+      },
+      error: (err: any) => {
+        console.error('Error eliminando archivo:', err);
+        this.error = err.error?.mensaje || 'Error eliminando el archivo.';
+      }
+    });
+  }
+
+  formatearTamano(bytes: any): string {
+    if (!bytes) return '';
+    const b = Number(bytes);
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
   // =====================================================
   // UTILIDADES
   // =====================================================
@@ -987,5 +1092,43 @@ export class HistoriaClinicaComponent implements OnInit {
     if (meses < 0) { anos--; meses += 12; }
     if (anos > 0) return `${anos} año(s) ${meses} mes(es)`;
     return `${meses} mes(es)`;
+  }
+
+  // =====================================================
+  // IMPRIMIR / EXPORTAR PDF DE LA HISTORIA CLINICA
+  // =====================================================
+  imprimirPDF(): void {
+    if (!this.historiaSeleccionadaId) {
+      this.error = 'Debe abrir una historia clínica para imprimir.';
+      return;
+    }
+    this.mensaje = '';
+    this.error = '';
+
+    const token = localStorage.getItem('token');
+    fetch(this.historiasService.imprimirPDF(this.historiaSeleccionadaId), {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.blob();
+      })
+      .then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `historia_clinica_${this.historiaSeleccionadaId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.mensaje = 'Historia clínica descargada en PDF.';
+      })
+      .catch((err: any) => {
+        console.error('Error generando PDF:', err);
+        this.error = 'No fue posible generar el PDF. Verifique sus permisos.';
+      });
   }
 }

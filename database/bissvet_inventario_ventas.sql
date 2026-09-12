@@ -274,6 +274,8 @@ CREATE TABLE compras (
   Impuesto             DECIMAL(18,4)  NOT NULL DEFAULT 0,
   Total                DECIMAL(18,4)  NOT NULL DEFAULT 0,
   Estado               ENUM('BORRADOR','CONFIRMADA','ANULADA') NOT NULL DEFAULT 'BORRADOR',
+  TipoDocumento        VARCHAR(30)    NULL,
+  NumeroDocumentoProveedor VARCHAR(50) NULL,
   Observaciones        VARCHAR(500)   NULL,
   UsuarioIdCreacion    INT            NULL,
   FechaCreacion        DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,

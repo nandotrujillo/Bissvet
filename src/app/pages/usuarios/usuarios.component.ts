@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UsuarioService } from '../../Services/usuario.service';
 import { SeguridadService } from '../../Services/seguridad.service';
+import { PlanesService } from '../../Services/planes.service';
 import { Usuario } from '../../Models/usuario';
 
 @Component({
@@ -52,15 +53,28 @@ export class UsuariosComponent implements OnInit {
   puedeBloquear = false;
   puedeCambiarClave = false;
 
+  // Límite de usuarios del plan de la empresa
+  limiteUsuarios: number | null = null;
+  usuariosActuales = 0;
+
   constructor(
     private usuarioService: UsuarioService,
-    private seguridadService: SeguridadService
+    private seguridadService: SeguridadService,
+    private planesService: PlanesService
   ) { }
 
   ngOnInit(): void {
     this.cargarPermisos();
     this.cargarPerfiles();
     this.cargarUsuarios();
+    this.cargarLimiteUsuarios();
+  }
+
+  get cupoCompleto(): boolean {
+    return (
+      this.limiteUsuarios !== null &&
+      this.usuariosActuales >= this.limiteUsuarios
+    );
   }
 
   // =====================================================
@@ -137,6 +151,27 @@ export class UsuariosComponent implements OnInit {
   }
 
   // =====================================================
+  // LÍMITE DE USUARIOS DEL PLAN (RF-MON-009)
+  // =====================================================
+
+  cargarLimiteUsuarios(): void {
+    this.planesService.consumo().subscribe({
+      next: (respuesta) => {
+        const datos = respuesta.datos || {};
+        const consumos: any[] = datos.consumos || [];
+        const usuarios = consumos.find(c => c.codigo === 'USUARIOS');
+        if (usuarios) {
+          this.limiteUsuarios = usuarios.maximo ?? null;
+          this.usuariosActuales = usuarios.actual ?? 0;
+        }
+      },
+      error: (err) => {
+        console.error('Error cargando límite de usuarios:', err);
+      }
+    });
+  }
+
+  // =====================================================
   // BUSCAR
   // =====================================================
 
@@ -191,7 +226,6 @@ export class UsuariosComponent implements OnInit {
     this.mensaje = '';
     this.error = '';
   }
-
   // =====================================================
   // EDITAR
   // =====================================================
@@ -279,6 +313,11 @@ export class UsuariosComponent implements OnInit {
 
     if (!this.usuario.Password?.trim()) {
       this.error = 'La contraseña es obligatoria.';
+      return;
+    }
+
+    if (this.cupoCompleto) {
+      this.error = `No es posible crear el usuario. Su plan permite máximo ${this.limiteUsuarios} usuarios activos. Actualice el plan para agregar más usuarios.`;
       return;
     }
 

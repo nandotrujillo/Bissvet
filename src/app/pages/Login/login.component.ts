@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -22,6 +22,10 @@ export class LoginComponent implements OnInit {
   IdEmpresa: number = 0;
 
   empresas: Empresa[] = [];
+
+  empresasAbierto: boolean = false;
+
+  busquedaEmpresa: string = '';
 
   mensaje: string = '';
 
@@ -53,11 +57,20 @@ export class LoginComponent implements OnInit {
 
           this.empresas = respuesta.datos || [];
 
-          if (this.empresas.length > 0) {
+          // Preseleccionar la última empresa usada, si sigue activa
+          const ultima = localStorage.getItem('ultimaEmpresa');
 
-            this.IdEmpresa = this.empresas[0].IdEmpresa;
+          const idUltima = ultima
+            ? Number(JSON.parse(ultima))
+            : null;
 
-          }
+          const existeUltima =
+            idUltima !== null &&
+            this.empresas.some((e) => e.IdEmpresa === idUltima);
+
+          this.IdEmpresa = existeUltima
+            ? idUltima
+            : (this.empresas[0]?.IdEmpresa || 0);
 
         },
 
@@ -72,6 +85,63 @@ export class LoginComponent implements OnInit {
 
       });
 
+  }
+
+  // =====================================================
+  // COMBO DE EMPRESA PROFESIONAL
+  // =====================================================
+
+  @HostListener('document:click')
+  cerrarEmpresas(): void {
+    this.empresasAbierto = false;
+  }
+
+  @HostListener('document:keydown.escape')
+  cerrarEmpresasConEscape(): void {
+    this.empresasAbierto = false;
+  }
+
+  get empresaSeleccionada(): Empresa | undefined {
+    return this.empresas.find((e) => e.IdEmpresa === this.IdEmpresa);
+  }
+
+  get empresasFiltradas(): Empresa[] {
+    const busqueda = this.busquedaEmpresa.trim().toLowerCase();
+    if (!busqueda) {
+      return this.empresas;
+    }
+    return this.empresas.filter(
+      (e) =>
+        (e.NombreComercial || '').toLowerCase().includes(busqueda) ||
+        (e.RazonSocial || '').toLowerCase().includes(busqueda) ||
+        (e.Nit || '').toLowerCase().includes(busqueda)
+    );
+  }
+
+  inicialesEmpresa(empresa: Empresa | undefined): string {
+    if (!empresa) {
+      return 'EI';
+    }
+    const nombre = (empresa.NombreComercial || '').trim();
+    if (!nombre) {
+      return (empresa.RazonSocial || 'EI').trim().slice(0, 2).toUpperCase();
+    }
+    const palabras = nombre.split(/\s+/);
+    if (palabras.length === 1) {
+      return palabras[0].slice(0, 2).toUpperCase();
+    }
+    return (palabras[0][0] + palabras[palabras.length - 1][0]).toUpperCase();
+  }
+
+  toggleEmpresas(evento: Event): void {
+    evento.stopPropagation();
+    this.empresasAbierto = !this.empresasAbierto;
+  }
+
+  seleccionarEmpresa(empresa: Empresa): void {
+    this.IdEmpresa = empresa.IdEmpresa;
+    this.busquedaEmpresa = '';
+    this.empresasAbierto = false;
   }
 
 
@@ -120,7 +190,7 @@ export class LoginComponent implements OnInit {
           );
           localStorage.setItem(
             'usuario',
-            JSON.stringify(respuesta.usuario.UsuarioId)
+            JSON.stringify(respuesta.usuario)
           );
           localStorage.setItem(
             'IdEmpresa',
@@ -144,6 +214,12 @@ export class LoginComponent implements OnInit {
           }
 
           this.seguridadService.limpiarCache();
+
+          // Recordar la última empresa para la próxima sesión
+          localStorage.setItem(
+            'ultimaEmpresa',
+            JSON.stringify(respuesta.empresa.IdEmpresa)
+          );
 
           this.seguridadService.obtenerMenu().subscribe({
             next: (menu) => {
@@ -178,6 +254,7 @@ export class LoginComponent implements OnInit {
           if (error.status === 401) {
 
             this.mensaje =
+              error.error?.mensaje ||
               'Usuario o contraseña incorrectos';
 
           } else if (error.status === 400) {

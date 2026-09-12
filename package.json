@@ -6,8 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "serve:ssr:BissVetApp": "node dist/biss-vet-app/server/server.mjs"
+    "test": "ng test"
   },
   "private": true,
   "dependencies": {
@@ -28,6 +27,7 @@
     "jsonwebtoken": "^9.0.3",
     "msnodesqlv8": "^5.2.3",
     "mssql": "^12.7.0",
+    "multer": "^2.3.0",
     "mysql2": "^3.23.4",
     "pdfkit": "^0.20.2",
     "rxjs": "~7.8.0",

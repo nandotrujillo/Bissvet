@@ -237,14 +237,25 @@ export const routes: Routes = [
       },
 
       // -------------------------------------------------
-      // SEGURIDAD Y ADMINISTRACIÓN (FASE 6)
+      // SERVICIOS
       // -------------------------------------------------
 
       {
-        path: 'seguridad',
+        path: 'servicios',
         loadComponent: () =>
-          import('./pages/seguridad/seguridad.component')
-            .then(m => m.SeguridadComponent)
+          import('./pages/servicios/servicios.component')
+            .then(m => m.ServiciosComponent)
+      },
+
+      // -------------------------------------------------
+      // CATEGORÍAS DE SERVICIO
+      // -------------------------------------------------
+
+      {
+        path: 'categorias-servicio',
+        loadComponent: () =>
+          import('./pages/categorias-servicio/categorias-servicio.component')
+            .then(m => m.CategoriasServicioComponent)
       },
 
       {
@@ -294,13 +305,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/reportes/reportes.component')
             .then(m => m.ReportesComponent)
-      },
-
-      {
-        path: 'servicios',
-        loadComponent: () =>
-          import('./pages/servicios/servicios.component')
-            .then(m => m.ServiciosComponent)
       },
 
       // -------------------------------------------------

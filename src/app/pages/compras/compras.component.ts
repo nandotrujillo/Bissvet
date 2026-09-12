@@ -72,7 +72,9 @@ export class ComprasComponent implements OnInit {
       IdBodega: 0,
       Fecha: new Date().toISOString().slice(0, 10),
       Observaciones: '',
-      MetodoPago: 'CONTADO'
+      MetodoPago: 'CONTADO',
+      TipoDocumento: 'Factura',
+      NumeroDocumentoProveedor: ''
     };
   }
 
@@ -178,7 +180,9 @@ export class ComprasComponent implements OnInit {
           IdBodega: datos.IdBodega,
           Fecha: (datos.Fecha || '').slice(0, 10),
           Observaciones: datos.Observaciones,
-          MetodoPago: datos.MetodoPago || 'CONTADO'
+          MetodoPago: datos.MetodoPago || 'CONTADO',
+          TipoDocumento: datos.TipoDocumento || 'Factura',
+          NumeroDocumentoProveedor: datos.NumeroDocumentoProveedor || ''
         };
         this.detalle = (datos.Detalle || []).map((d: any) => ({
           IdProducto: d.IdProducto,
@@ -216,10 +220,6 @@ export class ComprasComponent implements OnInit {
     this.mensaje = '';
     this.error = '';
 
-    if (!this.compra.Numero || !this.compra.Numero.trim()) {
-      this.error = 'El número del documento es obligatorio.';
-      return;
-    }
     if (!this.compra.IdProveedor) {
       this.error = 'Debe seleccionar un proveedor.';
       return;
@@ -246,6 +246,8 @@ export class ComprasComponent implements OnInit {
       Fecha: this.compra.Fecha,
       Observaciones: this.compra.Observaciones,
       MetodoPago: this.compra.MetodoPago,
+      TipoDocumento: this.compra.TipoDocumento,
+      NumeroDocumentoProveedor: this.compra.NumeroDocumentoProveedor,
       UsuarioIdCreacion: null,
       Detalle: this.detalle
     };
@@ -341,6 +343,43 @@ export class ComprasComponent implements OnInit {
 
   cerrarConfirmar(): void {
     this.confirmandoCompra = null;
+  }
+
+  // Al cambiar el método de pago en el modal de confirmación se reinicializan
+  // el pago inicial y las cuotas para que el editor de crédito funcione.
+  onMetodoPagoChange(nuevoMetodo: string): void {
+    const c = this.confirmandoCompra;
+    if (!c) { return; }
+    const total = Number(c.Total) || 0;
+    if (nuevoMetodo === 'CREDITO') {
+      c.PagoInicial = 0;
+      c.Cuotas = [{ ValorCuota: Math.round(total * 100) / 100, FechaVencimiento: '' }];
+    } else {
+      c.PagoInicial = total;
+      c.Cuotas = [];
+    }
+  }
+
+  // Al cambiar el pago inicial se reparte el nuevo saldo en las cuotas existentes.
+  onPagoInicialChange(): void {
+    const c = this.confirmandoCompra;
+    if (!c) { return; }
+    const total = Number(c.Total) || 0;
+    const inicial = Number(c.PagoInicial) || 0;
+    const saldo = Math.max(0, total - inicial);
+    if (c.MetodoPago !== 'CREDITO') { return; }
+    if (saldo <= 0) {
+      c.Cuotas = [];
+      return;
+    }
+    const n = Math.max(1, (c.Cuotas || []).length || 1);
+    const partes = Math.floor((saldo * 100) / n) / 100;
+    const nuevas = [];
+    for (let i = 0; i < n; i++) {
+      const valor = (i === n - 1) ? saldo - partes * (n - 1) : partes;
+      nuevas.push({ ValorCuota: Math.round(valor * 100) / 100, FechaVencimiento: (c.Cuotas[i] && c.Cuotas[i].FechaVencimiento) || '' });
+    }
+    c.Cuotas = nuevas;
   }
 
   // Redistribuir el saldo pendiente en N cuotas iguales (o repartir al pulsar).
@@ -539,5 +578,70 @@ export class ComprasComponent implements OnInit {
   nombreProducto(id: number): string {
     const p = this.productos.find(x => x.IdProducto === id);
     return p ? `${p.CodigoProducto} - ${p.NombreProducto}` : '';
+  }
+
+  // ==================================================
+  // EXPORTAR CSV (genérico, compatible con Excel)
+  // Exporta el listado filtrado actual a nivel de
+  // documento (una fila por compra), con números en
+  // formato es-CO para que Excel los totalice.
+  // ==================================================
+
+  exportarCSV(): void {
+    if (!this.compras.length) {
+      this.error = 'No hay compras para exportar. Ajuste los filtros.';
+      return;
+    }
+
+    const numero = (v: any): string => {
+      const n = Number(v) || 0;
+      return n.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    };
+
+    const escape = (v: any): string => {
+      if (v === null || v === undefined) return '';
+      const s = String(v);
+      return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    const cabecera = [
+      'Documento', 'Fecha', 'TipoDocumento', 'NumeroDocumentoProveedor',
+      'NIT', 'Proveedor', 'Bodega', 'MetodoPago', 'Estado',
+      'Subtotal', 'Descuento', 'Impuesto', 'Total', 'SaldoPendiente'
+    ];
+
+    let csv = cabecera.join(';') + '\r\n';
+    for (const c of this.compras) {
+      const fila = [
+        c.Numero,
+        (c.Fecha || '').slice(0, 10),
+        c.TipoDocumento,
+        c.NumeroDocumentoProveedor,
+        c.Nit,
+        c.NombreProveedor,
+        c.NombreBodega,
+        c.MetodoPago || 'CONTADO',
+        c.Estado,
+        numero(c.Subtotal),
+        numero(c.Descuento),
+        numero(c.Impuesto),
+        numero(c.Total),
+        numero(c.SaldoPendiente)
+      ];
+      csv += fila.map(escape).join(';') + '\r\n';
+    }
+
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = 'compras.csv';
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    URL.revokeObjectURL(url);
+
+    this.mensaje = `Compras exportadas a CSV (${this.compras.length} documentos).`;
+    this.error = '';
   }
 }

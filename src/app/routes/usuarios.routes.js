@@ -86,7 +86,7 @@ router.post('/login', async (req, res) => {
         if (rows.length === 0) {
             return res.status(401).json({
                 ok: false,
-                mensaje: 'Usuario o contraseña incorrectos'
+                mensaje: 'El usuario no existe en la empresa seleccionada'
             });
         }
 
@@ -442,8 +442,8 @@ router.post('/', authenticate, authorize('USUARIOS.CREAR'), async (req, res) => 
         }
 
         const [existe] = await pool.query(
-            `SELECT UsuarioId FROM Usuarios WHERE Username = ?`,
-            [Username]
+            `SELECT UsuarioId FROM Usuarios WHERE Username = ? AND IdEmpresa = ?`,
+            [Username, IdEmpresa]
         );
         if (existe.length > 0) {
             return res.status(409).json({

@@ -1,16 +1,83 @@
 <div class="inicio-container">
 
   <div class="saludo">
-
     <h2>🏠 Inicio</h2>
+    <p>Resumen de la operación e información de la empresa activa.</p>
+  </div>
 
-    <p>
-      Información de la empresa activa.
-      Aquí puedes consultar y actualizar sus datos desde el dashboard.
-    </p>
+  <!-- KPIs -->
+  <div class="kpis" *ngIf="kpis && !cargando">
+
+    <div class="kpi">
+      <div class="kpi-icono">👥</div>
+      <div class="kpi-info">
+        <strong>{{ kpis.clientes }}</strong>
+        <span>Clientes activos</span>
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-icono">🐾</div>
+      <div class="kpi-info">
+        <strong>{{ kpis.mascotas }}</strong>
+        <span>Mascotas</span>
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-icono">📅</div>
+      <div class="kpi-info">
+        <strong>{{ kpis.citasHoy }}</strong>
+        <span>Citas de hoy</span>
+      </div>
+    </div>
+
+    <div class="kpi kpi-destacado">
+      <div class="kpi-icono">💰</div>
+      <div class="kpi-info">
+        <strong>{{ formatoMoneda(kpis.ventasHoy.total) }}</strong>
+        <span>{{ kpis.ventasHoy.cantidad }} ventas de hoy</span>
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-icono">📦</div>
+      <div class="kpi-info">
+        <strong>{{ kpis.unidadesInventario }}</strong>
+        <span>Unidades en inventario</span>
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-icono">🛒</div>
+      <div class="kpi-info">
+        <strong>{{ kpis.productos }}</strong>
+        <span>Productos</span>
+      </div>
+    </div>
+
+    <div class="kpi kpi-alerta" *ngIf="kpis.stockBajo > 0">
+      <div class="kpi-icono">⚠️</div>
+      <div class="kpi-info">
+        <strong>{{ kpis.stockBajo }}</strong>
+        <span>Productos con stock bajo</span>
+      </div>
+    </div>
+
+    <div class="kpi" *ngIf="kpis.stockBajo === 0">
+      <div class="kpi-icono">✅</div>
+      <div class="kpi-info">
+        <strong>0</strong>
+        <span>Productos con stock bajo</span>
+      </div>
+    </div>
 
   </div>
 
-  <app-empresas></app-empresas>
+  <div class="mensaje error" *ngIf="error">{{ error }}</div>
+
+  <div class="seccion-empresa">
+    <app-empresas></app-empresas>
+  </div>
 
 </div>

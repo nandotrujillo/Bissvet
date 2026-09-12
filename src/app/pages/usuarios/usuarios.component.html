@@ -18,6 +18,8 @@
     <button
       class="btn-nuevo"
       *ngIf="puedeCrear"
+      [disabled]="cupoCompleto"
+      [title]="cupoCompleto ? 'Cupo del plan alcanzado' : ''"
       (click)="nueva()">
 
       + Nuevo usuario
@@ -43,6 +45,30 @@
     *ngIf="error">
 
     {{ error }}
+
+  </div>
+
+
+  <!-- CUPO DE USUARIOS DEL PLAN -->
+
+  <div
+    class="cupo-plan"
+    *ngIf="limiteUsuarios !== null && !modoEdicion">
+
+    <span *ngIf="!cupoCompleto">
+      Usuarios del plan:
+      <strong>
+        {{ usuariosActuales }} de {{ limiteUsuarios }}
+      </strong>
+    </span>
+
+    <span
+      *ngIf="cupoCompleto"
+      class="cupo-lleno">
+      ⚠️ Cupo del plan alcanzado
+      (<strong>{{ usuariosActuales }}/{{ limiteUsuarios }}</strong>).
+      Para crear más usuarios, actualice el plan.
+    </span>
 
   </div>
 

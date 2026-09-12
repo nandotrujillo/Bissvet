@@ -52,6 +52,11 @@ export class VentasComponent implements OnInit {
   mensaje = '';
   error = '';
 
+  // Protección contra doble submit y envíos en curso
+  cargando = false;
+  facturando = false;
+  imprimiendo = false;
+
   constructor(
     private ventasService: VentasService,
     private clientesService: ClientesService,
@@ -254,6 +259,8 @@ export class VentasComponent implements OnInit {
         };
         this.detalle = (datos.Detalle || []).map((d: any) => ({
           IdProducto: d.IdProducto,
+          IdServicio: d.IdServicio,
+          NombreServicio: d.NombreServicio,
           Cantidad: d.Cantidad,
           PrecioUnitario: d.PrecioUnitario,
           Descuento: d.Descuento
@@ -284,34 +291,14 @@ export class VentasComponent implements OnInit {
 
   guardar(): void {
 
+    if (this.cargando || this.facturando) { return; }
+
     this.mensaje = '';
     this.error = '';
 
-    if (!this.venta.IdCliente) {
-      this.error = 'Debe seleccionar un cliente.';
-      return;
-    }
-    if (!this.venta.IdVendedor) {
-      this.error = 'Debe seleccionar un vendedor.';
-      return;
-    }
-    if (!this.venta.TipoPago || !this.venta.TipoPago.trim()) {
-      this.error = 'Debe seleccionar el tipo de pago.';
-      return;
-    }
-    if (!this.venta.IdBodega) {
-      this.error = 'Debe seleccionar una bodega.';
-      return;
-    }
-    if (!this.detalle.length) {
-      this.error = 'Debe agregar al menos un producto.';
-      return;
-    }
-    for (const item of this.detalle) {
-      if (!item.IdProducto) { this.error = 'Cada fila debe tener un producto.'; return; }
-      if (!item.Cantidad || item.Cantidad <= 0) { this.error = 'La cantidad debe ser mayor a 0.'; return; }
-      if (item.PrecioUnitario === undefined || item.PrecioUnitario < 0) { this.error = 'El precio unitario es inválido.'; return; }
-    }
+    if (!this.validar()) { return; }
+
+    this.cargando = true;
 
     const IdEmpresa = Number(localStorage.getItem('IdEmpresa')) || null;
     const UsuarioId = Number(localStorage.getItem('UsuarioId')) || null;
@@ -335,11 +322,13 @@ export class VentasComponent implements OnInit {
 
       this.ventasService.actualizar(this.IdVentaEdicion, body).subscribe({
         next: () => {
+          this.cargando = false;
           this.mensaje = 'Venta actualizada (BORRADOR).';
           this.cargarVentas();
           this.cancelar();
         },
         error: (e: any) => {
+          this.cargando = false;
           console.error('Error actualizando venta:', e);
           this.error = e?.error?.mensaje || 'No fue posible actualizar la venta.';
         }
@@ -349,16 +338,140 @@ export class VentasComponent implements OnInit {
 
       this.ventasService.crear(body).subscribe({
         next: (respuesta: any) => {
+          this.cargando = false;
           this.mensaje = 'Venta ' + (respuesta.NumeroVenta || ('Id ' + respuesta.IdVenta)) + ' creada en estado BORRADOR.';
           this.cargarVentas();
           this.cancelar();
         },
         error: (e: any) => {
+          this.cargando = false;
           console.error('Error creando venta:', e);
           this.error = e?.error?.mensaje || 'No fue posible crear la venta.';
         }
       });
     }
+  }
+
+  // Validación compartida del formulario (borrador y facturación).
+  private validar(): boolean {
+    if (!this.venta.IdCliente) {
+      this.error = 'Debe seleccionar un cliente.';
+      return false;
+    }
+    if (!this.venta.IdVendedor) {
+      this.error = 'Debe seleccionar un vendedor.';
+      return false;
+    }
+    if (!this.venta.TipoPago || !this.venta.TipoPago.trim()) {
+      this.error = 'Debe seleccionar el tipo de pago.';
+      return false;
+    }
+    if (!Number(this.venta.IdBodega) || Number(this.venta.IdBodega) <= 0) {
+      this.error = 'Debe seleccionar una bodega válida.';
+      return false;
+    }
+    if (!this.detalle.length) {
+      this.error = 'Debe agregar al menos un producto.';
+      return false;
+    }
+    for (const item of this.detalle) {
+      if (!item.IdProducto) { this.error = 'Cada fila debe tener un producto.'; return false; }
+      if (!item.Cantidad || item.Cantidad <= 0) { this.error = 'La cantidad debe ser mayor a 0.'; return false; }
+      if (item.PrecioUnitario === undefined || item.PrecioUnitario < 0) { this.error = 'El precio unitario es inválido.'; return false; }
+    }
+    return true;
+  }
+
+  // ==================================================
+  // FACTURAR + IMPRIMIR (flujo unificado)
+  // Crea el borrador, lo CONFIRMA y abre la factura en PDF,
+  // todo en una sola acción y sin permitir doble envío.
+  // ==================================================
+
+  facturar(): void {
+
+    if (this.cargando || this.facturando) { return; }
+
+    this.mensaje = '';
+    this.error = '';
+
+    if (!this.validar()) { return; }
+
+    this.facturando = true;
+
+    const UsuarioId = Number(localStorage.getItem('UsuarioId')) || null;
+
+    const body: any = {
+      IdCliente: this.venta.IdCliente,
+      IdVendedor: this.venta.IdVendedor,
+      TipoPago: this.venta.TipoPago,
+      PorcentajeImpuesto: this.venta.PorcentajeImpuesto,
+      IdBodega: this.venta.IdBodega,
+      Fecha: this.venta.Fecha,
+      Observaciones: this.venta.Observaciones,
+      UsuarioIdCreacion: UsuarioId,
+      IdEmpresa: Number(localStorage.getItem('IdEmpresa')) || null,
+      Detalle: this.detalle
+    };
+
+    this.ventasService.crear(body).subscribe({
+      next: (respuesta: any) => {
+        const IdVenta = respuesta.IdVenta;
+        const NumeroVenta = respuesta.NumeroVenta || '';
+
+        this.ventasService.confirmar(IdVenta, { UsuarioIdConfirmacion: UsuarioId }).subscribe({
+          next: () => {
+            this.facturando = false;
+            this.mensaje = 'Venta ' + NumeroVenta + ' facturada correctamente.';
+            this.cargarVentas();
+            this.cancelar();
+            this.imprimir(IdVenta);
+          },
+          error: (e: any) => {
+            this.facturando = false;
+            console.error('Error confirmando venta:', e);
+            this.error = e?.error?.mensaje || 'No fue posible confirmar la factura.';
+            this.cargarVentas();
+          }
+        });
+      },
+      error: (e: any) => {
+        this.facturando = false;
+        console.error('Error creando venta:', e);
+        this.error = e?.error?.mensaje || 'No fue posible crear la factura.';
+      }
+    });
+  }
+
+  // Descarga el PDF de la venta (factura).
+  imprimir(IdVenta?: number): void {
+
+    if (this.imprimiendo) { return; }
+
+    const id = IdVenta ?? (this.detalleVista ? this.detalleVista.IdVenta : null);
+    if (!id) { return; }
+
+    this.imprimiendo = true;
+
+    this.ventasService.imprimir(Number(id)).subscribe({
+      next: (blob: Blob) => {
+        this.imprimiendo = false;
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.download = `factura.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (e: any) => {
+        this.imprimiendo = false;
+        console.error('Error imprimiendo venta:', e);
+        this.error = e?.error?.mensaje || 'No fue posible generar la factura PDF.';
+      }
+    });
   }
 
   // ==================================================

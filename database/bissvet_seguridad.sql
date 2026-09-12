@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS Usuarios (
   UsuarioIdModificacion INT          NULL,
   UltimoAcceso         DATETIME      NULL,
   PRIMARY KEY (UsuarioId),
-  UNIQUE KEY uk_usuarios_username (Username),
+  UNIQUE KEY UQ_Usuarios_Username_Empresa (IdEmpresa, Username),
   KEY idx_usuarios_empresa (IdEmpresa),
   KEY idx_usuarios_perfil (IdPerfil),
   CONSTRAINT fk_usuarios_empresa FOREIGN KEY (IdEmpresa)

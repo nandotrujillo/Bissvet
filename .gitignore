@@ -32,6 +32,15 @@ src/app/JwtToken.env
 !.vscode/extensions.json
 .history/*
 
+# Logs de ejecución local
+/angular.out.log
+/angular.err.log
+/server.out.log
+/server.err.log
+
+# Scripts de prueba ad-hoc
+/_test_*.cjs
+
 # Miscellaneous
 /*.rar
 /.angular/cache

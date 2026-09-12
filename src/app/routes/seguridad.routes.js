@@ -41,6 +41,7 @@ router.get('/mi-menu', authenticate, async (req, res) => {
                  WHERE up.UsuarioId = ? AND up.TipoAcceso = 'PERMITIR'
              ) t ON t.IdPermiso = p.IdPermiso
              WHERE m.Activo = 1
+               AND m.Ruta IS NOT NULL AND m.Ruta <> ''
              ORDER BY m.Orden, m.NombreModulo`,
             [req.auth.IdPerfil, req.auth.UsuarioId, req.auth.UsuarioId]
         );
@@ -65,7 +66,9 @@ router.get('/mi-menu', authenticate, async (req, res) => {
         if (superAdmin[0].es) {
             const [todos] = await pool.query(
                 `SELECT idModulos, Codigo, NombreModulo, Ruta, Icono, Orden, Descripcion
-                 FROM modulos WHERE Activo = 1 ORDER BY Orden, NombreModulo`
+                 FROM modulos WHERE Activo = 1
+                   AND Ruta IS NOT NULL AND Ruta <> ''
+                 ORDER BY Orden, NombreModulo`
             );
             modulos = todos;
         } else {

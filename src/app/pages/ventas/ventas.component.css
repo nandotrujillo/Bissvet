@@ -174,8 +174,17 @@ th {
   background: #f3e5f5;
 }
 
+.btn-imprimir {
+  background: #ede9fe;
+}
+
 .btn-eliminar {
   background: #ffebee;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn:hover {
@@ -355,8 +364,28 @@ th {
   cursor: pointer;
 }
 
+.btn-guardar:disabled,
+.btn-facturar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-guardar:hover {
   opacity: 0.9;
+}
+
+.btn-facturar {
+  background: #1565c0;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-facturar:hover {
+  background: #0d47a1;
 }
 
 .btn-cancelar {

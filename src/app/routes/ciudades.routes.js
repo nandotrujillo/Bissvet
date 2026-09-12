@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
 
         res.json({
             ok: true,
-            data: rows
+            datos: rows
         });
 
     } catch (error) {
@@ -90,7 +90,7 @@ router.get('/:id', async (req, res) => {
 
         res.json({
             ok: true,
-            data: rows[0]
+            datos: rows[0]
         });
 
     } catch (error) {

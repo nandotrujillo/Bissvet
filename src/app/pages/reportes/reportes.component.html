@@ -146,6 +146,49 @@
 
           </div>
 
+          <div
+            class="campo"
+            *ngIf="requiereProveedor(seleccion.id)">
+
+            <label>Proveedor</label>
+
+            <select [(ngModel)]="proveedorId">
+
+              <option [ngValue]="null">
+                Todos los proveedores
+              </option>
+
+              <option
+                *ngFor="let pr of proveedores"
+                [ngValue]="pr.IdProveedor">
+
+                {{ pr.Nombre }}
+
+              </option>
+
+            </select>
+
+          </div>
+
+          <div
+            class="campo"
+            *ngIf="requiereAgrupar(seleccion.id)">
+
+            <label
+              class="campo-check"
+              [class.activo]="agruparPorProducto">
+
+              <input
+                type="checkbox"
+                [(ngModel)]="agruparPorProducto"
+                (ngModelChange)="ejecutar()" />
+
+              <span>Agrupar por productos</span>
+
+            </label>
+
+          </div>
+
         </div>
 
         <div class="botones-accion">
@@ -164,6 +207,15 @@
             (click)="exportar()">
 
             ⬇ Exportar CSV
+
+          </button>
+
+          <button
+            class="btn-secundario"
+            *ngIf="puedeExportar && seleccion?.id === 'compras'"
+            (click)="exportarSiigo()">
+
+            ⬇ Exportar SIIGO
 
           </button>
 
@@ -208,8 +260,7 @@
               *ngFor="let fila of datos">
 
               <td
-                *ngFor="let col of columnas()"
-                [class.texto-derecha]="esMoneda(col) || esCantidad(col)">
+                *ngFor="let col of columnas()">
 
                 <span *ngIf="esMoneda(col) && fila[col] !== null && fila[col] !== undefined">
                   $ {{ formatValor(fila[col]) }}
@@ -252,8 +303,7 @@
             <tr class="fila-total">
 
               <td
-                *ngFor="let col of columnas(); let i = index"
-                [class.texto-derecha]="esMoneda(col)">
+                *ngFor="let col of columnas(); let i = index">
 
                 <strong *ngIf="i === 0">
                   {{ totales()!.Etiqueta }}
@@ -262,7 +312,8 @@
                 <strong
                   *ngIf="i !== 0 && puedeMostrarColumnaTotales(col)"
                   class="total-moneda">
-                  $ {{ formatValor(totalColumna(col)) }}
+                  <span *ngIf="esMoneda(col)">$</span>
+                  {{ formatValor(totalColumna(col)) }}
                 </strong>
 
               </td>
