@@ -4,12 +4,13 @@ const path = require('path');
 
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'ClaveSuperSecretaBissVet2026';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
 
-if (!JWT_SECRET) {
-    console.error('FATAL: JWT_SECRET no está definido en el entorno (.env).');
-    process.exit(1);
+if (!process.env.JWT_SECRET) {
+    console.warn(
+        'ADVERTENCIA: JWT_SECRET no está definido; se usa el valor por defecto.'
+    );
 }
 
 function generarToken(usuario) {
