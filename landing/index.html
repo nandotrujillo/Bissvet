@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BISSVET — La gestión de tu veterinaria en un solo lugar</title>
+<meta name="description" content="Plataforma web de administración integral para veterinarias: clientes, mascotas, citas, historia clínica, inventario, compras, ventas, caja y reportes.">
+<style>
+  :root {
+    --primario: #0e7c66;
+    --primario-oscuro: #09604f;
+    --primario-suave: #e3f4ef;
+    --acento: #f59e0b;
+    --acento-suave: #fdf3e0;
+    --texto: #1f2937;
+    --texto-suave: #6b7280;
+    --superficie: #ffffff;
+    --fondo: #f7faf9;
+    --borde: #e5e7eb;
+    --sombra: 0 10px 30px rgba(14, 124, 102, 0.08);
+    --radio: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    color: var(--texto);
+    background: var(--fondo);
+    line-height: 1.6;
+  }
+
+  a { color: var(--primario); text-decoration: none; }
+
+  img { max-width: 100%; }
+
+  .contenedor {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ============ BOTONES ============ */
+  .btn {
+    display: inline-block;
+    padding: 14px 28px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 16px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s, background .2s;
+  }
+  .btn:active { transform: scale(.98); }
+
+  .btn-primario {
+    background: var(--primario);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(14, 124, 102, .3);
+  }
+  .btn-primario:hover {
+    background: var(--primario-oscuro);
+    transform: translateY(-2px);
+  }
+
+  .btn-acento {
+    background: var(--acento);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(245, 158, 11, .35);
+  }
+  .btn-acento:hover {
+    background: #d97706;
+    transform: translateY(-2px);
+  }
+
+  .btn-contorno {
+    background: transparent;
+    color: var(--primario);
+    border-color: var(--primario);
+  }
+  .btn-contorno:hover { background: var(--primario-suave); }
+
+  .btn-contorno-blanco {
+    background: transparent;
+    color: #fff;
+    border-color: rgba(255,255,255,.6);
+  }
+  .btn-contorno-blanco:hover { background: rgba(255,255,255,.12); }
+
+  /* ============ BARRA DE NAVEGACIÓN ============ */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--borde);
+  }
+  .nav .contenedor {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+  }
+  .nav .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--primario);
+  }
+  .nav .logo .huella {
+    font-size: 28px;
+  }
+  .nav-enlaces {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    font-weight: 600;
+    color: var(--texto-suave);
+  }
+  .nav-enlaces a { color: inherit; transition: color .2s; }
+  .nav-enlaces a:hover { color: var(--primario); }
+  .nav-enlaces .btn { padding: 10px 22px; font-size: 14px; }
+
+  .nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: var(--primario);
+    cursor: pointer;
+  }
+
+  /* ============ HERO ============ */
+  .hero {
+    background: linear-gradient(135deg, #0b5d4f 0%, #0e7c66 45%, #12917a 100%);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    padding: 96px 0 120px;
+  }
+  .hero::after {
+    content: "🐾";
+    position: absolute;
+    right: -40px;
+    bottom: -60px;
+    font-size: 320px;
+    opacity: .08;
+    transform: rotate(-20deg);
+  }
+  .hero .contenedor {
+    display: grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap: 48px;
+    align-items: center;
+    position: relative;
+  }
+  .hero-kicker {
+    display: inline-block;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.3);
+    padding: 6px 16px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: 46px;
+    line-height: 1.15;
+    margin-bottom: 18px;
+  }
+  .hero h1 span { color: #ffd27a; }
+  .hero p.desc {
+    font-size: 18px;
+    opacity: .92;
+    margin-bottom: 30px;
+    max-width: 540px;
+  }
+  .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; }
+  .hero-features {
+    display: flex;
+    gap: 18px;
+    margin-top: 34px;
+    flex-wrap: wrap;
+  }
+  .hero-feature {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    background: rgba(255,255,255,.1);
+    border-radius: 10px;
+    padding: 8px 14px;
+  }
+
+  .hero-tarjeta {
+    background: #fff;
+    color: var(--texto);
+    border-radius: var(--radio);
+    padding: 28px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.25);
+  }
+  .hero-tarjeta .ttl {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--primario);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .hero-tarjeta .lista { list-style: none; }
+  .hero-tarjeta .lista li {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--borde);
+    font-size: 15px;
+  }
+  .hero-tarjeta .lista li:last-child { border-bottom: none; }
+  .hero-tarjeta .lista .check { color: var(--primario); font-weight: 800; }
+  .hero-tarjeta .precio { margin-top: 18px; }
+
+  /* ============ SECCIONES ============ */
+  .seccion { padding: 90px 0; }
+
+  .seccion-titulo {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 52px;
+  }
+  .seccion-titulo .kicker {
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--acento);
+    margin-bottom: 12px;
+  }
+  .seccion-titulo h2 {
+    font-size: 36px;
+    line-height: 1.2;
+    margin-bottom: 14px;
+    color: var(--texto);
+  }
+  .seccion-titulo p { color: var(--texto-suave); font-size: 17px; }
+
+  /* ============ PROBLEMA ============ */
+  .problema { background: var(--superficie); }
+  .problema-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: center;
+  }
+  .problema-puntos {
+    list-style: none;
+  }
+  .problema-puntos li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: #fff8ef;
+    border: 1px solid #fde8c8;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    font-size: 15.5px;
+  }
+  .problema-puntos .ico { font-size: 20px; }
+  .problema-block {
+    background: var(--primario-suave);
+    border-radius: var(--radio);
+    padding: 34px;
+    border-left: 6px solid var(--primario);
+  }
+  .problema-block h3 { font-size: 22px; color: var(--primario-oscuro); margin-bottom: 12px; }
+  .problema-block p { color: var(--texto); }
+
+  /* ============ SOLUCIÓN ============ */
+  .solucion { background: var(--fondo); }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 48px;
+  }
+  .stat {
+    text-align: center;
+    background: #fff;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    padding: 26px 16px;
+    box-shadow: var(--sombra);
+  }
+  .stat .numero {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--primario);
+  }
+  .stat .etiqueta { color: var(--texto-suave); font-size: 14px; margin-top: 4px; }
+
+  .beneficios {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  .beneficio {
+    background: #fff;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    padding: 26px;
+    box-shadow: var(--sombra);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .beneficio:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(14,124,102,.14); }
+  .beneficio .ico {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--primario-suave);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    margin-bottom: 16px;
+  }
+  .beneficio h3 { font-size: 18px; margin-bottom: 8px; color: var(--primario-oscuro); }
+  .beneficio p { color: var(--texto-suave); font-size: 14.5px; }
+
+  /* ============ MÓDULOS ============ */
+  .modulos { background: var(--superficie); }
+  .modulos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  .modulo {
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    padding: 20px 22px;
+    background: var(--fondo);
+    transition: border-color .2s, background .2s;
+  }
+  .modulo:hover { border-color: var(--primario); background: var(--primario-suave); }
+  .modulo h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16.5px;
+    color: var(--primario-oscuro);
+    margin-bottom: 6px;
+  }
+  .modulo .emoji { font-size: 20px; }
+  .modulo p { color: var(--texto-suave); font-size: 14px; }
+
+  /* ============ PLANES / PRECIOS ============ */
+  .planes { background: linear-gradient(180deg, var(--fondo) 0%, #eef7f4 100%); }
+  .planes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 26px;
+    align-items: stretch;
+  }
+  .plan {
+    background: #fff;
+    border: 1px solid var(--borde);
+    border-radius: 20px;
+    padding: 34px 30px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .plan:hover { transform: translateY(-6px); box-shadow: var(--sombra); }
+  .plan.destacado {
+    border: 2px solid var(--primario);
+    box-shadow: 0 18px 45px rgba(14,124,102,.18);
+  }
+  .plan .etiqueta {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--acento);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 16px;
+    border-radius: 50px;
+    white-space: nowrap;
+  }
+  .plan .nombre { font-size: 20px; font-weight: 800; color: var(--primario-oscuro); }
+  .plan .descripcion { color: var(--texto-suave); font-size: 14px; margin: 8px 0 18px; min-height: 64px; }
+  .plan .precio-caja { margin-bottom: 20px; }
+  .plan .mes { font-size: 44px; font-weight: 800; color: var(--texto); line-height: 1; }
+  .plan .mes small { font-size: 15px; font-weight: 600; color: var(--texto-suave); }
+  .plan .anual {
+    font-size: 13px;
+    color: var(--texto-suave);
+    margin-top: 4px;
+  }
+  .plan .anual b { color: var(--acento); }
+  .plan ul { list-style: none; margin-bottom: 26px; flex: 1; }
+  .plan ul li {
+    display: flex;
+    gap: 10px;
+    font-size: 14.5px;
+    padding: 7px 0;
+    border-bottom: 1px dashed var(--borde);
+  }
+  .plan ul li .check { color: var(--primario); font-weight: 800; }
+  .plan .btn { text-align: center; }
+
+  /* ============ POR QUÉ ============ */
+  .porque { background: var(--superficie); }
+  .porque-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .porque-item {
+    display: flex;
+    gap: 18px;
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    padding: 24px;
+    background: var(--fondo);
+  }
+  .porque-item .ico {
+    font-size: 30px;
+    background: var(--acento-suave);
+    width: 58px;
+    height: 58px;
+    min-width: 58px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .porque-item h3 { font-size: 17px; color: var(--primario-oscuro); margin-bottom: 4px; }
+  .porque-item p { color: var(--texto-suave); font-size: 14.5px; }
+
+  /* ============ TESTIMONIO / CTA ============ */
+  .cta {
+    background: linear-gradient(135deg, #09604f 0%, #12917a 100%);
+    color: #fff;
+    padding: 80px 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta::before {
+    content: "🐶 🐱 🐰 🐦";
+    position: absolute;
+    top: 20px;
+    left: 24px;
+    font-size: 60px;
+    opacity: .1;
+    letter-spacing: 18px;
+  }
+  .cta h2 { font-size: 36px; margin-bottom: 14px; }
+  .cta p { opacity: .9; font-size: 17px; margin-bottom: 30px; }
+  .cta-acciones { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .cta-pasos {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 44px;
+  }
+  .cta-paso {
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 14px;
+    padding: 18px 26px;
+    min-width: 190px;
+  }
+  .cta-paso .num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--acento);
+    color: #fff;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  .cta-paso b { display: block; font-size: 15px; }
+
+  /* ============ CONTACTO ============ */
+  .contacto { background: var(--fondo); }
+  .contacto-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .contacto-info p { color: var(--texto-suave); margin-bottom: 26px; }
+  .contacto-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff;
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+  }
+  .contacto-item .ico { font-size: 24px; }
+  .contacto-item b { display: block; font-size: 15px; }
+  .contacto-item a { color: var(--primario); font-weight: 600; }
+
+  .formulario {
+    background: #fff;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    padding: 34px;
+    box-shadow: var(--sombra);
+  }
+  .formulario h3 { font-size: 20px; color: var(--primario-oscuro); margin-bottom: 22px; }
+  .campo { margin-bottom: 16px; }
+  .campo label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--texto-suave);
+    margin-bottom: 6px;
+  }
+  .campo input, .campo textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--texto);
+    background: var(--fondo);
+    transition: border-color .2s;
+  }
+  .campo input:focus, .campo textarea:focus {
+    outline: none;
+    border-color: var(--primario);
+    background: #fff;
+  }
+  .nota-form { font-size: 12px; color: var(--texto-suave); margin-top: 12px; text-align: center; }
+
+  /* ============ FOOTER ============ */
+  footer {
+    background: #09473c;
+    color: rgba(255,255,255,.8);
+    padding: 36px 0;
+  }
+  footer .contenedor {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  footer .logo { font-size: 20px; font-weight: 800; color: #fff; }
+  footer small { font-size: 13px; }
+
+  /* ============ ANIMACIONES ============ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity .6s ease, transform .6s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 960px) {
+    .hero .contenedor { grid-template-columns: 1fr; }
+    .hero { padding: 64px 0 90px; }
+    .hero h1 { font-size: 36px; }
+    .problema-grid,
+    .porque-grid,
+    .contacto-grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .beneficios { grid-template-columns: 1fr 1fr; }
+    .modulos-grid { grid-template-columns: 1fr 1fr; }
+    .planes-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+  }
+
+  @media (max-width: 640px) {
+    .nav-enlaces {
+      display: none;
+      position: absolute;
+      top: 68px;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      background: #fff;
+      border-bottom: 1px solid var(--borde);
+      padding: 18px 24px;
+      gap: 16px;
+      text-align: center;
+    }
+    .nav-enlaces.abierto { display: flex; }
+    .nav-toggle { display: block; }
+    .beneficios, .modulos-grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .cta-pasos { flex-direction: column; align-items: center; }
+    .seccion { padding: 60px 0; }
+    .seccion-titulo h2 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ================= NAV ================= -->
+  <nav class="nav" id="nav">
+    <div class="contenedor">
+      <a class="logo" href="#inicio"><span class="huella">🐾</span> BISSVET</a>
+      <div class="nav-enlaces" id="nav-enlaces">
+        <a href="#problema">El problema</a>
+        <a href="#solucion">Solución</a>
+        <a href="#modulos">Módulos</a>
+        <a href="#planes">Precios</a>
+        <a href="#porque">¿Por qué BISSVET?</a>
+        <a class="btn btn-primario" href="#contacto">Solicitar demo</a>
+      </div>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú">☰</button>
+    </div>
+  </nav>
+
+  <!-- ================= HERO ================= -->
+  <header class="hero" id="inicio">
+    <div class="contenedor">
+      <div>
+        <span class="hero-kicker">🐾 Sistema para veterinarias</span>
+        <h1>La gestión de tu veterinaria, <span>en un solo lugar.</span></h1>
+        <p class="desc">
+          Plataforma web de administración integral para veterinarias.
+          Control total de clientes, mascotas, citas, historia clínica,
+          inventario, compras, ventas, caja y reportes — sin instalar nada.
+        </p>
+        <div class="hero-cta">
+          <a href="#contacto" class="btn btn-acento">Solicitar demostración</a>
+          <a href="#modulos" class="btn btn-contorno-blanco">Ver módulos</a>
+        </div>
+        <div class="hero-features">
+          <span class="hero-feature">💻 Multi-empresa</span>
+          <span class="hero-feature">🔐 Segura y auditada</span>
+          <span class="hero-feature">📱 Acceso web</span>
+        </div>
+      </div>
+
+      <div class="hero-tarjeta">
+        <div class="ttl">📋 Lo que controlas con BISSVET</div>
+        <ul class="lista">
+          <li><span class="check">✔</span> Clientes y mascotas con historial completo</li>
+          <li><span class="check">✔</span> Citas y agenda de veterinarios</li>
+          <li><span class="check">✔</span> Historia clínica detallada y trazable</li>
+          <li><span class="check">✔</span> Inventario, bodegas y kardex</li>
+          <li><span class="check">✔</span> Compras, ventas y control de caja</li>
+          <li><span class="check">✔</span> Reportes y panel en tiempo real</li>
+        </ul>
+        <div class="precio">
+          <div class="btn btn-contorno" style="width:100%; text-align:center;">Empieza desde $199.000/mes</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= PROBLEMA ================= -->
+  <section class="seccion problema" id="problema">
+    <div class="contenedor">
+      <div class="seccion-titulo reveal">
+        <div class="kicker">¿Te pasa esto?</div>
+        <h2>El problema</h2>
+        <p>Muchas veterinarias pierden tiempo y dinero por no tener su información organizada.</p>
+      </div>
+      <div class="problema-grid">
+        <ul class="problema-puntos reveal">
+          <li><span class="ico">📒</span> Información de clientes dispersa en cuadernos, Excel o distintas computadoras.</li>
+          <li><span class="ico">🗒️</span> Citas manejadas manualmente: se olvidan, se duplican, no hay seguimiento.</li>
+          <li><span class="ico">📄</span> Dificultad para consultar la historia clínica completa de una mascota al instante.</li>
+          <li><span class="ico">📦</span> No sabes exactamente cuánto inventario tienes: productos agotados o por vencer.</li>
+          <li><span class="ico">👥</span> Diferentes personas manejando información sin control ni trazabilidad.</li>
+          <li><span class="ico">📉</span> Reportes de ventas, compras o servicios que toman horas o días.</li>
+          <li><span class="ico">💸</span> Pérdida de dinero por mala gestión de caja y pagos sin registro.</li>
+        </ul>
+        <div class="problema-block reveal">
+          <h3>💡 La buena noticia</h3>
+          <p>
+            Todo eso se puede resolver con una sola herramienta digital. BISSVET
+            centraliza la información de tu veterinaria y te devuelve el control
+            de tu negocio.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SOLUCIÓN ================= -->
+  <section class="seccion solucion" id="solucion">
+    <div class="contenedor">
+      <div class="seccion-titulo reveal">
+        <div class="kicker">Nuestra solución</div>
+        <h2>Una plataforma diseñada para veterinarias modernas</h2>
+        <p>Accesible desde cualquier dispositivo con navegador: PC, tablet o celular.</p>
+      </div>
+
+      <div class="stats reveal">
+        <div class="stat"><div class="numero">100%</div><div class="etiqueta">Información centralizada</div></div>
+        <div class="stat"><div class="numero">∞</div><div class="etiqueta">Veterinarias en 1 plataforma</div></div>
+        <div class="stat"><div class="numero">24/7</div><div class="etiqueta">Acceso web desde cualquier lugar</div></div>
+        <div class="stat"><div class="numero">🔐</div><div class="etiqueta">Control total con auditoría</div></div>
+      </div>
+
+      <div class="beneficios">
+        <div class="beneficio reveal">
+          <div class="ico">🗄️</div>
+          <h3>Datos centralizados</h3>
+          <p>Toda la información de tu veterinaria en una sola base de datos segura.</p>
+        </div>
+        <div class="beneficio reveal">
+          <div class="ico">🧑‍💼</div>
+          <h3>Permisos por rol</h3>
+          <p>Cada persona accede solo a lo que le corresponde: administradores, veterinarios, vendedores.</p>
+        </div>
+        <div class="beneficio reveal">
+          <div class="ico">🏢</div>
+          <h3>Múltiples sedes</h3>
+          <p>Administra más de una veterinaria (empresa) con datos completamente aislados.</p>
+        </div>
+        <div class="beneficio reveal">
+          <div class="ico">📊</div>
+          <h3>Panel en tiempo real</h3>
+          <p>Indicadores clave de ventas, citas e inventario en tu tablero de control.</p>
+        </div>
+        <div class="beneficio reveal">
+          <div class="ico">🛡️</div>
+          <h3>Seguridad y respaldo</h3>
+          <p>Sesiones controladas, contraseñas encriptadas y registro de cada cambio.</p>
+        </div>
+        <div class="beneficio reveal">
+          <div class="ico">🔄</div>
+          <h3>Siempre actualizado</h3>
+          <p>Mejoras e nuevas funciones llegan automáticamente, sin reinstalar nada.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MÓDULOS ================= -->
+  <section class="seccion modulos" id="modulos">
+    <div class="contenedor">
+      <div class="seccion-titulo reveal">
+        <div class="kicker">Módulos del sistema</div>
+        <h2>Todo lo que tu veterinaria necesita</h2>
+        <p>Dieciocho módulos integrados que trabajan juntos como un solo sistema.</p>
+      </div>
+      <div class="modulos-grid">
+        <div class="modulo reveal"><h3><span class="emoji">👥</span> Clientes y Mascotas</h3><p>Registro completo de clientes y sus mascotas con historial de visitas.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">📅</span> Citas</h3><p>Agenda digital con programación y seguimiento de consultas.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">👨‍⚕️</span> Veterinarios</h3><p>Perfiles profesionales con tarjeta profesional y agenda.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">🩺</span> Historia Clínica</h3><p>Anamnesis, diagnósticos, tratamientos, recetas, cirugías, controles y archivos.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">💉</span> Servicios y Categorías</h3><p>Catálogo de servicios con precios y clasificación por categoría.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">📦</span> Inventario</h3><p>Control de productos, stock por bodega y precios de compra y venta.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">🏬</span> Bodegas</h3><p>Almacenes con gestión de existencias por ubicación.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">📒</span> Kardex</h3><p>Historial completo de movimientos: entradas, salidas y ajustes.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">🛒</span> Compras</h3><p>Registro de compras a proveedores con tipos de documento y pagos.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">🧾</span> Ventas</h3><p>Facturación con vendedor, tipo de pago, impuestos y numeración consecutiva.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">🚚</span> Traslados</h3><p>Movimiento de productos entre bodegas sin perder trazabilidad.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">⚖️</span> Ajustes de Inventario</h3><p>Corrección de existencias por diferencias, con registro.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">💰</span> Caja</h3><p>Ingresos, egresos, arqueo y movimientos del día por caja.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">📈</span> Reportes</h3><p>Dashboards y reportes de ventas, inventario y servicios.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">🔐</span> Seguridad</h3><p>Usuarios, perfiles, roles, sesiones activas y auditoría de cambios.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">🏢</span> Empresas</h3><p>Modelo multi-tenant: cada veterinaria con sus datos aislados.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">📋</span> Proveedores</h3><p>Directorio y compras por proveedor con tipos de documento.</p></div>
+        <div class="modulo reveal"><h3><span class="emoji">💳</span> Plan y Suscripciones</h3><p>Control del plan activo, facturación y módulos habilitados.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PLANES ================= -->
+  <section class="seccion planes" id="planes">
+    <div class="contenedor">
+      <div class="seccion-titulo reveal">
+        <div class="kicker">Precios</div>
+        <h2>Planes flexibles para cada veterinaria</h2>
+        <p>Elige el plan que se ajuste al tamaño de tu operación. Todos incluyen acceso web y soporte.</p>
+      </div>
+      <div class="planes-grid">
+        <div class="plan reveal">
+          <div class="nombre">Básico</div>
+          <p class="descripcion">Para pequeñas veterinarias: clientes, mascotas, citas y servicios.</p>
+          <div class="precio-caja">
+            <div class="mes">$199.000 <small>/mes</small></div>
+            <div class="anual">Pago anual: <b>$1.990.000</b></div>
+          </div>
+          <ul>
+            <li><span class="check">✔</span> Hasta <b>2 usuarios</b></li>
+            <li><span class="check">✔</span> Clientes y mascotas</li>
+            <li><span class="check">✔</span> Agenda de citas</li>
+            <li><span class="check">✔</span> Catálogo de servicios</li>
+            <li><span class="check">✔</span> Dashboard básico</li>
+            <li><span class="check">✔</span> Soporte por email</li>
+          </ul>
+          <a href="#contacto" class="btn btn-contorno">Elegir Básico</a>
+        </div>
+
+        <div class="plan destacado reveal">
+          <span class="etiqueta">MÁS POPULAR</span>
+          <div class="nombre">Profesional</div>
+          <p class="descripcion">Para clínicas: historias clínicas, inventario, bodegas y ventas.</p>
+          <div class="precio-caja">
+            <div class="mes">$399.000 <small>/mes</small></div>
+            <div class="anual">Pago anual: <b>$3.990.000</b> (ahorra 2 meses)</div>
+          </div>
+          <ul>
+            <li><span class="check">✔</span> Hasta <b>5 usuarios</b></li>
+            <li><span class="check">✔</span> Todo lo de Básico</li>
+            <li><span class="check">✔</span> Historia clínica completa</li>
+            <li><span class="check">✔</span> Inventario, bodegas y kardex</li>
+            <li><span class="check">✔</span> Ventas con facturación</li>
+            <li><span class="check">✔</span> Reportes avanzados</li>
+          </ul>
+          <a href="#contacto" class="btn btn-primario">Elegir Profesional</a>
+        </div>
+
+        <div class="plan reveal">
+          <div class="nombre">Empresarial</div>
+          <p class="descripcion">Para operaciones completas: compras, caja y multi-sede.</p>
+          <div class="precio-caja">
+            <div class="mes">$799.000 <small>/mes</small></div>
+            <div class="anual">Pago anual: <b>$7.990.000</b> (ahorra 2 meses)</div>
+          </div>
+          <ul>
+            <li><span class="check">✔</span> Hasta <b>10 usuarios</b></li>
+            <li><span class="check">✔</span> Todo lo de Profesional</li>
+            <li><span class="check">✔</span> Compras y proveedores</li>
+            <li><span class="check">✔</span> Control de caja</li>
+            <li><span class="check">✔</span> Traslados y ajustes</li>
+            <li><span class="check">✔</span> Soporte prioritario</li>
+          </ul>
+          <a href="#contacto" class="btn btn-contorno">Elegir Empresarial</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= POR QUÉ ================= -->
+  <section class="seccion porque" id="porque">
+    <div class="contenedor">
+      <div class="seccion-titulo reveal">
+        <div class="kicker">Diferenciadores</div>
+        <h2>¿Por qué elegir BISSVET?</h2>
+      </div>
+      <div class="porque-grid">
+        <div class="porque-item reveal">
+          <div class="ico">🏥</div>
+          <div>
+            <h3>Diseñado para veterinarias</h3>
+            <p>No es un software genérico adaptado; fue construido desde cero para el sector veterinario.</p>
+          </div>
+        </div>
+        <div class="porque-item reveal">
+          <div class="ico">🔐</div>
+          <div>
+            <h3>Seguridad por diseño</h3>
+            <p>Autenticación encriptada, permisos por módulo y auditoría de cada cambio.</p>
+          </div>
+        </div>
+        <div class="porque-item reveal">
+          <div class="ico">📊</div>
+          <div>
+            <h3>Trazabilidad total</h3>
+            <p>Cada movimiento de inventario, venta o cambio clínico queda registrado con usuario y fecha.</p>
+          </div>
+        </div>
+        <div class="porque-item reveal">
+          <div class="ico">💻</div>
+          <div>
+            <h3>Multi-empresa</h3>
+            <p>Una sola instalación administra varias veterinarias con datos totalmente aislados.</p>
+          </div>
+        </div>
+        <div class="porque-item reveal">
+          <div class="ico">📱</div>
+          <div>
+            <h3>Web responsive</h3>
+            <p>Funciona desde escritorio, tableta o celular. Sin instalar ni descargar nada.</p>
+          </div>
+        </div>
+        <div class="porque-item reveal">
+          <div class="ico">🚀</div>
+          <div>
+            <h3>Implementación rápida</h3>
+            <p>Sin instalación compleja: acceso inmediato con usuario y contraseña.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CTA ================= -->
+  <section class="cta" id="demo">
+    <div class="contenedor">
+      <h2>¿Listo para transformar la gestión de tu veterinaria?</h2>
+      <p>Reserva una demostración gratuita y conoce BISSVET en acción.</p>
+      <div class="cta-acciones">
+        <a href="#contacto" class="btn btn-acento">Agendar demostración</a>
+        <a href="#planes" class="btn btn-contorno-blanco">Ver planes</a>
+      </div>
+      <div class="cta-pasos">
+        <div class="cta-paso"><span class="num">1</span><b>Solicita una demo</b></div>
+        <div class="cta-paso"><span class="num">2</span><b>Configuramos tu veterinaria</b></div>
+        <div class="cta-paso"><span class="num">3</span><b>Capacitamos a tu equipo</b></div>
+        <div class="cta-paso"><span class="num">4</span><b>Gestiona como un profesional</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CONTACTO ================= -->
+  <section class="seccion contacto" id="contacto">
+    <div class="contenedor">
+      <div class="seccion-titulo reveal">
+        <div class="kicker">Contáctanos</div>
+        <h2>Solicita una demostración gratuita</h2>
+        <p>Déjanos tus datos y un asesor te contactará en menos de 24 horas.</p>
+      </div>
+      <div class="contacto-grid">
+        <div class="contacto-info reveal">
+          <p>Nuestro equipo de soporte está listo para mostrarte cómo BISSVET puede adaptarse a tu veterinaria.</p>
+          <div class="contacto-item">
+            <span class="ico">📍</span>
+            <div><b>Ubicación</b><span>Bogotá D.C. — Colombia</span></div>
+          </div>
+          <div class="contacto-item">
+            <span class="ico">📧</span>
+            <div><b>Email</b><a href="mailto:obuitragot@gmail.com">obuitragot@gmail.com</a></div>
+          </div>
+          <div class="contacto-item">
+            <span class="ico">📱</span>
+            <div><b>WhatsApp</b><a href="https://wa.me/573027460927">+57 302 746 0927</a></div>
+          </div>
+          <div class="contacto-item">
+            <span class="ico">🌐</span>
+            <div><b>Web</b><a href="https://www.biisvet.com">www.biisvet.com</a></div>
+          </div>
+        </div>
+
+        <form class="formulario reveal" id="formulario" novalidate>
+          <h3>Agenda tu demostración gratis</h3>
+          <div class="campo">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" name="nombre" placeholder="Tu nombre completo" required>
+          </div>
+          <div class="campo">
+            <label for="veterinaria">Nombre de la veterinaria</label>
+            <input type="text" id="veterinaria" name="veterinaria" placeholder="Nombre de tu negocio">
+          </div>
+          <div class="campo">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="correo@ejemplo.com" required>
+          </div>
+          <div class="campo">
+            <label for="telefono">WhatsApp</label>
+            <input type="tel" id="telefono" name="telefono" placeholder="+57 300 123 4567">
+          </div>
+          <div class="campo">
+            <label for="plan">Plan de interés</label>
+            <select id="plan" name="plan" style="width:100%;padding:12px 14px;border:1px solid var(--borde);border-radius:10px;font-size:15px;font-family:inherit;background:var(--fondo);color:var(--texto);">
+              <option value="">Selecciona un plan</option>
+              <option value="basico">Básico — $199.000/mes</option>
+              <option value="profesional">Profesional — $399.000/mes</option>
+              <option value="empresarial">Empresarial — $799.000/mes</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="mensaje">Mensaje (opcional)</label>
+            <textarea id="mensaje" name="mensaje" rows="3" placeholder="Cuéntanos qué necesitas..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primario" style="width:100%">Enviar solicitud</button>
+          <p class="nota-form" id="nota-forma">Sin compromiso. Respondemos en menos de 24 horas.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer>
+    <div class="contenedor">
+      <div class="logo">🐾 BISSVET</div>
+      <small>© 2026 BISSVET — La gestión de tu veterinaria, en un solo lugar.</small>
+      <small><a href="#inicio" style="color:#fff;">Volver arriba ↑</a></small>
+    </div>
+  </footer>
+
+<script>
+  // Menú móvil
+  const toggle = document.getElementById('nav-toggle');
+  const enlaces = document.getElementById('nav-enlaces');
+  toggle.addEventListener('click', function () {
+    enlaces.classList.toggle('abierto');
+  });
+  enlaces.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () {
+      enlaces.classList.remove('abierto');
+    });
+  });
+
+  // Reveal on scroll
+  const observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(function (el) {
+    observer.observe(el);
+  });
+
+  // Enviar el formulario sin backend (demo)
+  const formulario = document.getElementById('formulario');
+  const nota = document.getElementById('nota-forma');
+  formulario.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const nombre = document.getElementById('nombre').value.trim();
+    const email = document.getElementById('email').value.trim();
+    if (!nombre || !email) {
+      nota.textContent = '⚠️ Por favor completa tu nombre y email.';
+      nota.style.color = '#dc2626';
+      return;
+    }
+    nota.innerHTML = '✅ <b>¡Solicitud enviada!</b> Pronto te contactaremos para agendar tu demostración.';
+    nota.style.color = '#0e7c66';
+    formulario.reset();
+  });
+</script>
+
+</body>
+</html>

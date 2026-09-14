@@ -26,25 +26,72 @@
 
     <nav>
 
-      <a routerLink="/dashboard">
-        🏠 Inicio
-      </a>
+      <!-- SECCIÓN FIJA: PANEL -->
+      <div class="seccion">
 
-      <a routerLink="/dashboard/mi-plan">
-        📋 Mi Plan
-      </a>
+        <button
+          type="button"
+          class="seccion-cabecera"
+          [class.abierta]="panelAbierta"
+          (click)="panelAbierta = !panelAbierta"
+          [attr.aria-expanded]="panelAbierta">
 
-      <a
-        *ngFor="let mod of modulos"
-        [routerLink]="mod.Ruta || ''"
-        [class.activo-seguridad]="mod.Codigo === 'SEGURIDAD'">
-        <ng-container *ngIf="mod.Icono; else sinIcono">
-          {{ mod.Icono }} {{ mod.NombreModulo }}
-        </ng-container>
-        <ng-template #sinIcono>
-          {{ mod.NombreModulo }}
-        </ng-template>
-      </a>
+          <span class="seccion-icono">🏠</span>
+          <span class="seccion-titulo">Panel</span>
+          <span class="seccion-flecha" [class.rotada]="!panelAbierta"></span>
+
+        </button>
+
+        <div class="seccion-items" [hidden]="!panelAbierta">
+
+          <a
+            routerLink="/dashboard"
+            routerLinkActive="activo"
+            [routerLinkActiveOptions]="{ exact: true }">
+            <span class="item-icono">🏠</span>
+            <span class="item-titulo">Inicio</span>
+          </a>
+
+          <a
+            routerLink="/dashboard/mi-plan"
+            routerLinkActive="activo">
+            <span class="item-icono">📋</span>
+            <span class="item-titulo">Mi Plan</span>
+          </a>
+
+        </div>
+
+      </div>
+
+      <!-- SECCIONES DINÁMICAS (agrupadas por categoría) -->
+      <div class="seccion" *ngFor="let sec of secciones">
+
+        <button
+          type="button"
+          class="seccion-cabecera"
+          [class.abierta]="sec.abierta"
+          (click)="toggleSeccion(sec)"
+          [attr.aria-expanded]="sec.abierta">
+
+          <span class="seccion-icono">{{ sec.icono }}</span>
+          <span class="seccion-titulo">{{ sec.nombre }}</span>
+          <span class="seccion-flecha" [class.rotada]="!sec.abierta"></span>
+
+        </button>
+
+        <div class="seccion-items" [hidden]="!sec.abierta">
+
+          <a
+            *ngFor="let mod of sec.modulos"
+            [routerLink]="mod.Ruta || ''"
+            routerLinkActive="activo">
+            <span class="item-icono">{{ iconoModulo(mod) }}</span>
+            <span class="item-titulo">{{ mod.NombreModulo }}</span>
+          </a>
+
+        </div>
+
+      </div>
 
     </nav>
 

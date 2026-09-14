@@ -615,13 +615,14 @@ FechaCita: '',
       .crear(this.cita)
       .subscribe({
 
-        next: () => {
+        next: (respuesta: any) => {
+
+          this.cita.IdCita =
+            respuesta?.IdCita ??
+            this.cita.IdCita;
 
           this.mensaje =
-            'Cita creada correctamente.';
-
-          this.mostrarFormulario =
-            false;
+            'Cita creada correctamente. Puede imprimir el comprobante.';
 
           this.cargarCitas();
 
@@ -975,6 +976,95 @@ cargarServiciosCitas(): void {
           'No fue posible generar el PDF. Puede imprimirla desde el módulo de Ventas.';
       }
     });
+
+  }
+
+
+  // =====================================================
+  // IMPRIMIR / EXPORTAR PDF DE CITA (comprobante al cliente)
+  // =====================================================
+
+  imprimirComprobantePDF(cita: Cita): void {
+
+    if (!cita.IdCita) {
+
+      this.error =
+        'Debe guardar la cita primero para poder generar el PDF.';
+
+      return;
+
+    }
+
+    if (this.imprimiendo) { return; }
+
+    this.mensaje = '';
+
+    this.error = '';
+
+    this.imprimiendo = true;
+
+    const token =
+      localStorage.getItem('token');
+
+    fetch(
+      this.citasService.imprimirPDF(cita.IdCita),
+      {
+        headers: token
+          ? { Authorization: `Bearer ${token}` }
+          : {}
+      }
+    )
+      .then((res) => {
+
+        if (!res.ok) {
+
+          throw new Error(`HTTP ${res.status}`);
+
+        }
+
+        return res.blob();
+
+      })
+      .then((blob) => {
+
+        this.imprimiendo = false;
+
+        const url =
+          window.URL.createObjectURL(blob);
+
+        const a =
+          document.createElement('a');
+
+        a.href = url;
+
+        a.download =
+          `comprobante_cita_${cita.IdCita}.pdf`;
+
+        document.body.appendChild(a);
+
+        a.click();
+
+        document.body.removeChild(a);
+
+        window.URL.revokeObjectURL(url);
+
+        this.mensaje =
+          'Comprobante de cita descargado en PDF.';
+
+      })
+      .catch((err: any) => {
+
+        this.imprimiendo = false;
+
+        console.error(
+          'Error generando PDF de cita:',
+          err
+        );
+
+        this.error =
+          'No fue posible generar el PDF de la cita.';
+
+      });
 
   }
 

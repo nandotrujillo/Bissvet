@@ -247,15 +247,22 @@ export const routes: Routes = [
             .then(m => m.ServiciosComponent)
       },
 
-      // -------------------------------------------------
-      // CATEGORÍAS DE SERVICIO
-      // -------------------------------------------------
-
       {
         path: 'categorias-servicio',
         loadComponent: () =>
           import('./pages/categorias-servicio/categorias-servicio.component')
             .then(m => m.CategoriasServicioComponent)
+      },
+
+      // -------------------------------------------------
+      // SEGURIDAD (HUB: usuarios, perfiles, roles, sesiones, auditoría)
+      // -------------------------------------------------
+
+      {
+        path: 'seguridad',
+        loadComponent: () =>
+          import('./pages/seguridad/seguridad.component')
+            .then(m => m.SeguridadComponent)
       },
 
       {

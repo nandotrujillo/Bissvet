@@ -8,6 +8,7 @@ const { authenticate, generarToken } = require('../../middleware/auth.js');
 const { authorize } = require('../../middleware/authorize.js');
 const { registrarAuditoria } = require('../../middleware/auditoria.js');
 const { obtenerSuscripcionActiva, verificarLimiteUsuarios } = require('../../middleware/suscripcion.js');
+const { restaurarPaquetePerfil } = require('../../middleware/paquete-permisos.js');
 
 function obtenerIP(req) {
     return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
@@ -453,6 +454,18 @@ router.post('/', authenticate, authorize('USUARIOS.CREAR'), async (req, res) => 
         }
 
         const hash = await bcrypt.hash(Password, 10);
+
+        // Prevención de permisos: antes de crear el usuario se asegura que el
+        // perfil tenga su paquete predeterminado completo (perfilpermisos y, si
+        // existe, el rol homónimo), de modo que el usuario nunca quede con
+        // permisos incompletos como ocurría con Vendedor/Veterinario.
+        const paquete = await restaurarPaquetePerfil(IdPerfil, req.auth.UsuarioId);
+        if (!paquete.ok) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: paquete.mensaje
+            });
+        }
 
         await conn.beginTransaction();
 

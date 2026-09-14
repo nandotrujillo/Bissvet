@@ -23,4 +23,11 @@ export class InventarioService {
   inicial(body: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/inicial`, body);
   }
+
+  inicialCSV(IdBodega: number, archivo: File): Observable<any> {
+    const form = new FormData();
+    form.append('IdBodega', String(IdBodega));
+    form.append('archivo', archivo);
+    return this.http.post<any>(`${this.apiUrl}/inicial/csv`, form);
+  }
 }

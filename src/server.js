@@ -210,6 +210,8 @@ app.get('/', (req, res) => {
     });
 });
 
+module.exports = app;
+
 app.get('/api/test-mysql', async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT 1 AS conectado');
@@ -228,10 +230,12 @@ app.get('/api/test-mysql', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log('================================');
-    console.log('       BISSVET API');
-    console.log('================================');
-    console.log(`Servidor: http://localhost:${PORT}`);
-    console.log('Base de datos: MySQL 8');
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+      console.log('================================');
+      console.log('       BISSVET API');
+      console.log('================================');
+      console.log(`Servidor: http://localhost:${PORT}`);
+      console.log('Base de datos: MySQL 8');
+  });
+}

@@ -24,7 +24,7 @@ import { UnidadesMedidaService } from '../../../Services/unidades-medida.service
 })
 export class ProductosComponent implements OnInit {
 
-  vista: 'productos' | 'categorias' = 'productos';
+  vista: 'productos' | 'categorias' | 'marcas' | 'unidades' = 'productos';
 
   productos: Producto[] = [];
   categorias: CategoriaProducto[] = [];
@@ -33,12 +33,20 @@ export class ProductosComponent implements OnInit {
 
   producto: Producto = this.nuevoProducto();
   categoria: CategoriaProducto = this.nuevaCategoria();
+  marca: Marca = this.nuevaMarca();
+  unidadMedida: UnidadMedida = this.nuevaUnidadMedida();
 
   editando = false;
   mostrarFormulario = false;
 
   editandoCategoria = false;
   mostrarFormularioCategoria = false;
+
+  editandoMarca = false;
+  mostrarFormularioMarca = false;
+
+  editandoUnidadMedida = false;
+  mostrarFormularioUnidadMedida = false;
 
   buscar = '';
 
@@ -88,7 +96,23 @@ export class ProductosComponent implements OnInit {
     };
   }
 
-  cambiarVista(vista: 'productos' | 'categorias'): void {
+  nuevaMarca(): Marca {
+    return {
+      Nombre: '',
+      Descripcion: '',
+      Activo: 1
+    };
+  }
+
+  nuevaUnidadMedida(): UnidadMedida {
+    return {
+      Unidad: '',
+      Descripcion: '',
+      Activo: 1
+    };
+  }
+
+  cambiarVista(vista: 'productos' | 'categorias' | 'marcas' | 'unidades'): void {
 
     this.vista = vista;
 
@@ -97,6 +121,8 @@ export class ProductosComponent implements OnInit {
 
     this.cancelarProducto();
     this.cancelarCategoria();
+    this.cancelarMarca();
+    this.cancelarUnidadMedida();
   }
 
   cargarProductos(): void {
@@ -384,6 +410,230 @@ export class ProductosComponent implements OnInit {
         error: (error: any) => {
           console.error('Error eliminando categoría:', error);
           this.error = error?.error?.mensaje || 'No fue posible eliminar la categoría.';
+        }
+      });
+  }
+
+  // ==================================================
+  // MARCAS
+  // ==================================================
+
+  nuevaMarcaForm(): void {
+
+    this.marca = this.nuevaMarca();
+
+    this.editandoMarca = false;
+    this.mostrarFormularioMarca = true;
+
+    this.mensaje = '';
+    this.error = '';
+  }
+
+  editarMarca(marca: Marca): void {
+
+    this.marca = { ...marca };
+
+    this.editandoMarca = true;
+    this.mostrarFormularioMarca = true;
+
+    this.mensaje = '';
+    this.error = '';
+  }
+
+  cancelarMarca(): void {
+
+    this.marca = this.nuevaMarca();
+
+    this.editandoMarca = false;
+    this.mostrarFormularioMarca = false;
+
+    this.mensaje = '';
+    this.error = '';
+  }
+
+  guardarMarca(): void {
+
+    this.mensaje = '';
+    this.error = '';
+
+    if (!this.marca.Nombre || !this.marca.Nombre.trim()) {
+      this.error = 'El nombre de la marca es obligatorio.';
+      return;
+    }
+
+    if (this.editandoMarca && this.marca.Id) {
+
+      this.marcasService
+        .actualizar(this.marca.Id, this.marca)
+        .subscribe({
+          next: () => {
+            this.mensaje = 'Marca actualizada correctamente.';
+            this.cargarMarcas();
+            this.mostrarFormularioMarca = false;
+            this.editandoMarca = false;
+            this.marca = this.nuevaMarca();
+          },
+          error: (error: any) => {
+            console.error('Error actualizando marca:', error);
+            this.error = error?.error?.mensaje || 'No fue posible actualizar la marca.';
+          }
+        });
+
+    } else {
+
+      this.marcasService
+        .crear(this.marca)
+        .subscribe({
+          next: () => {
+            this.mensaje = 'Marca creada correctamente.';
+            this.cargarMarcas();
+            this.mostrarFormularioMarca = false;
+            this.marca = this.nuevaMarca();
+          },
+          error: (error: any) => {
+            console.error('Error creando marca:', error);
+            this.error = error?.error?.mensaje || 'No fue posible crear la marca.';
+          }
+        });
+    }
+  }
+
+  eliminarMarca(marca: Marca): void {
+
+    if (!marca.Id) {
+      return;
+    }
+
+    const confirmar = confirm(
+      `¿Está seguro de eliminar la marca "${marca.Nombre}"?`
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    this.marcasService
+      .eliminar(marca.Id)
+      .subscribe({
+        next: () => {
+          this.mensaje = 'Marca eliminada correctamente.';
+          this.cargarMarcas();
+        },
+        error: (error: any) => {
+          console.error('Error eliminando marca:', error);
+          this.error = error?.error?.mensaje || 'No fue posible eliminar la marca.';
+        }
+      });
+  }
+
+  // ==================================================
+  // UNIDADES DE MEDIDA
+  // ==================================================
+
+  nuevaUnidadMedidaForm(): void {
+
+    this.unidadMedida = this.nuevaUnidadMedida();
+
+    this.editandoUnidadMedida = false;
+    this.mostrarFormularioUnidadMedida = true;
+
+    this.mensaje = '';
+    this.error = '';
+  }
+
+  editarUnidadMedida(unidad: UnidadMedida): void {
+
+    this.unidadMedida = { ...unidad };
+
+    this.editandoUnidadMedida = true;
+    this.mostrarFormularioUnidadMedida = true;
+
+    this.mensaje = '';
+    this.error = '';
+  }
+
+  cancelarUnidadMedida(): void {
+
+    this.unidadMedida = this.nuevaUnidadMedida();
+
+    this.editandoUnidadMedida = false;
+    this.mostrarFormularioUnidadMedida = false;
+
+    this.mensaje = '';
+    this.error = '';
+  }
+
+  guardarUnidadMedida(): void {
+
+    this.mensaje = '';
+    this.error = '';
+
+    if (!this.unidadMedida.Unidad || !this.unidadMedida.Unidad.trim()) {
+      this.error = 'La unidad de medida es obligatoria.';
+      return;
+    }
+
+    if (this.editandoUnidadMedida && this.unidadMedida.Id) {
+
+      this.unidadesMedidaService
+        .actualizar(this.unidadMedida.Id, this.unidadMedida)
+        .subscribe({
+          next: () => {
+            this.mensaje = 'Unidad de medida actualizada correctamente.';
+            this.cargarUnidadesMedida();
+            this.mostrarFormularioUnidadMedida = false;
+            this.editandoUnidadMedida = false;
+            this.unidadMedida = this.nuevaUnidadMedida();
+          },
+          error: (error: any) => {
+            console.error('Error actualizando unidad de medida:', error);
+            this.error = error?.error?.mensaje || 'No fue posible actualizar la unidad de medida.';
+          }
+        });
+
+    } else {
+
+      this.unidadesMedidaService
+        .crear(this.unidadMedida)
+        .subscribe({
+          next: () => {
+            this.mensaje = 'Unidad de medida creada correctamente.';
+            this.cargarUnidadesMedida();
+            this.mostrarFormularioUnidadMedida = false;
+            this.unidadMedida = this.nuevaUnidadMedida();
+          },
+          error: (error: any) => {
+            console.error('Error creando unidad de medida:', error);
+            this.error = error?.error?.mensaje || 'No fue posible crear la unidad de medida.';
+          }
+        });
+    }
+  }
+
+  eliminarUnidadMedida(unidad: UnidadMedida): void {
+
+    if (!unidad.Id) {
+      return;
+    }
+
+    const confirmar = confirm(
+      `¿Está seguro de eliminar la unidad de medida "${unidad.Unidad}"?`
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    this.unidadesMedidaService
+      .eliminar(unidad.Id)
+      .subscribe({
+        next: () => {
+          this.mensaje = 'Unidad de medida eliminada correctamente.';
+          this.cargarUnidadesMedida();
+        },
+        error: (error: any) => {
+          console.error('Error eliminando unidad de medida:', error);
+          this.error = error?.error?.mensaje || 'No fue posible eliminar la unidad de medida.';
         }
       });
   }

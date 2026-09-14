@@ -1,83 +1,124 @@
 <div class="inicio-container">
 
+  <!-- ENCABEZADO -->
   <div class="saludo">
     <h2>🏠 Inicio</h2>
-    <p>Resumen de la operación e información de la empresa activa.</p>
+    <p *ngIf="empresaNombre; else bienvenidaGenerica">
+      Bienvenido{{ usuarioActual ? ', ' + usuarioActual : '' }} a <strong>{{ empresaNombre }}</strong>.
+      Resumen de la operación e información de la empresa activa.
+    </p>
+    <ng-template #bienvenidaGenerica>
+      <p>Resumen de la operación e información de la empresa activa.</p>
+    </ng-template>
   </div>
 
-  <!-- KPIs -->
-  <div class="kpis" *ngIf="kpis && !cargando">
+  <!-- ATAJOS RÁPIDOS -->
+  <section class="seccion-inicio" *ngIf="atajos.length > 0">
 
-    <div class="kpi">
-      <div class="kpi-icono">👥</div>
-      <div class="kpi-info">
-        <strong>{{ kpis.clientes }}</strong>
-        <span>Clientes activos</span>
-      </div>
+    <h3 class="titulo-seccion">⚡ Accesos rápidos</h3>
+
+    <div class="grid-atajos">
+
+      <a
+        class="atarjeta"
+        *ngFor="let atajo of atajos"
+        [routerLink]="atajo.ruta"
+        [style.--c]="'#1d6955'">
+
+        <div class="atarjeta-icono">{{ atajo.icono }}</div>
+
+        <div class="atarjeta-info">
+
+          <strong>{{ atajo.texto }}</strong>
+
+          <span>{{ atajo.descripcion }}</span>
+
+        </div>
+
+      </a>
+
     </div>
 
-    <div class="kpi">
-      <div class="kpi-icono">🐾</div>
-      <div class="kpi-info">
-        <strong>{{ kpis.mascotas }}</strong>
-        <span>Mascotas</span>
+  </section>
+
+  <!-- INDICADORES -->
+  <section class="seccion-inicio" *ngIf="kpis && !cargando">
+
+    <h3 class="titulo-seccion">📊 Indicadores</h3>
+
+    <div class="grid-kpis">
+
+      <div class="kpi">
+        <div class="kpi-icono">👥</div>
+        <div class="kpi-info">
+          <strong>{{ kpis.clientes }}</strong>
+          <span>Clientes activos</span>
+        </div>
       </div>
+
+      <div class="kpi">
+        <div class="kpi-icono">🐾</div>
+        <div class="kpi-info">
+          <strong>{{ kpis.mascotas }}</strong>
+          <span>Mascotas</span>
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-icono">📅</div>
+        <div class="kpi-info">
+          <strong>{{ kpis.citasHoy }}</strong>
+          <span>Citas de hoy</span>
+        </div>
+      </div>
+
+      <div class="kpi kpi-destacado">
+        <div class="kpi-icono">💰</div>
+        <div class="kpi-info">
+          <strong>{{ formatoMoneda(kpis.ventasHoy.total) }}</strong>
+          <span>{{ kpis.ventasHoy.cantidad }} ventas de hoy</span>
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-icono">📦</div>
+        <div class="kpi-info">
+          <strong>{{ kpis.unidadesInventario }}</strong>
+          <span>Unidades en inventario</span>
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-icono">🛒</div>
+        <div class="kpi-info">
+          <strong>{{ kpis.productos }}</strong>
+          <span>Productos</span>
+        </div>
+      </div>
+
+      <div class="kpi" [class.kpi-alerta]="kpis.stockBajo > 0">
+        <div class="kpi-icono">⚠️</div>
+        <div class="kpi-info">
+          <strong>{{ kpis.stockBajo }}</strong>
+          <span>Productos con stock bajo</span>
+        </div>
+      </div>
+
     </div>
 
-    <div class="kpi">
-      <div class="kpi-icono">📅</div>
-      <div class="kpi-info">
-        <strong>{{ kpis.citasHoy }}</strong>
-        <span>Citas de hoy</span>
-      </div>
-    </div>
-
-    <div class="kpi kpi-destacado">
-      <div class="kpi-icono">💰</div>
-      <div class="kpi-info">
-        <strong>{{ formatoMoneda(kpis.ventasHoy.total) }}</strong>
-        <span>{{ kpis.ventasHoy.cantidad }} ventas de hoy</span>
-      </div>
-    </div>
-
-    <div class="kpi">
-      <div class="kpi-icono">📦</div>
-      <div class="kpi-info">
-        <strong>{{ kpis.unidadesInventario }}</strong>
-        <span>Unidades en inventario</span>
-      </div>
-    </div>
-
-    <div class="kpi">
-      <div class="kpi-icono">🛒</div>
-      <div class="kpi-info">
-        <strong>{{ kpis.productos }}</strong>
-        <span>Productos</span>
-      </div>
-    </div>
-
-    <div class="kpi kpi-alerta" *ngIf="kpis.stockBajo > 0">
-      <div class="kpi-icono">⚠️</div>
-      <div class="kpi-info">
-        <strong>{{ kpis.stockBajo }}</strong>
-        <span>Productos con stock bajo</span>
-      </div>
-    </div>
-
-    <div class="kpi" *ngIf="kpis.stockBajo === 0">
-      <div class="kpi-icono">✅</div>
-      <div class="kpi-info">
-        <strong>0</strong>
-        <span>Productos con stock bajo</span>
-      </div>
-    </div>
-
-  </div>
+  </section>
 
   <div class="mensaje error" *ngIf="error">{{ error }}</div>
 
-  <div class="seccion-empresa">
-    <app-empresas></app-empresas>
-  </div>
+  <!-- EMPRESA -->
+  <section class="seccion-inicio">
+
+    <h3 class="titulo-seccion">🏢 Mi empresa</h3>
+
+    <div class="seccion-empresa">
+      <app-empresas></app-empresas>
+    </div>
+
+  </section>
 
 </div>

@@ -1,0 +1,17 @@
+# =============================================================================
+# NIXPACKS - Configuración del build en Railway
+# -----------------------------------------------------------------------------
+# Railway detecta Node.js y ejecuta:
+#   1. npm install          (dependencias)
+#   2. npm run build        (genera dist/biss-vet-app con el SPA)
+#   3. node server.prod.js  (servidor unificado API + frontend en $PORT)
+# =============================================================================
+
+[phases.setup]
+nixPkgs = ["nodejs", "nodejs_20"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "node server.prod.js"

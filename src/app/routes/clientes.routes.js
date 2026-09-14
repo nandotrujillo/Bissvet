@@ -193,10 +193,11 @@ router.post('/', async (req, res) => {
         }
 
 
+        // El usuario que crea proviene de la sesión (JWT), nunca del body
+        // como verdad de origen. Se respeta un body solo si trae un Id válido.
         const usuarioId =
-            UsuarioIdCreacion
-                ? Number(UsuarioIdCreacion)
-                : null;
+            (UsuarioIdCreacion && Number(UsuarioIdCreacion))
+            || req.auth.UsuarioId;
 
 
         const fechaNacimiento =
@@ -333,9 +334,8 @@ router.put('/:id', async (req, res) => {
 
 
         const usuarioId =
-            UsuarioIdModificacion
-                ? Number(UsuarioIdModificacion)
-                : null;
+            (UsuarioIdModificacion && Number(UsuarioIdModificacion))
+            || req.auth.UsuarioId;
 
 
         const fechaNacimiento =

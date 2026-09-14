@@ -168,13 +168,106 @@
 
   padding: 15px 12px;
 
-  gap: 5px;
+  gap: 8px;
 
   flex: 1;
 
   overflow-y: auto;
 
   min-height: 0;
+}
+
+
+/* =====================================================
+   SECCIÓN DEL MENÚ (GRUPO COLAPSABLE)
+   ===================================================== */
+
+.seccion {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.seccion-cabecera {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  padding: 12px 14px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: rgba(255,255,255,0.04);
+
+  color: #dceae6;
+
+  text-align: left;
+
+  font-size: 13px;
+  font-weight: bold;
+  font-family: inherit;
+
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.seccion-cabecera:hover {
+  background: rgba(255,255,255,0.10);
+  color: white;
+}
+
+.seccion-icono {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.seccion-titulo {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seccion-flecha {
+  width: 0;
+  height: 0;
+
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid #a8cfc4;
+
+  transition: transform 0.2s ease;
+
+  flex-shrink: 0;
+}
+
+.seccion-flecha.rotada {
+  transform: rotate(90deg);
+}
+
+.seccion-items {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+
+  gap: 2px;
+
+  padding-left: 8px;
+}
+
+.seccion-items[hidden] {
+  display: none;
 }
 
 
@@ -192,7 +285,7 @@
 
   gap: 13px;
 
-  padding: 13px 14px;
+  padding: 11px 14px;
 
   border-radius: 8px;
 
@@ -210,6 +303,20 @@
     transform 0.2s ease;
 }
 
+.item-icono {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.item-titulo {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 /* =====================================================
    HOVER
@@ -221,6 +328,18 @@
 
   color: white;
 
+  transform: translateX(2px);
+}
+
+
+/* =====================================================
+   ENLACE ACTIVO
+   ===================================================== */
+
+.sidebar nav a.activo {
+  background: #1d6955;
+  color: white;
+  font-weight: bold;
   transform: translateX(2px);
 }
 
@@ -293,10 +412,6 @@
   color: white;
 }
 
-.activo-seguridad {
-  background: rgba(255,255,255,0.06);
-}
-
 
 /* =====================================================
    RESPONSIVE
@@ -329,20 +444,47 @@
 
   }
 
+  .empresa-actual,
+  .plan-actual {
+    display: none;
+  }
+
   .sidebar nav {
 
     padding: 15px 8px;
 
   }
 
+  /* Todas las secciones visibles, solo iconos */
+  .seccion-items[hidden] {
+    display: flex;
+  }
+
+  .seccion-cabecera {
+
+    justify-content: center;
+
+    padding: 10px 8px;
+
+    gap: 0;
+  }
+
+  .seccion-titulo,
+  .seccion-flecha {
+    display: none;
+  }
+
   .sidebar nav a {
 
     justify-content: center;
 
-    padding: 13px 8px;
+    padding: 12px 8px;
 
-    font-size: 0;
+    gap: 0;
+  }
 
+  .item-titulo {
+    display: none;
   }
 
   .sidebar nav a:hover {

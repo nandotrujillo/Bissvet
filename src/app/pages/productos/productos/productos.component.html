@@ -4,7 +4,7 @@
 
     <div>
       <h2>📦 Productos</h2>
-      <p>Administración de productos y categorías del inventario</p>
+      <p>Administración de productos, categorías, marcas y unidades de medida</p>
     </div>
 
   </div>
@@ -29,6 +29,24 @@
       (click)="cambiarVista('categorias')">
 
       Categorías
+
+    </button>
+
+    <button
+      class="tab"
+      [class.activo]="vista === 'marcas'"
+      (click)="cambiarVista('marcas')">
+
+      Marcas
+
+    </button>
+
+    <button
+      class="tab"
+      [class.activo]="vista === 'unidades'"
+      (click)="cambiarVista('unidades')">
+
+      Unidades de Medida
 
     </button>
 
@@ -680,6 +698,398 @@
               class="sin-registros">
 
               No existen categorías registradas.
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- ================================================
+       VISTA MARCAS
+       ================================================ -->
+
+  <div *ngIf="vista === 'marcas'">
+
+    <div class="barra-busqueda">
+
+      <button
+        class="btn-nuevo"
+        (click)="nuevaMarcaForm()">
+
+        + Nueva Marca
+
+      </button>
+
+    </div>
+
+
+    <!-- FORMULARIO MARCA -->
+
+    <div
+      class="formulario"
+      *ngIf="mostrarFormularioMarca">
+
+      <h3>
+        {{ editandoMarca ? 'Editar Marca' : 'Nueva Marca' }}
+      </h3>
+
+
+      <div class="form-grid">
+
+        <div class="campo">
+
+          <label>Nombre *</label>
+
+          <input
+            type="text"
+            [(ngModel)]="marca.Nombre"
+            maxlength="100"
+            placeholder="Nombre de la marca">
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Estado</label>
+
+          <select [(ngModel)]="marca.Activo">
+
+            <option [ngValue]="1">Activo</option>
+            <option [ngValue]="0">Inactivo</option>
+
+          </select>
+
+        </div>
+
+
+        <div class="campo campo-completo">
+
+          <label>Descripción</label>
+
+          <textarea
+            [(ngModel)]="marca.Descripcion"
+            maxlength="300"
+            rows="2"
+            placeholder="Descripción de la marca">
+          </textarea>
+
+        </div>
+
+      </div>
+
+
+      <!-- BOTONES -->
+
+      <div class="acciones-formulario">
+
+        <button
+          class="btn-guardar"
+          (click)="guardarMarca()">
+
+          {{ editandoMarca ? 'Actualizar' : 'Guardar' }}
+
+        </button>
+
+
+        <button
+          class="btn-cancelar"
+          (click)="cancelarMarca()">
+
+          Cancelar
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- TABLA MARCAS -->
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let item of marcas">
+
+            <td>
+              {{ item.Id }}
+            </td>
+
+            <td>
+              {{ item.Nombre }}
+            </td>
+
+            <td>
+              {{ item.Descripcion || '-' }}
+            </td>
+
+            <td>
+
+              <span
+                class="estado"
+                [class.inactivo]="item.Activo === 0">
+
+                {{ item.Activo === 1 ? 'Activo' : 'Inactivo' }}
+
+              </span>
+
+            </td>
+
+            <td class="acciones">
+
+              <button
+                class="btn-editar"
+                (click)="editarMarca(item)">
+
+                Editar
+
+              </button>
+
+              <button
+                class="btn-eliminar"
+                (click)="eliminarMarca(item)">
+
+                Eliminar
+
+              </button>
+
+            </td>
+
+          </tr>
+
+
+          <!-- SIN REGISTROS -->
+
+          <tr *ngIf="marcas.length === 0">
+
+            <td
+              colspan="5"
+              class="sin-registros">
+
+              No existen marcas registradas.
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- ================================================
+       VISTA UNIDADES DE MEDIDA
+       ================================================ -->
+
+  <div *ngIf="vista === 'unidades'">
+
+    <div class="barra-busqueda">
+
+      <button
+        class="btn-nuevo"
+        (click)="nuevaUnidadMedidaForm()">
+
+        + Nueva Unidad de Medida
+
+      </button>
+
+    </div>
+
+
+    <!-- FORMULARIO UNIDAD DE MEDIDA -->
+
+    <div
+      class="formulario"
+      *ngIf="mostrarFormularioUnidadMedida">
+
+      <h3>
+        {{ editandoUnidadMedida ? 'Editar Unidad de Medida' : 'Nueva Unidad de Medida' }}
+      </h3>
+
+
+      <div class="form-grid">
+
+        <div class="campo">
+
+          <label>Unidad *</label>
+
+          <input
+            type="text"
+            [(ngModel)]="unidadMedida.Unidad"
+            maxlength="20"
+            placeholder="Ej: Kilogramo">
+
+        </div>
+
+
+        <div class="campo">
+
+          <label>Estado</label>
+
+          <select [(ngModel)]="unidadMedida.Activo">
+
+            <option [ngValue]="1">Activo</option>
+            <option [ngValue]="0">Inactivo</option>
+
+          </select>
+
+        </div>
+
+
+        <div class="campo campo-completo">
+
+          <label>Descripción</label>
+
+          <textarea
+            [(ngModel)]="unidadMedida.Descripcion"
+            maxlength="100"
+            rows="2"
+            placeholder="Descripción de la unidad">
+          </textarea>
+
+        </div>
+
+      </div>
+
+
+      <!-- BOTONES -->
+
+      <div class="acciones-formulario">
+
+        <button
+          class="btn-guardar"
+          (click)="guardarUnidadMedida()">
+
+          {{ editandoUnidadMedida ? 'Actualizar' : 'Guardar' }}
+
+        </button>
+
+
+        <button
+          class="btn-cancelar"
+          (click)="cancelarUnidadMedida()">
+
+          Cancelar
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- TABLA UNIDADES DE MEDIDA -->
+
+    <div class="tabla-container">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>ID</th>
+            <th>Unidad</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr *ngFor="let item of unidadesMedida">
+
+            <td>
+              {{ item.Id }}
+            </td>
+
+            <td>
+              {{ item.Unidad }}
+            </td>
+
+            <td>
+              {{ item.Descripcion || '-' }}
+            </td>
+
+            <td>
+
+              <span
+                class="estado"
+                [class.inactivo]="item.Activo === 0">
+
+                {{ item.Activo === 1 ? 'Activo' : 'Inactivo' }}
+
+              </span>
+
+            </td>
+
+            <td class="acciones">
+
+              <button
+                class="btn-editar"
+                (click)="editarUnidadMedida(item)">
+
+                Editar
+
+              </button>
+
+              <button
+                class="btn-eliminar"
+                (click)="eliminarUnidadMedida(item)">
+
+                Eliminar
+
+              </button>
+
+            </td>
+
+          </tr>
+
+
+          <!-- SIN REGISTROS -->
+
+          <tr *ngIf="unidadesMedida.length === 0">
+
+            <td
+              colspan="5"
+              class="sin-registros">
+
+              No existen unidades de medida registradas.
 
             </td>
 

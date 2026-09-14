@@ -174,6 +174,15 @@
 
             <button
               type="button"
+              class="btn-imprimir"
+              (click)="imprimirComprobantePDF(item)">
+
+              🖨️
+
+            </button>
+
+            <button
+              type="button"
               class="btn-editar"
               (click)="editar(item)">
 
@@ -449,6 +458,16 @@
     <!-- BOTONES -->
 
     <div class="formulario-botones">
+
+      <button
+        type="button"
+        class="btn-imprimir"
+        *ngIf="cita.IdCita"
+        (click)="imprimirComprobantePDF(cita)">
+
+        🖨️ Imprimir PDF
+
+      </button>
 
       <button
         type="button"

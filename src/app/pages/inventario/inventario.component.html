@@ -405,6 +405,72 @@
 
     </div>
 
+
+    <div
+      class="formulario"
+      style="margin-top: 25px;">
+
+      <h3>Cargar Inventario Inicial desde CSV</h3>
+
+      <p class="archivo-info">
+        El archivo debe tener 3 columnas:
+        <strong>CodigoProducto ; Cantidad ; CostoUnitario</strong>.
+        Separador <strong>;</strong> (o <strong>,</strong>). La primera fila es el encabezado.
+        También se acepta <strong>IdProducto</strong> en la primera columna.
+      </p>
+
+
+      <div class="campo-inicial">
+
+        <div class="campo">
+
+          <label>Archivo CSV *</label>
+
+          <input
+            type="file"
+            #archivoInput
+            accept=".csv,.txt,text/csv,text/plain"
+            (change)="onArchivoChange($event)">
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="lista-errores"
+        *ngIf="erroresCSV.length > 0">
+
+        <strong>Filas con problemas:</strong>
+
+        <ul>
+          <li *ngFor="let err of erroresCSV">
+            {{ err }}
+          </li>
+        </ul>
+
+      </div>
+
+
+      <div class="acciones-formulario">
+
+        <button
+          class="btn-guardar"
+          [disabled]="cargandoCSV"
+          (click)="cargarCSVInicial()">
+          {{ cargandoCSV ? 'Cargando...' : 'Cargar CSV' }}
+        </button>
+
+        <button
+          class="btn-ejemplo"
+          (click)="descargarEjemploCSV()">
+          ⬇ Descargar ejemplo CSV
+        </button>
+
+      </div>
+
+    </div>
+
   </div>
 
 </div>

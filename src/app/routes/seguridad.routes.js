@@ -6,6 +6,7 @@ const { authenticate } = require('../../middleware/auth.js');
 const { authorize } = require('../../middleware/authorize.js');
 const { registrarAuditoria } = require('../../middleware/auditoria.js');
 const { modulosContratados } = require('../../middleware/suscripcion.js');
+const { restaurarPaquetePerfil } = require('../../middleware/paquete-permisos.js');
 
 function obtenerIP(req) {
     return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
@@ -359,6 +360,56 @@ router.post('/perfilpermisos/:idPerfil', authenticate, authorize('SEGURIDAD.ASIG
         res.status(500).json({ ok: false, mensaje: 'Error asignando permisos', error: error.message });
     } finally {
         conn.release();
+    }
+});
+
+// =============================================================================
+// POST /api/seguridad/perfiles/:id/restaurar   (PROTEGIDO - SEGURIDAD.ASIGNAR_PERMISOS)
+// Restaura el paquete predeterminado de permisos de un perfil operativo.
+// Reemplaza perfilpermisos y sincroniza el rol homónimo (rolpermisos) con la
+// matriz canónica de perfil_permisos_base. No aplica a Administrador (1) ni
+// a perfiles sin paquete definido.
+// =============================================================================
+router.post('/perfiles/:id/restaurar', authenticate, authorize('SEGURIDAD.ASIGNAR_PERMISOS'), async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+
+        const [perfil] = await pool.query(
+            `SELECT IdPerfil, Nombre FROM perfiles WHERE IdPerfil = ?`,
+            [id]
+        );
+        if (perfil.length === 0) {
+            return res.status(404).json({ ok: false, mensaje: 'Perfil no encontrado' });
+        }
+
+        const [verificado] = await pool.query(
+            `SELECT IdPerfil FROM perfil_permisos_base WHERE IdPerfil = ? LIMIT 1`,
+            [id]
+        );
+        if (verificado.length === 0) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: `El perfil "${perfil[0].Nombre}" no tiene paquete predeterminado (solo aplica a perfiles operativos).`
+            });
+        }
+
+        const resultado = await restaurarPaquetePerfil(id, req.auth.UsuarioId);
+
+        await registrarAuditoria({
+            IdEmpresa: req.auth.IdEmpresa,
+            UsuarioId: req.auth.UsuarioId,
+            Tabla: 'perfilpermisos',
+            RegistroId: id,
+            Accion: 'EDITAR',
+            DireccionIP: obtenerIP(req),
+            DatosNuevos: resultado,
+            Descripcion: `Restauración de permisos predeterminados del perfil ${perfil[0].Nombre} (${resultado.permisosAplicados} permisos)`
+        });
+
+        res.json(resultado);
+    } catch (error) {
+        console.error('Error restaurando paquete de perfil:', error);
+        res.status(500).json({ ok: false, mensaje: 'Error restaurando paquete de perfil', error: error.message });
     }
 });
 

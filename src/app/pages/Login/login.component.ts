@@ -58,7 +58,10 @@ export class LoginComponent implements OnInit {
           this.empresas = respuesta.datos || [];
 
           // Preseleccionar la última empresa usada, si sigue activa
-          const ultima = localStorage.getItem('ultimaEmpresa');
+          const ultima =
+            typeof localStorage !== 'undefined'
+              ? localStorage.getItem('ultimaEmpresa')
+              : null;
 
           const idUltima = ultima
             ? Number(JSON.parse(ultima))

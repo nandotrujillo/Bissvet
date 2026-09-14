@@ -37,6 +37,13 @@ src/app/JwtToken.env
 /angular.err.log
 /server.out.log
 /server.err.log
+/api.out.log
+/api.err.log
+/ssr.out.log
+/ssr.err.log
+/dump.out.log
+/dump.err.log
+/query
 
 # Scripts de prueba ad-hoc
 /_test_*.cjs

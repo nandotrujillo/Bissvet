@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
             SELECT IdCategoriaProducto, Nombre, Descripcion, Activo,
                    FechaCreacion, FechaModificacion
             FROM categoriasproducto
-            WHERE IdEmpresa = ?
+            WHERE IdEmpresa = ? OR IdEmpresa IS NULL
             ORDER BY Nombre
         `, [req.auth.IdEmpresa]);
         res.json({ ok: true, datos: rows });

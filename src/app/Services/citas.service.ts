@@ -64,4 +64,8 @@ export class CitasService {
   listarPorVeterinario(idVeterinario: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/veterinario/${idVeterinario}`);
   }
+
+  imprimirPDF(id: number): string {
+    return `${this.apiUrl}/${id}/pdf`;
+  }
 }

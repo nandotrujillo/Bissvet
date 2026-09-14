@@ -37,6 +37,11 @@ export class InventarioComponent implements OnInit {
   IdBodegaInicial = 0;
   itemsInicial: any[] = [this.nuevoItemInicial()];
 
+  // Inventario inicial por CSV
+  archivoCSV: File | null = null;
+  erroresCSV: string[] = [];
+  cargandoCSV = false;
+
   mensaje = '';
   error = '';
 
@@ -178,5 +183,79 @@ export class InventarioComponent implements OnInit {
       case 'STOCK ALTO': return 'alto';
       default: return 'ok';
     }
+  }
+
+  // ==================================================
+  // INVENTARIO INICIAL POR CSV
+  // ==================================================
+
+  onArchivoChange(event: any): void {
+    const file = event?.target?.files?.[0];
+    this.archivoCSV = file || null;
+    this.mensaje = '';
+    this.error = '';
+    this.erroresCSV = [];
+  }
+
+  descargarEjemploCSV(): void {
+
+    const filas: string[] = ['CodigoProducto;Cantidad;CostoUnitario'];
+
+    if (this.productos.length > 0) {
+      const muestra = this.productos.slice(0, 5);
+      const cantidades = [50, 100, 25, 75, 10];
+      muestra.forEach((p, i) => {
+        filas.push(`${p.CodigoProducto};${cantidades[i] || 10};${Number(p.CostoActual ?? p.PrecioVenta ?? 0).toFixed(2)}`);
+      });
+    } else {
+      filas.push('ALI-001;50;75.00');
+      filas.push('FAR-006;20;32.00');
+      filas.push('EQU-003;100;4.00');
+    }
+
+    const contenido = '\uFEFF' + filas.join('\r\n');
+    const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'inventario_inicial_ejemplo.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  cargarCSVInicial(): void {
+
+    this.mensaje = '';
+    this.error = '';
+    this.erroresCSV = [];
+
+    if (!this.IdBodegaInicial) {
+      this.error = 'Debe seleccionar una bodega.';
+      return;
+    }
+
+    if (!this.archivoCSV) {
+      this.error = 'Debe seleccionar el archivo CSV.';
+      return;
+    }
+
+    this.cargandoCSV = true;
+
+    this.inventarioService.inicialCSV(this.IdBodegaInicial, this.archivoCSV).subscribe({
+      next: (respuesta: any) => {
+        this.cargandoCSV = false;
+        this.erroresCSV = respuesta?.errores ?? [];
+        this.mensaje = respuesta?.mensaje || 'Inventario inicial registrado correctamente.';
+        this.archivoCSV = null;
+        this.cargarExistencias();
+        this.cargarConsolidado();
+      },
+      error: (error: any) => {
+        this.cargandoCSV = false;
+        console.error('Error cargando CSV:', error);
+        this.erroresCSV = error?.error?.errores ?? [];
+        this.error = error?.error?.mensaje || 'No fue posible procesar el archivo CSV.';
+      }
+    });
   }
 }

@@ -6,7 +6,12 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "build:prod": "ng build",
+    "start:prod": "node server.prod.js",
+    "api": "node src/server.js",
+    "demo:ssr": "node dist/biss-vet-app/server/server.mjs",
+    "demo": "call start-demo.bat"
   },
   "private": true,
   "dependencies": {
