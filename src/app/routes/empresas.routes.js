@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
                 IdCiudad,
                 UsaControlCaja,
                 ControlExistencias
-            FROM BissVet.empresas
+            FROM empresas
             WHERE Activo = 1
             ORDER BY NombreComercial
         `);
@@ -93,7 +93,7 @@ router.get('/:id', authenticate, authorize('EMPRESAS.CONSULTAR'), async (req, re
                 Activo,
                 UsaControlCaja,
                 ControlExistencias
-            FROM BissVet.empresas
+            FROM empresas
             WHERE IdEmpresa = ?
         `, [id]);
 
@@ -215,7 +215,7 @@ router.put('/:id', authenticate, authorize('EMPRESAS.EDITAR'), async (req, res) 
 
         const [result] = await pool.query(`
 
-            UPDATE BissVet.empresas
+            UPDATE empresas
             SET
                 CodigoEmpresa = ?,
                 Nit = ?,
