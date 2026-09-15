@@ -4,27 +4,38 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 // =============================================================================
-// Resolución de configuración de MySQL
-// 1. DATABASE_URL (lo genera Railway automáticamente; formato mysql://...)
-// 2. Variables MYSQL_* (Railway MySQL plugin: MYSQLHOST, MYSQLPORT, ...)
-// 3. Variables DB_* (config manual /.env local)
-// 4. Defaults locales de desarrollo
+// Resolución de configuración de MySQL (prioridad de mayor a menor)
+// 1. DATABASE_URL / MYSQL_URL / MYSQL_PUBLIC_URL  (formato mysql://... )
+// 2. Variables individuales: DB_* o MYSQL_* (MYSQLHOST, MYSQLPORT, etc.)
+// 3. Defaults locales de desarrollo
 // =============================================================================
+function parseUrl(urlStr) {
+    try {
+        const url = new URL(urlStr);
+        if (url.protocol === 'mysql:' || url.protocol === 'mariadb:') {
+            return {
+                host: url.hostname,
+                port: Number(url.port) || 3306,
+                user: decodeURIComponent(url.username || 'root'),
+                password: decodeURIComponent(url.password || ''),
+                database: url.pathname ? url.pathname.replace(/^\//, '') : null
+            };
+        }
+    } catch (_) {}
+    return null;
+}
+
 function resolverConfig() {
-    if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('://')) {
-        try {
-            const url = new URL(process.env.DATABASE_URL);
-            if (url.protocol === 'mysql:' || url.protocol === 'mariadb:') {
-                return {
-                    host: url.hostname,
-                    port: Number(url.port) || 3306,
-                    user: decodeURIComponent(url.username || 'root'),
-                    password: decodeURIComponent(url.password || ''),
-                    database: url.pathname ? url.pathname.replace(/^\//, '') : (process.env.DB_NAME || 'BissVet')
-                };
+    // Intentar parsear una URL de conexión (DATABASE_URL > MYSQL_URL > MYSQL_PUBLIC_URL)
+    const urlVars = ['DATABASE_URL', 'MYSQL_URL', 'MYSQL_PUBLIC_URL'];
+    for (const v of urlVars) {
+        const val = process.env[v];
+        if (val && val.includes('://')) {
+            const parsed = parseUrl(val);
+            if (parsed) {
+                console.log(`Conectando via ${v}`);
+                return parsed;
             }
-        } catch (e) {
-            console.warn('DATABASE_URL no válida, se ignora:', e.message);
         }
     }
 
