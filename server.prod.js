@@ -57,18 +57,5 @@ app.listen(PORT, () => {
     console.log(`  Frontend + API: http://localhost:${PORT}`);
     console.log('  Base de datos: MySQL');
     console.log('========================================');
-    const tiene = (v) => (v ? 'SÍ' : 'NO');
-    console.log('Diagnóstico de entorno:');
-    console.log(`  JWT_SECRET:  ${tiene(process.env.JWT_SECRET)}`);
-    console.log(`  DB_HOST:     ${tiene(process.env.DB_HOST)}`);
-    console.log(`  DB_PORT:     ${process.env.DB_PORT || '(default 3306)'}`);
-    console.log(`  DB_USER:     ${tiene(process.env.DB_USER)}`);
-    console.log(`  DB_PASSWORD: ${tiene(process.env.DB_PASSWORD)}`);
-    console.log(`  DB_NAME:     ${process.env.DB_NAME || '(default BissVet)'}`);
-    console.log(`  PORT:        ${PORT}`);
-    console.log(`  RAILWAY_SVC: ${process.env.RAILWAY_SERVICE_ID || '(no está)'}`);
-    // Listar TODAS las variables de entorno disponibles (solo keys)
-    const allKeys = Object.keys(process.env).sort();
-    console.log(`  Total vars:  ${allKeys.length}`);
-    console.log('  Keys:', allKeys.join(', '));
+    console.log('Listo.');
 });
