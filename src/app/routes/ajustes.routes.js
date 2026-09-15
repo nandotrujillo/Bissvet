@@ -160,7 +160,7 @@ router.put('/:id', async (req, res) => {
     try {
         await conn.beginTransaction();
 
-        const { Numero, IdBodega, Fecha, TipoAjuste, Motivo, Observaciones, UsuarioIdModificacion, Detalle } = req.body;
+        const { Numero, IdBodega, Fecha, TipoAjuste, Motivo, Observaciones, Detalle } = req.body;
         const IdAjuste = Number(req.params.id);
 
         const [actual] = await conn.query(`SELECT Estado FROM ajustes_inventario WHERE IdAjuste = ?`, [IdAjuste]);

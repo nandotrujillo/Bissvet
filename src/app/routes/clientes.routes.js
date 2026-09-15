@@ -193,11 +193,9 @@ router.post('/', async (req, res) => {
         }
 
 
-        // El usuario que crea proviene de la sesión (JWT), nunca del body
-        // como verdad de origen. Se respeta un body solo si trae un Id válido.
-        const usuarioId =
-            (UsuarioIdCreacion && Number(UsuarioIdCreacion))
-            || req.auth.UsuarioId;
+        // El usuario que crea proviene SIEMPRE de la sesión (JWT).
+        // El frontend no debe influir en el usuario de auditoría (RN-011).
+        const usuarioId = req.auth.UsuarioId;
 
 
         const fechaNacimiento =
@@ -316,9 +314,7 @@ router.put('/:id', async (req, res) => {
 
             Observaciones,
 
-            Activo,
-
-            UsuarioIdModificacion
+            Activo
 
         } = req.body;
 
@@ -333,9 +329,7 @@ router.put('/:id', async (req, res) => {
         }
 
 
-        const usuarioId =
-            (UsuarioIdModificacion && Number(UsuarioIdModificacion))
-            || req.auth.UsuarioId;
+        const usuarioId = req.auth.UsuarioId;
 
 
         const fechaNacimiento =

@@ -166,7 +166,7 @@ router.post('/', async (req, res) => {
             TipoAnestesia || null,
             Observaciones || null,
             Estado || 'Programada',
-            UsuarioIdCreacion || null,
+            req.auth.UsuarioId,
             req.auth.IdEmpresa
         ]);
 
@@ -215,7 +215,7 @@ router.put('/:id', async (req, res) => {
             TipoAnestesia || null,
             Observaciones || null,
             Estado,
-            UsuarioIdModificacion || null,
+            req.auth.UsuarioId,
             id,
             req.auth.IdEmpresa
         ]);
@@ -280,7 +280,7 @@ router.post('/:id/preoperatorio', async (req, res) => {
             FrecuenciaRespiratoria || null, EstadoGeneral || null,
             ExamenesPrequirurgicos || null, RiesgoAnestesico || null,
             Ayuno || null, Observaciones || null,
-            UsuarioIdCreacion || null,
+            req.auth.UsuarioId,
             req.auth.IdEmpresa
         ]);
 
@@ -337,7 +337,7 @@ router.post('/:id/anestesico', async (req, res) => {
             MedicamentosAnestesicos || null, Dosis || null, HoraAdministracion || null,
             ViaAdministracion || null, HoraInicio || null, HoraFin || null,
             SignosVitales || null, Observaciones || null, Complicaciones || null,
-            UsuarioIdCreacion || null,
+            req.auth.UsuarioId,
             req.auth.IdEmpresa
         ]);
 
@@ -394,7 +394,7 @@ router.post('/:id/postoperatorio', async (req, res) => {
             EstadoPostoperatorio || null, Medicamentos || null, Tratamiento || null,
             Recomendaciones || null, Alimentacion || null, Restricciones || null,
             Cuidados || null, SignosDeAlarma || null, FechaControl || null, Observaciones || null,
-            UsuarioIdCreacion || null,
+            req.auth.UsuarioId,
             req.auth.IdEmpresa
         ]);
 

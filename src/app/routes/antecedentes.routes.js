@@ -120,7 +120,7 @@ router.post('/', async (req, res) => {
                 Alimentacion || null,
                 Habitos || null,
                 Observaciones || null,
-                UsuarioIdCreacion || null,
+                req.auth.UsuarioId,
                 IdMascota,
                 req.auth.IdEmpresa
             ]);
@@ -148,7 +148,7 @@ router.post('/', async (req, res) => {
                 Alimentacion || null,
                 Habitos || null,
                 Observaciones || null,
-                UsuarioIdCreacion || null,
+                req.auth.UsuarioId,
                 req.auth.IdEmpresa
             ]);
             res.status(201).json({ ok: true, mensaje: 'Antecedentes creados correctamente', IdAntecedente: result.insertId });
@@ -208,7 +208,7 @@ router.put('/:id', async (req, res) => {
             Alimentacion || null,
             Habitos || null,
             Observaciones || null,
-            UsuarioIdModificacion || null,
+            req.auth.UsuarioId,
             id,
             req.auth.IdEmpresa
         ]);

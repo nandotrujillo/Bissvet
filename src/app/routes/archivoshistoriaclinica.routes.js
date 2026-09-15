@@ -144,7 +144,7 @@ router.post('/', upload.single('archivo'), async (req, res) => {
             RutaArchivo,
             TamanoBytes,
             TipoMIME,
-            UsuarioIdCreacion || null,
+            req.auth.UsuarioId,
             req.auth.IdEmpresa
         ]);
 

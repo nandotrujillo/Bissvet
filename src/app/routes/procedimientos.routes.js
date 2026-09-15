@@ -104,7 +104,7 @@ router.post('/', async (req, res) => {
             Descripcion || null,
             Resultado || null,
             Observaciones || null,
-            UsuarioIdCreacion || null,
+            req.auth.UsuarioId,
             req.auth.IdEmpresa
         ]);
 

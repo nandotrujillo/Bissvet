@@ -93,7 +93,7 @@ router.post('/', async (req, res) => {
             CodigoDiagnostico || null,
             TipoDiagnostico || 'Presuntivo',
             Observaciones || null,
-            UsuarioIdCreacion || null,
+            req.auth.UsuarioId,
             req.auth.IdEmpresa
         ]);
 

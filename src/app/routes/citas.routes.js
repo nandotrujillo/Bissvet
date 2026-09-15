@@ -295,7 +295,7 @@ router.post('/', async (req, res) => {
             Observaciones || null,
             Precio ?? 0,
             UsuarioIdVeterinario || null,
-            UsuarioIdCreacion || null,
+            req.auth.UsuarioId,
             req.auth.IdEmpresa
         ]);
 
@@ -353,7 +353,7 @@ router.put('/:id', async (req, res) => {
             MotivoConsulta || null,
             Observaciones || null,
             Precio ?? 0,
-            UsuarioIdModificacion || null,
+            req.auth.UsuarioId,
             id,
             req.auth.IdEmpresa
         ]);

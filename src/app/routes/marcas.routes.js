@@ -46,7 +46,7 @@ router.get('/:id', async (req, res) => {
 // =====================================================
 router.post('/', async (req, res) => {
     try {
-        const { Nombre, Descripcion, Activo, UsuarioIdCreacion } = req.body;
+        const { Nombre, Descripcion, Activo } = req.body;
 
         if (!Nombre || !Nombre.trim())
             return res.status(400).json({ ok: false, mensaje: 'El nombre es obligatorio' });
@@ -54,7 +54,7 @@ router.post('/', async (req, res) => {
         const [resultado] = await pool.query(
             `INSERT INTO marcas (Nombre, Descripcion, Activo, UsuarioIdCreacion, IdEmpresa)
              VALUES (?, ?, ?, ?, ?)`,
-            [Nombre.trim(), Descripcion || null, Activo ?? 1, UsuarioIdCreacion || null, req.auth.IdEmpresa]
+            [Nombre.trim(), Descripcion || null, Activo ?? 1, req.auth.UsuarioId, req.auth.IdEmpresa]
         );
         res.status(201).json({ ok: true, mensaje: 'Marca creada', Id: resultado.insertId });
     } catch (error) {
@@ -68,7 +68,7 @@ router.post('/', async (req, res) => {
 // =====================================================
 router.put('/:id', async (req, res) => {
     try {
-        const { Nombre, Descripcion, Activo, UsuarioIdModificacion } = req.body;
+        const { Nombre, Descripcion, Activo } = req.body;
 
         if (!Nombre || !Nombre.trim())
             return res.status(400).json({ ok: false, mensaje: 'El nombre es obligatorio' });
@@ -78,7 +78,7 @@ router.put('/:id', async (req, res) => {
                 Nombre = ?, Descripcion = ?, Activo = ?,
                 FechaModificacion = NOW(), UsuarioIdModificacion = ?
              WHERE Id = ? AND (IdEmpresa = ? OR IdEmpresa IS NULL)`,
-            [Nombre.trim(), Descripcion || null, Activo ?? 1, UsuarioIdModificacion || null, req.params.id, req.auth.IdEmpresa]
+            [Nombre.trim(), Descripcion || null, Activo ?? 1, req.auth.UsuarioId, req.params.id, req.auth.IdEmpresa]
         );
         if (resultado.affectedRows === 0)
             return res.status(404).json({ ok: false, mensaje: 'Marca no encontrada' });

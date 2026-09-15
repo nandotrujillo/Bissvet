@@ -110,7 +110,7 @@ router.post('/', async (req, res) => {
                 ManejaInventario ?? 1,
                 PermiteVenta ?? 1,
                 Activo ?? 1,
-                (UsuarioIdCreacion || null),
+                req.auth.UsuarioId,
                 req.auth.IdEmpresa
             ]
         );
@@ -155,7 +155,7 @@ router.put('/:id', async (req, res) => {
                 IdCategoriaProducto, IdUnidadMedida || null, IdMarca || null, Referencia || null,
                 PrecioVenta ?? 0, CostoActual ?? 0, CostoPromedio ?? 0,
                 StockMinimo ?? 0, StockMaximo ?? 0, ManejaInventario ?? 1, PermiteVenta ?? 1,
-                Activo ?? 1, UsuarioIdModificacion || null, req.params.id, req.auth.IdEmpresa
+                Activo ?? 1, req.auth.UsuarioId, req.params.id, req.auth.IdEmpresa
             ]
         );
 

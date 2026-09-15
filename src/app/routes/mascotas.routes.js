@@ -157,12 +157,9 @@ router.post('/', async (req, res) => {
             Observaciones,
             UsuarioIdCreacion
         } = req.body;
-        const usuarioIdNumero =
-            UsuarioIdCreacion !== '' &&
-            UsuarioIdCreacion !== null &&
-            UsuarioIdCreacion !== undefined
-                ? Number(UsuarioIdCreacion)
-                : 3;
+        // El usuario que crea proviene SIEMPRE de la sesión (JWT).
+        // El frontend no debe influir en el usuario de auditoría (RN-011).
+        const usuarioIdNumero = req.auth.UsuarioId;
 
         if (!ClienteId) {
 
@@ -228,7 +225,7 @@ router.post('/', async (req, res) => {
             Microchip || null,
             Esterilizado ? 1 : 0,
             Observaciones || null,
-            UsuarioIdCreacion ? null:usuarioIdNumero,
+            usuarioIdNumero,
             req.auth.IdEmpresa
         ]);
 
@@ -290,6 +287,8 @@ router.put('/:id', async (req, res) => {
 
         }
 
+        // El usuario de modificación proviene SIEMPRE de la sesión (JWT).
+        const usuarioMod = req.auth.UsuarioId;
 
         const [result] = await pool.query(`
 
@@ -324,7 +323,7 @@ router.put('/:id', async (req, res) => {
             Microchip || null,
             Esterilizado ? 1 : 0,
             Observaciones || null,
-            UsuarioIdModificacion || null,
+            usuarioMod,
             id,
             req.auth.IdEmpresa
         ]);

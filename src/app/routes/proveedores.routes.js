@@ -76,7 +76,7 @@ router.post('/', async (req, res) => {
                 TipoDocumento || null, NumeroDocumento || null, Nit || null,
                 Nombre.trim(), Telefono || null, Email || null,
                 Direccion || null, IdCiudad || null, Contacto || null,
-                Activo ?? 1, UsuarioIdCreacion || null, req.auth.IdEmpresa
+                Activo ?? 1, req.auth.UsuarioId, req.auth.IdEmpresa
             ]
         );
         res.status(201).json({ ok: true, mensaje: 'Proveedor creado', IdProveedor: resultado.insertId });
@@ -109,7 +109,7 @@ router.put('/:id', async (req, res) => {
                 TipoDocumento || null, NumeroDocumento || null, Nit || null,
                 Nombre.trim(), Telefono || null, Email || null,
                 Direccion || null, IdCiudad || null, Contacto || null,
-                Activo ?? 1, UsuarioIdModificacion || null, req.params.id, req.auth.IdEmpresa
+                Activo ?? 1, req.auth.UsuarioId, req.params.id, req.auth.IdEmpresa
             ]
         );
         if (resultado.affectedRows === 0)

@@ -227,7 +227,7 @@ router.put('/:id', async (req, res) => {
     try {
         await conn.beginTransaction();
 
-        const { Numero, IdProveedor, IdBodega, Fecha, Observaciones, MetodoPago, TipoDocumento, NumeroDocumentoProveedor, UsuarioIdModificacion, Detalle } = req.body;
+        const { Numero, IdProveedor, IdBodega, Fecha, Observaciones, MetodoPago, TipoDocumento, NumeroDocumentoProveedor, Detalle } = req.body;
         const IdCompra = Number(req.params.id);
 
         const [actual] = await conn.query(`SELECT Estado FROM compras WHERE IdCompra = ?`, [IdCompra]);

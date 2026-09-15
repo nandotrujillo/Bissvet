@@ -46,7 +46,7 @@ router.get('/:id', async (req, res) => {
 // =====================================================
 router.post('/', async (req, res) => {
     try {
-        const { Unidad, Descripcion, Activo, UsuarioIdCreacion } = req.body;
+        const { Unidad, Descripcion, Activo } = req.body;
 
         if (!Unidad || !Unidad.trim())
             return res.status(400).json({ ok: false, mensaje: 'La unidad es obligatoria' });
@@ -56,7 +56,7 @@ router.post('/', async (req, res) => {
         const [resultado] = await pool.query(
             `INSERT INTO unidades_medida (Unidad, Descripcion, Activo, UsuarioIdCreacion, IdEmpresa)
              VALUES (?, ?, ?, ?, ?)`,
-            [Unidad.trim(), Descripcion || null, Activo ?? 1, UsuarioIdCreacion || null, req.auth.IdEmpresa]
+            [Unidad.trim(), Descripcion || null, Activo ?? 1, req.auth.UsuarioId, req.auth.IdEmpresa]
         );
         res.status(201).json({ ok: true, mensaje: 'Unidad de medida creada', Id: resultado.insertId });
     } catch (error) {
@@ -70,7 +70,7 @@ router.post('/', async (req, res) => {
 // =====================================================
 router.put('/:id', async (req, res) => {
     try {
-        const { Unidad, Descripcion, Activo, UsuarioIdModificacion } = req.body;
+        const { Unidad, Descripcion, Activo } = req.body;
 
         if (!Unidad || !Unidad.trim())
             return res.status(400).json({ ok: false, mensaje: 'La unidad es obligatoria' });
@@ -82,7 +82,7 @@ router.put('/:id', async (req, res) => {
                 Unidad = ?, Descripcion = ?, Activo = ?,
                 FechaModificacion = NOW(), UsuarioIdModificacion = ?
              WHERE Id = ? AND (IdEmpresa = ? OR IdEmpresa IS NULL)`,
-            [Unidad.trim(), Descripcion || null, Activo ?? 1, UsuarioIdModificacion || null, req.params.id, req.auth.IdEmpresa]
+            [Unidad.trim(), Descripcion || null, Activo ?? 1, req.auth.UsuarioId, req.params.id, req.auth.IdEmpresa]
         );
         if (resultado.affectedRows === 0)
             return res.status(404).json({ ok: false, mensaje: 'Unidad de medida no encontrada' });

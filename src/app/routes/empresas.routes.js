@@ -161,8 +161,7 @@ router.put('/:id', authenticate, authorize('EMPRESAS.EDITAR'), async (req, res) 
             IdCiudad,
             Activo,
             UsaControlCaja,
-            ControlExistencias,
-            UsuarioIdModificacion
+            ControlExistencias
 
         } = req.body;
 
@@ -207,10 +206,7 @@ router.put('/:id', authenticate, authorize('EMPRESAS.EDITAR'), async (req, res) 
         }
 
 
-        const usuarioId =
-            UsuarioIdModificacion
-                ? Number(UsuarioIdModificacion)
-                : null;
+        const usuarioId = req.auth.UsuarioId;
 
 
         const [result] = await pool.query(`

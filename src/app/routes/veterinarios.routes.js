@@ -171,6 +171,8 @@ router.post('/', async (req, res) => {
         } = req.body;
 
 
+        const usuarioAutenticado = req.auth.UsuarioId;
+
         const [resultado] = await pool.query(`
 
             INSERT INTO veterinarios (
@@ -218,7 +220,7 @@ router.post('/', async (req, res) => {
             FechaNacimiento ?? null,
             Observaciones ?? null,
             Activo ?? true,
-            UsuarioId ?? null,
+            usuarioAutenticado,
             req.auth.IdEmpresa
         ]);
 
@@ -294,11 +296,12 @@ router.put('/:id', async (req, res) => {
             IdCiudad,
             FechaNacimiento,
             Observaciones,
-            Activo,
-            UsuarioIdCreacion
+            Activo
 
         } = req.body;
 
+
+        const usuarioModificacion = req.auth.UsuarioId;
 
         await pool.query(`
 
@@ -347,7 +350,7 @@ router.put('/:id', async (req, res) => {
             FechaNacimiento ?? null,
             Observaciones ?? null,
             Activo ?? true,
-            UsuarioIdCreacion ?? null,
+            usuarioModificacion,
             id,
             req.auth.IdEmpresa
 

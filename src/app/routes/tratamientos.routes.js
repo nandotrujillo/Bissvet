@@ -120,7 +120,7 @@ router.post('/', async (req, res) => {
             Indicaciones || null,
             Observaciones || null,
             Estado || 'Activo',
-            UsuarioIdCreacion || null,
+            req.auth.UsuarioId,
             req.auth.IdEmpresa
         ]);
 
@@ -168,7 +168,7 @@ router.put('/:id', async (req, res) => {
             Indicaciones || null,
             Observaciones || null,
             Estado,
-            UsuarioIdModificacion || null,
+            req.auth.UsuarioId,
             id,
             req.auth.IdEmpresa
         ]);
@@ -189,7 +189,7 @@ router.put('/:id', async (req, res) => {
 router.put('/:id/finalizar', async (req, res) => {
     try {
         const id = Number(req.params.id);
-        const { UsuarioIdModificacion } = req.body;
+        const usuarioMod = req.auth.UsuarioId;
 
         const [result] = await pool.query(`
             UPDATE tratamientos SET
@@ -198,7 +198,7 @@ router.put('/:id/finalizar', async (req, res) => {
                 FechaModificacion = NOW(),
                 UsuarioIdModificacion = ?
             WHERE IdTratamiento = ? AND IdEmpresa = ?
-        `, [UsuarioIdModificacion || null, id, req.auth.IdEmpresa]);
+        `, [usuarioMod, id, req.auth.IdEmpresa]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Tratamiento no encontrado' });

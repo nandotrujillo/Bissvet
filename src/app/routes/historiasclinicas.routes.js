@@ -547,7 +547,7 @@ router.post('/', async (req, res) => {
             EnfermedadActual || null,
             Observaciones || null,
             Estado || 'Abierta',
-            UsuarioIdCreacion || null,
+            req.auth.UsuarioId,
             req.auth.IdEmpresa
         ]);
 
@@ -606,7 +606,7 @@ router.put('/:id', async (req, res) => {
             EnfermedadActual || null,
             Observaciones || null,
             Estado,
-            UsuarioIdModificacion || null,
+            req.auth.UsuarioId,
             id,
             req.auth.IdEmpresa
         ]);
@@ -627,7 +627,6 @@ router.put('/:id', async (req, res) => {
 router.put('/:id/cerrar', async (req, res) => {
     try {
         const id = Number(req.params.id);
-        const { UsuarioIdModificacion } = req.body;
 
         const [result] = await pool.query(`
             UPDATE historiasclinicas SET
@@ -635,7 +634,7 @@ router.put('/:id/cerrar', async (req, res) => {
                 FechaModificacion = NOW(),
                 UsuarioIdModificacion = ?
             WHERE IdHistoriaClinica = ? AND IdEmpresa = ?
-        `, [UsuarioIdModificacion || null, id, req.auth.IdEmpresa]);
+        `, [req.auth.UsuarioId, id, req.auth.IdEmpresa]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ ok: false, mensaje: 'Historia clínica no encontrada' });

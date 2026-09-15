@@ -177,7 +177,7 @@ router.post('/', async (req, res) => {
             Observaciones || null,
             Recomendaciones || null,
             ProximoControl || null,
-            UsuarioIdCreacion || null,
+            req.auth.UsuarioId,
             req.auth.IdEmpresa
         ]);
 
@@ -197,7 +197,7 @@ router.post('/', async (req, res) => {
                 IdControl,
                 ProximoControl,
                 Motivo || 'Control programado',
-                UsuarioIdCreacion || null,
+                req.auth.UsuarioId,
                 req.auth.IdEmpresa
             ]);
         }
