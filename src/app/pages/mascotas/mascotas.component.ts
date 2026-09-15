@@ -351,6 +351,16 @@ editar(mascota: Mascota): void {
 
   this.error = '';
 
+  // Mostrar el dueño ya asociado a la mascota (1 mascota = 1 cliente).
+  this.textoCliente =
+    mascota.NombreClienteCompleto ||
+    mascota.NombreCliente ||
+    '';
+
+  this.clienteSeleccionado =
+    this.clientes.find(c => c.ClienteId === mascota.ClienteId) ||
+    null;
+
 }
 
   // =====================================================
@@ -363,6 +373,10 @@ editar(mascota: Mascota): void {
 
     this.mascota =
       this.nuevaMascota();
+
+    this.textoCliente = '';
+
+    this.clienteSeleccionado = null;
 
     this.mensaje = '';
 
