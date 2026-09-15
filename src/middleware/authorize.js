@@ -16,7 +16,7 @@ async function esSuperAdmin(UsuarioId) {
                   AND r.IdEmpresa IS NULL
             )
             OR EXISTS(
-                SELECT 1 FROM Usuarios u
+                SELECT 1 FROM usuarios u
                 INNER JOIN perfiles pf ON u.IdPerfil = pf.IdPerfil
                 WHERE u.UsuarioId = ? AND pf.Nombre = 'SUPERADMIN'
             )

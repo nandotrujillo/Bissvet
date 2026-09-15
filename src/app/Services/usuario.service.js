@@ -1,6 +1,6 @@
 const { sql, conectarBD } = require('../config/database');
 
-async function obtenerUsuarios() {
+async function obtenerusuarios() {
     console.log ("Conectar a la base de 111 ");
     const pool = await conectarBD();
     console.log ("Conectar a la base de datos222 ");
@@ -11,7 +11,7 @@ async function obtenerUsuarios() {
                 UsuarioId,
                 Username,
                 PasswordHash
-                FROM Usuarios
+                FROM usuarios
             ORDER BY UsuarioId
         `);
 
@@ -31,7 +31,7 @@ async function obtenerUsuarioPorId(id) {
                 UsuarioId,
                 Username,
                 PasswordHash
-            FROM Usuarios
+            FROM usuarios
             WHERE UsuarioId = @id
         `);
 
@@ -56,7 +56,7 @@ async function validarUsuario(usuario, contraseña) {
                 UsuarioId,
                 Username,
                 PasswordHash            
-            FROM Usuarios
+            FROM usuarios
             WHERE Username = @usuario
             AND PasswordHash = @contraseña
         `);
@@ -73,7 +73,7 @@ async function crearUsuario(usuario, contraseña) {
         .input('usuario', sql.NVarChar(50), usuario)
         .input('contraseña', sql.NVarChar(255), contraseña)
         .query(`
-            INSERT INTO Usuarios
+            INSERT INTO usuarios
             (
                 Username,
                 PasswordHash                        )
@@ -94,7 +94,7 @@ async function crearUsuario(usuario, contraseña) {
 
 
 module.exports = {
-    obtenerUsuarios,
+    obtenerusuarios,
     obtenerUsuarioPorId,
     validarUsuario,
     crearUsuario

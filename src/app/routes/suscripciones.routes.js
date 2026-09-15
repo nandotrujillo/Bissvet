@@ -25,7 +25,7 @@ router.get('/', authorize('SUSCRIPCIONES.CONSULTAR'), async (req, res) => {
                     s.FechaProximaFacturacion, s.FechaCreacion, s.FechaModificacion,
                     e.CodigoEmpresa, e.NombreComercial, e.Nit,
                     p.CodigoPlan, p.NombrePlan, p.PrecioMensual, p.Moneda,
-                    (SELECT COUNT(*) FROM Usuarios u
+                    (SELECT COUNT(*) FROM usuarios u
                       WHERE u.IdEmpresa = s.IdEmpresa AND u.Activo = 1) AS usuariosActuales,
                     (SELECT COUNT(*) FROM suscripcion_modulos sm
                       WHERE sm.IdSuscripcion = s.IdSuscripcion) AS addonsActuales
@@ -51,7 +51,7 @@ router.get('/:id', authorize('SUSCRIPCIONES.CONSULTAR'), async (req, res) => {
 
         const [rows] = await pool.query(
             `SELECT s.*, e.CodigoEmpresa, e.NombreComercial, e.Nit,
-                    p.CodigoPlan, p.NombrePlan, p.PrecioMensual, p.PrecioAnual, p.Moneda, p.MaxUsuarios
+                    p.CodigoPlan, p.NombrePlan, p.PrecioMensual, p.PrecioAnual, p.Moneda, p.Maxusuarios
              FROM suscripciones s
              INNER JOIN empresas e ON e.IdEmpresa = s.IdEmpresa
              INNER JOIN planes p ON p.IdPlan = s.IdPlan
@@ -76,7 +76,7 @@ router.get('/:id', authorize('SUSCRIPCIONES.CONSULTAR'), async (req, res) => {
                     hs.EstadoNuevo, hs.PrecioAnterior, hs.PrecioNuevo, hs.Motivo,
                     hs.FechaCambio, u.Username
              FROM historial_suscripciones hs
-             LEFT JOIN Usuarios u ON u.UsuarioId = hs.UsuarioId
+             LEFT JOIN usuarios u ON u.UsuarioId = hs.UsuarioId
              WHERE hs.IdSuscripcion = ?
              ORDER BY hs.FechaCambio DESC`,
             [id]
@@ -305,13 +305,13 @@ router.post('/:id/cambiar-plan', authorize('SUSCRIPCIONES.CAMBIAR_PLAN'), async 
         // (menos máximo de usuarios), verificar que no lo supere.
         if (planNuevo.IdPlan !== actualRec.IdPlan && planNuevo.PrecioMensual <= actualRec.PrecioActual) {
             const consumo = await obtenerConsumoEmpresa(actualRec.IdEmpresa);
-            const limiteUsuarios = consumo.MaxUsuarios || 1;
-            const usuariosActuales = consumo.consumos?.find(c => c.codigo === 'USUARIOS')?.actual || 0;
+            const limiteusuarios = consumo.Maxusuarios || 1;
+            const usuariosActuales = consumo.consumos?.find(c => c.codigo === 'usuarios')?.actual || 0;
 
-            if (usuariosActuales > planNuevo.MaxUsuarios) {
+            if (usuariosActuales > planNuevo.Maxusuarios) {
                 return res.status(409).json({
                     ok: false,
-                    mensaje: `No puede cambiar al plan seleccionado porque actualmente tiene ${usuariosActuales} usuarios activos y el nuevo plan permite máximo ${planNuevo.MaxUsuarios}.`
+                    mensaje: `No puede cambiar al plan seleccionado porque actualmente tiene ${usuariosActuales} usuarios activos y el nuevo plan permite máximo ${planNuevo.Maxusuarios}.`
                 });
             }
         }

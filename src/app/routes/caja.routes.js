@@ -77,7 +77,7 @@ router.get('/', async (req, res) => {
                 (SELECT COUNT(*) FROM cajeromovdet d WHERE d.IdCajaMov = cm.Id) AS TotalMovimientos
             FROM cajeromov cm
             LEFT JOIN bodegas b   ON b.Id = cm.IdBodega
-            LEFT JOIN Usuarios u  ON u.UsuarioId = cm.idUsuario
+            LEFT JOIN usuarios u  ON u.UsuarioId = cm.idUsuario
             ${where}
             ORDER BY cm.diaProceso DESC, cm.Id DESC
         `, params);
@@ -179,7 +179,7 @@ router.get('/:id/movimientos', async (req, res) => {
                 END AS Origen
             FROM cajeromovdet d
             INNER JOIN tipomovcaja t ON d.TipoMov = t.id
-            LEFT JOIN Usuarios u ON u.UsuarioId = d.UsuarioIdCreacion
+            LEFT JOIN usuarios u ON u.UsuarioId = d.UsuarioIdCreacion
             WHERE d.IdCajaMov = ?
             ORDER BY d.FechaRegistro ASC, d.Id ASC
         `, [id]);

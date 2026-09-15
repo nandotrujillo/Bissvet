@@ -7,7 +7,7 @@ const pool = require('../../database/mysql.js');
 const { authenticate, generarToken } = require('../../middleware/auth.js');
 const { authorize } = require('../../middleware/authorize.js');
 const { registrarAuditoria } = require('../../middleware/auditoria.js');
-const { obtenerSuscripcionActiva, verificarLimiteUsuarios } = require('../../middleware/suscripcion.js');
+const { obtenerSuscripcionActiva, verificarLimiteusuarios } = require('../../middleware/suscripcion.js');
 const { restaurarPaquetePerfil } = require('../../middleware/paquete-permisos.js');
 
 function obtenerIP(req) {
@@ -79,7 +79,7 @@ router.post('/login', async (req, res) => {
         const [rows] = await pool.query(
             `SELECT UsuarioId, Username, PasswordHash, IdEmpresa, IdPerfil,
                     Activo, Bloqueado, IntentosFallidos
-             FROM Usuarios
+             FROM usuarios
              WHERE Username = ? AND IdEmpresa = ?`,
             [Username, IdEmpresa]
         );
@@ -115,7 +115,7 @@ router.post('/login', async (req, res) => {
             const quedaBloqueado = nuevosIntentos >= maxIntentos ? 1 : 0;
 
             await pool.query(
-                `UPDATE Usuarios
+                `UPDATE usuarios
                  SET IntentosFallidos = ?, Bloqueado = ?
                  WHERE UsuarioId = ?`,
                 [nuevosIntentos, quedaBloqueado, user.UsuarioId]
@@ -144,7 +144,7 @@ router.post('/login', async (req, res) => {
 
         // Éxito: resetear intentos y actualizar último ingreso
         await pool.query(
-            `UPDATE Usuarios
+            `UPDATE usuarios
              SET IntentosFallidos = 0, Bloqueado = 0, FechaUltimoIngreso = NOW(), UltimoAcceso = NOW()
              WHERE UsuarioId = ?`,
             [user.UsuarioId]
@@ -260,7 +260,7 @@ router.post('/logout', authenticate, async (req, res) => {
 // Lista usuarios de la empresa del token; no filtra nada del body.
 // Nunca expone al SUPERADMIN global (rol o perfil) ni al usuario que consulta.
 // =============================================================================
-router.get('/', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, res) => {
+router.get('/', authenticate, authorize('usuarios.CONSULTAR'), async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT u.UsuarioId, u.IdEmpresa, u.IdPerfil, u.Username, u.TipoDocumento,
@@ -268,7 +268,7 @@ router.get('/', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, res) 
                     u.SegundoApellido, u.Correo, u.Telefono, u.Activo, u.Bloqueado,
                     u.IntentosFallidos, u.FechaUltimoIngreso, u.FechaCreacion,
                     p.Nombre AS Perfil, e.NombreComercial
-             FROM Usuarios u
+             FROM usuarios u
              LEFT JOIN perfiles p ON p.IdPerfil = u.IdPerfil
              LEFT JOIN empresas e ON e.IdEmpresa = u.IdEmpresa
              WHERE u.IdEmpresa = ?
@@ -307,7 +307,7 @@ router.get('/', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, res) 
 // Lista de vendedores para el formulario de ventas: usuarios ACTIVOS y NO
 // bloqueados de la empresa del token cuyo perfil o rol es VENDEDOR o
 // ADMINISTRADOR. Nunca expone al SUPERADMIN global.
-// No depende de USUARIOS.CONSULTAR para que un perfil de ventas pueda
+// No depende de usuarios.CONSULTAR para que un perfil de ventas pueda
 // cargar el combo de vendedores.
 // =============================================================================
 router.get('/vendedores', authenticate, async (req, res) => {
@@ -316,7 +316,7 @@ router.get('/vendedores', authenticate, async (req, res) => {
             `SELECT u.UsuarioId, u.IdEmpresa, u.IdPerfil, u.Username, u.TipoDocumento,
                     u.NumeroDocumento, u.PrimerNombre, u.SegundoNombre, u.PrimerApellido,
                     u.SegundoApellido, u.Correo, u.Telefono, p.Nombre AS Perfil
-             FROM Usuarios u
+             FROM usuarios u
              LEFT JOIN perfiles p ON p.IdPerfil = u.IdPerfil
              LEFT JOIN usuarioroles ur ON ur.UsuarioId = u.UsuarioId
              LEFT JOIN roles r ON r.IdRol = ur.IdRol
@@ -353,7 +353,7 @@ router.get('/vendedores', authenticate, async (req, res) => {
 // Solo puede ver usuarios de su propia empresa (RF-013).
 // Nunca expone al SUPERADMIN global.
 // =============================================================================
-router.get('/:id', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, res) => {
+router.get('/:id', authenticate, authorize('usuarios.CONSULTAR'), async (req, res) => {
     try {
         const id = Number(req.params.id);
 
@@ -363,7 +363,7 @@ router.get('/:id', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, re
                     u.SegundoApellido, u.Correo, u.Telefono, u.Activo, u.Bloqueado,
                     u.IntentosFallidos, u.FechaUltimoIngreso, u.FechaCreacion,
                     p.Nombre AS Perfil
-             FROM Usuarios u
+             FROM usuarios u
              LEFT JOIN perfiles p ON p.IdPerfil = u.IdPerfil
              WHERE u.UsuarioId = ? AND u.IdEmpresa = ?
                AND NOT EXISTS(
@@ -403,7 +403,7 @@ router.get('/:id', authenticate, authorize('USUARIOS.CONSULTAR'), async (req, re
 // Crea usuarios SOLO dentro de su propia empresa. La contraseña se hashea
 // con bcrypt; Nunca se almacena en texto plano (RN-015).
 // =============================================================================
-router.post('/', authenticate, authorize('USUARIOS.CREAR'), async (req, res) => {
+router.post('/', authenticate, authorize('usuarios.CREAR'), async (req, res) => {
     const conn = await pool.getConnection();
     try {
         const {
@@ -430,7 +430,7 @@ router.post('/', authenticate, authorize('USUARIOS.CREAR'), async (req, res) => 
         const IdEmpresa = req.auth.IdEmpresa;
 
         // Monetización (RF-MON-009): verificar cupo de usuarios del plan
-        const limite = await verificarLimiteUsuarios(IdEmpresa);
+        const limite = await verificarLimiteusuarios(IdEmpresa);
         if (!limite.permitido) {
             return res.status(409).json({
                 ok: false,
@@ -443,7 +443,7 @@ router.post('/', authenticate, authorize('USUARIOS.CREAR'), async (req, res) => 
         }
 
         const [existe] = await pool.query(
-            `SELECT UsuarioId FROM Usuarios WHERE Username = ? AND IdEmpresa = ?`,
+            `SELECT UsuarioId FROM usuarios WHERE Username = ? AND IdEmpresa = ?`,
             [Username, IdEmpresa]
         );
         if (existe.length > 0) {
@@ -470,7 +470,7 @@ router.post('/', authenticate, authorize('USUARIOS.CREAR'), async (req, res) => 
         await conn.beginTransaction();
 
         const [result] = await conn.query(
-            `INSERT INTO Usuarios
+            `INSERT INTO usuarios
                (IdEmpresa, IdPerfil, Username, PasswordHash, TipoDocumento,
                 NumeroDocumento, PrimerNombre, SegundoNombre, PrimerApellido,
                 SegundoApellido, Correo, Telefono, Activo, UsuarioIdCreacion)
@@ -495,7 +495,7 @@ router.post('/', authenticate, authorize('USUARIOS.CREAR'), async (req, res) => 
         await registrarAuditoria({
             IdEmpresa,
             UsuarioId: req.auth.UsuarioId,
-            Tabla: 'Usuarios',
+            Tabla: 'usuarios',
             RegistroId: result.insertId,
             Accion: 'CREAR',
             DireccionIP: obtenerIP(req),
@@ -527,7 +527,7 @@ router.post('/', authenticate, authorize('USUARIOS.CREAR'), async (req, res) => 
 // PUT /api/usuarios/:id   (PROTEGIDO - RF-003)
 // Modifica datos del usuario de la misma empresa. Nunca recibe PasswordHash.
 // =============================================================================
-router.put('/:id', authenticate, authorize('USUARIOS.EDITAR'), async (req, res) => {
+router.put('/:id', authenticate, authorize('usuarios.EDITAR'), async (req, res) => {
     const conn = await pool.getConnection();
     try {
         const id = Number(req.params.id);
@@ -547,7 +547,7 @@ router.put('/:id', authenticate, authorize('USUARIOS.EDITAR'), async (req, res) 
         } = req.body;
 
         const [actual] = await pool.query(
-            `SELECT * FROM Usuarios WHERE UsuarioId = ? AND IdEmpresa = ?`,
+            `SELECT * FROM usuarios WHERE UsuarioId = ? AND IdEmpresa = ?`,
             [id, req.auth.IdEmpresa]
         );
         if (actual.length === 0) {
@@ -561,7 +561,7 @@ router.put('/:id', authenticate, authorize('USUARIOS.EDITAR'), async (req, res) 
         await conn.beginTransaction();
 
         await conn.query(
-            `UPDATE Usuarios
+            `UPDATE usuarios
              SET IdPerfil = COALESCE(?, IdPerfil),
                  TipoDocumento = COALESCE(?, TipoDocumento),
                  NumeroDocumento = COALESCE(?, NumeroDocumento),
@@ -599,7 +599,7 @@ router.put('/:id', authenticate, authorize('USUARIOS.EDITAR'), async (req, res) 
         await registrarAuditoria({
             IdEmpresa: req.auth.IdEmpresa,
             UsuarioId: req.auth.UsuarioId,
-            Tabla: 'Usuarios',
+            Tabla: 'usuarios',
             RegistroId: id,
             Accion: 'EDITAR',
             DireccionIP: obtenerIP(req),
@@ -628,9 +628,9 @@ router.put('/:id', authenticate, authorize('USUARIOS.EDITAR'), async (req, res) 
 });
 
 // =============================================================================
-// PUT /api/usuarios/:id/cambiar-password   (PROTEGIDO - USUARIOS.CAMBIAR_CLAVE)
+// PUT /api/usuarios/:id/cambiar-password   (PROTEGIDO - usuarios.CAMBIAR_CLAVE)
 // =============================================================================
-router.put('/:id/cambiar-password', authenticate, authorize('USUARIOS.CAMBIAR_CLAVE'), async (req, res) => {
+router.put('/:id/cambiar-password', authenticate, authorize('usuarios.CAMBIAR_CLAVE'), async (req, res) => {
     const conn = await pool.getConnection();
     try {
         const id = Number(req.params.id);
@@ -644,7 +644,7 @@ router.put('/:id/cambiar-password', authenticate, authorize('USUARIOS.CAMBIAR_CL
         }
 
         const [actual] = await pool.query(
-            `SELECT Username, PasswordHash FROM Usuarios
+            `SELECT Username, PasswordHash FROM usuarios
              WHERE UsuarioId = ? AND IdEmpresa = ?`,
             [id, req.auth.IdEmpresa]
         );
@@ -661,7 +661,7 @@ router.put('/:id/cambiar-password', authenticate, authorize('USUARIOS.CAMBIAR_CL
         await conn.beginTransaction();
 
         await conn.query(
-            `UPDATE Usuarios
+            `UPDATE usuarios
              SET PasswordHash = ?, IntentosFallidos = 0, Bloqueado = 0,
                  FechaModificacion = NOW(), UsuarioIdModificacion = ?
              WHERE UsuarioId = ? AND IdEmpresa = ?`,
@@ -671,7 +671,7 @@ router.put('/:id/cambiar-password', authenticate, authorize('USUARIOS.CAMBIAR_CL
         await registrarAuditoria({
             IdEmpresa: req.auth.IdEmpresa,
             UsuarioId: req.auth.UsuarioId,
-            Tabla: 'Usuarios',
+            Tabla: 'usuarios',
             RegistroId: id,
             Accion: 'CAMBIAR_CLAVE',
             DireccionIP: obtenerIP(req),

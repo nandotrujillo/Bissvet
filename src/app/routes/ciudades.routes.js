@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
                 Ciudad,
                 CodigoCiudad,
                 Departamento
-            FROM bissvet.ciudades
+            FROM ciudades
             ORDER BY Ciudad
         `);
 
@@ -73,7 +73,7 @@ router.get('/:id', async (req, res) => {
                 Ciudad,
                 CodigoCiudad,
                 Departamento
-            FROM bissvet.ciudades
+            FROM ciudades
             WHERE Id = ?
         `, [id]);
 

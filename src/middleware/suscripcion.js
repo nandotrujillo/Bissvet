@@ -21,7 +21,7 @@ async function obtenerSuscripcionActiva(IdEmpresa) {
                 s.FechaInicio, s.FechaFin, s.Periodicidad, s.AutoRenovacion,
                 s.FechaProximaFacturacion,
                 p.CodigoPlan, p.NombrePlan, p.Descripcion,
-                p.PrecioMensual, p.PrecioAnual, p.Moneda, p.MaxUsuarios, p.DiasPrueba
+                p.PrecioMensual, p.PrecioAnual, p.Moneda, p.Maxusuarios, p.DiasPrueba
          FROM suscripciones s
          INNER JOIN planes p ON p.IdPlan = s.IdPlan
          WHERE s.IdEmpresa = ?
@@ -98,7 +98,7 @@ function controlarModuloContratado(codigoModulo) {
                     EXISTS(SELECT 1 FROM usuarioroles ur
                            INNER JOIN roles r ON ur.IdRol = r.IdRol AND r.Activo = 1
                            WHERE ur.UsuarioId = ? AND r.Nombre = 'SUPERADMIN' AND r.IdEmpresa IS NULL)
-                    OR EXISTS(SELECT 1 FROM Usuarios u
+                    OR EXISTS(SELECT 1 FROM usuarios u
                               INNER JOIN perfiles pf ON u.IdPerfil = pf.IdPerfil
                               WHERE u.UsuarioId = ? AND pf.Nombre = 'SUPERADMIN')
                 ) AS es`,
@@ -134,11 +134,11 @@ function controlarModuloContratado(codigoModulo) {
 }
 
 // =============================================================================
-// verificarLimiteUsuarios: ¿puede la empresa crear un usuario activo más?
-// Usuarios ACTIVOS ocupan cupo; usuarios INACTIVOS no (sección 9).
+// verificarLimiteusuarios: ¿puede la empresa crear un usuario activo más?
+// usuarios ACTIVOS ocupan cupo; usuarios INACTIVOS no (sección 9).
 // Devuelve { permitido, maximo, actuales, mensaje }
 // =============================================================================
-async function verificarLimiteUsuarios(IdEmpresa) {
+async function verificarLimiteusuarios(IdEmpresa) {
     const suscripcion = await obtenerSuscripcionActiva(IdEmpresa);
 
     if (!suscripcion || !ESTADOS_VALIDOS.includes(suscripcion.Estado)) {
@@ -150,11 +150,11 @@ async function verificarLimiteUsuarios(IdEmpresa) {
         };
     }
 
-    const maximo = suscripcion.MaxUsuarios;
+    const maximo = suscripcion.Maxusuarios;
 
     const [rows] = await pool.query(
         `SELECT COUNT(*) AS total
-         FROM Usuarios
+         FROM usuarios
          WHERE IdEmpresa = ? AND Activo = 1 AND Bloqueado = 0`,
         [IdEmpresa]
     );
@@ -180,7 +180,7 @@ async function verificarLimiteUsuarios(IdEmpresa) {
 // =============================================================================
 // obtenerConsumoEmpresa: consumo actual de la empresa vs. límites contratados.
 // Devuelve por cada tipo de límite: { codigo, nombre, unidad, maximo, actual }
-// Además incluye usuarios desde planes.MaxUsuarios.
+// Además incluye usuarios desde planes.Maxusuarios.
 // =============================================================================
 async function obtenerConsumoEmpresa(IdEmpresa) {
     const suscripcion = await obtenerSuscripcionActiva(IdEmpresa);
@@ -195,7 +195,7 @@ async function obtenerConsumoEmpresa(IdEmpresa) {
         FechaFin: suscripcion?.FechaFin || null,
         Periodicidad: suscripcion?.Periodicidad || null,
         AutoRenovacion: suscripcion?.AutoRenovacion ?? null,
-        MaxUsuarios: suscripcion?.MaxUsuarios || 0
+        Maxusuarios: suscripcion?.Maxusuarios || 0
     };
 
     const [rows] = await pool.query(
@@ -207,7 +207,7 @@ async function obtenerConsumoEmpresa(IdEmpresa) {
     );
 
     const [conteos] = await pool.query(
-        `SELECT 'USUARIOS' AS tipo, COUNT(*) AS total FROM Usuarios WHERE IdEmpresa = ? AND Activo = 1
+        `SELECT 'usuarios' AS tipo, COUNT(*) AS total FROM usuarios WHERE IdEmpresa = ? AND Activo = 1
          UNION ALL SELECT 'BODEGAS', COUNT(*) FROM bodegas WHERE IdEmpresa = ?
          UNION ALL SELECT 'MASCOTAS', COUNT(*) FROM mascotas WHERE IdEmpresa = ?
          UNION ALL SELECT 'PRODUCTOS', COUNT(*) FROM productos WHERE IdEmpresa = ?
@@ -226,11 +226,11 @@ async function obtenerConsumoEmpresa(IdEmpresa) {
     }));
 
     consumos.unshift({
-        codigo: 'USUARIOS',
-        nombre: 'Usuarios',
+        codigo: 'usuarios',
+        nombre: 'usuarios',
         unidad: 'unidades',
-        maximo: suscripcion?.MaxUsuarios ?? 0,
-        actual: mapaConteos['USUARIOS'] ?? 0
+        maximo: suscripcion?.Maxusuarios ?? 0,
+        actual: mapaConteos['usuarios'] ?? 0
     });
 
     return { ...base, consumos };
@@ -242,6 +242,6 @@ module.exports = {
     modulosContratados,
     verificarModuloContratado,
     controlarModuloContratado,
-    verificarLimiteUsuarios,
+    verificarLimiteusuarios,
     obtenerConsumoEmpresa
 };

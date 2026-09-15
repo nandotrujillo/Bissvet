@@ -53,7 +53,7 @@ router.get('/mi-menu', authenticate, async (req, res) => {
                 EXISTS(SELECT 1 FROM usuarioroles ur
                        INNER JOIN roles r ON ur.IdRol = r.IdRol AND r.Activo = 1
                        WHERE ur.UsuarioId = ? AND r.Nombre = 'SUPERADMIN' AND r.IdEmpresa IS NULL)
-                OR EXISTS(SELECT 1 FROM Usuarios u
+                OR EXISTS(SELECT 1 FROM usuarios u
                           INNER JOIN perfiles pf ON u.IdPerfil = pf.IdPerfil
                           WHERE u.UsuarioId = ? AND pf.Nombre = 'SUPERADMIN')
             ) AS es`,
@@ -137,7 +137,7 @@ router.get('/mis-permisos', authenticate, async (req, res) => {
                 EXISTS(SELECT 1 FROM usuarioroles ur
                        INNER JOIN roles r ON ur.IdRol = r.IdRol AND r.Activo = 1
                        WHERE ur.UsuarioId = ? AND r.Nombre = 'SUPERADMIN' AND r.IdEmpresa IS NULL)
-                OR EXISTS(SELECT 1 FROM Usuarios u
+                OR EXISTS(SELECT 1 FROM usuarios u
                           INNER JOIN perfiles pf ON u.IdPerfil = pf.IdPerfil
                           WHERE u.UsuarioId = ? AND pf.Nombre = 'SUPERADMIN')
             ) AS es`,
@@ -697,7 +697,7 @@ router.post('/usuarioroles/:usuarioId', authenticate, authorize('SEGURIDAD.ASIGN
 
         // Solo usuarios de la misma empresa (RN-008)
         const [usuario] = await pool.query(
-            `SELECT Username FROM Usuarios WHERE UsuarioId = ? AND IdEmpresa = ?`,
+            `SELECT Username FROM usuarios WHERE UsuarioId = ? AND IdEmpresa = ?`,
             [usuarioId, req.auth.IdEmpresa]
         );
         if (usuario.length === 0) {
@@ -752,7 +752,7 @@ router.get('/sesiones', authenticate, authorize('SEGURIDAD.CONSULTAR'), async (r
             `SELECT s.IdSesion, s.UsuarioId, u.Username, s.FechaIngreso, s.FechaSalida,
                     s.UltimoAcceso, s.DireccionIP, s.EstadoSesion
              FROM sesiones s
-             INNER JOIN Usuarios u ON u.UsuarioId = s.UsuarioId
+             INNER JOIN usuarios u ON u.UsuarioId = s.UsuarioId
              WHERE s.IdEmpresa = ?
              ORDER BY s.FechaIngreso DESC
              LIMIT 200`,
@@ -775,7 +775,7 @@ router.get('/auditoria', authenticate, authorize('AUDITORIA.CONSULTAR'), async (
             `SELECT a.IdAuditoria, a.UsuarioId, u.Username, a.IdModulo, m.Codigo AS ModuloCodigo,
                     a.Tabla, a.RegistroId, a.Accion, a.Fecha, a.DireccionIP, a.Descripcion
              FROM auditoria a
-             INNER JOIN Usuarios u ON u.UsuarioId = a.UsuarioId
+             INNER JOIN usuarios u ON u.UsuarioId = a.UsuarioId
              LEFT JOIN modulos m ON m.idModulos = a.IdModulo
              WHERE a.IdEmpresa = ?
              ORDER BY a.Fecha DESC

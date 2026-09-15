@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
                 UsuarioIdCreacion,
                 FechaModificacion,
                 UsuarioIdModificacion
-            FROM bissvet.clientes
+            FROM clientes
             WHERE Activo = 1 AND IdEmpresa = ?
             ORDER BY PrimerNombre, PrimerApellido
         `, [req.auth.IdEmpresa]);
@@ -79,7 +79,7 @@ router.get('/:id', async (req, res) => {
 
         const [rows] = await pool.query(`
             SELECT *
-            FROM bissvet.clientes
+            FROM clientes
             WHERE ClienteId = ? AND IdEmpresa = ?
         `, [id, req.auth.IdEmpresa]);
 
@@ -209,7 +209,7 @@ router.post('/', async (req, res) => {
 
         const [result] = await pool.query(`
 
-            INSERT INTO bissvet.clientes
+            INSERT INTO clientes
             (
                 TipoDocumento,
                 NumeroDocumento,
@@ -347,7 +347,7 @@ router.put('/:id', async (req, res) => {
 
         const [result] = await pool.query(`
 
-            UPDATE bissvet.clientes
+            UPDATE clientes
             SET
 
                 TipoDocumento = ?,
@@ -480,7 +480,7 @@ router.delete('/:id', async (req, res) => {
 
         const [result] = await pool.query(`
 
-            UPDATE bissvet.clientes
+            UPDATE clientes
 
             SET Activo = 0
 

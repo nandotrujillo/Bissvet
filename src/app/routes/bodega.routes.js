@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
                 Direccion,
                 Responsable,
                 Activo
-            FROM bissvet.bodegas
+            FROM bodegas
             WHERE IdEmpresa = ?
             ORDER BY NombreBodega
         `, [req.auth.IdEmpresa]);
@@ -73,7 +73,7 @@ router.get('/:id', async (req, res) => {
                 Direccion,
                 Responsable,
                 Activo
-FROM bissvet.bodegas
+FROM bodegas
             WHERE Id = ? AND IdEmpresa = ?
         `, [id, req.auth.IdEmpresa]);
 
@@ -150,7 +150,7 @@ router.post('/', async (req, res) => {
 
 
         const [resultado] = await pool.query(`
-            INSERT INTO bissvet.bodegas
+            INSERT INTO bodegas
             (
                 CodigoBodega,
                 NombreBodega,
@@ -254,7 +254,7 @@ router.put('/:id', async (req, res) => {
 
 
         const [resultado] = await pool.query(`
-            UPDATE bissvet.bodegas
+            UPDATE bodegas
 
             SET
                 CodigoBodega = ?,
@@ -336,7 +336,7 @@ router.delete('/:id', async (req, res) => {
         const { id } = req.params;
 
         const [resultado] = await pool.query(`
-            DELETE FROM bissvet.bodegas
+            DELETE FROM bodegas
             WHERE Id = ? AND IdEmpresa = ?
         `, [id, req.auth.IdEmpresa]);
 

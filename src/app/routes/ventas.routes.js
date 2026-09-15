@@ -64,7 +64,7 @@ router.get('/', async (req, res) => {
                 (SELECT COUNT(*) FROM ventas_detalle vd WHERE vd.IdVenta = v.IdVenta AND vd.IdEmpresa = v.IdEmpresa) AS TotalItems
             FROM ventas v
             INNER JOIN clientes c    ON c.ClienteId = v.IdCliente
-            LEFT JOIN Usuarios ven   ON ven.UsuarioId = v.IdVendedor
+            LEFT JOIN usuarios ven   ON ven.UsuarioId = v.IdVendedor
             INNER JOIN bodegas b     ON b.Id = v.IdBodega
             ${where}
             ORDER BY v.Fecha DESC, v.IdVenta DESC
@@ -99,7 +99,7 @@ router.get('/:id', async (req, res) => {
                 v.UsuarioIdAnulacion, v.FechaAnulacion
             FROM ventas v
             INNER JOIN clientes c    ON c.ClienteId = v.IdCliente
-            LEFT JOIN Usuarios ven   ON ven.UsuarioId = v.IdVendedor
+            LEFT JOIN usuarios ven   ON ven.UsuarioId = v.IdVendedor
             INNER JOIN bodegas b     ON b.Id = v.IdBodega
             WHERE v.IdVenta = ? AND v.IdEmpresa = ?
         `, [req.params.id, req.auth.IdEmpresa]);
@@ -710,7 +710,7 @@ router.get('/:id/imprimir', authorize('VENTAS.IMPRIMIR'), async (req, res) => {
                 v.Observaciones
             FROM ventas v
             INNER JOIN clientes c    ON c.ClienteId = v.IdCliente
-            LEFT JOIN Usuarios ven   ON ven.UsuarioId = v.IdVendedor
+            LEFT JOIN usuarios ven   ON ven.UsuarioId = v.IdVendedor
             INNER JOIN bodegas b     ON b.Id = v.IdBodega
             WHERE v.IdVenta = ? AND v.IdEmpresa = ?
         `, [IdVenta, req.auth.IdEmpresa]);

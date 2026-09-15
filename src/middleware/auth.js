@@ -61,7 +61,7 @@ async function authenticate(req, res, next) {
                     s.IdSuscripcion, s.IdPlan,
                     s.Estado AS EstadoSuscripcion, s.FechaFin AS FinSuscripcion,
                     p.CodigoPlan, p.NombrePlan
-             FROM Usuarios u
+             FROM usuarios u
              INNER JOIN empresas e ON e.IdEmpresa = u.IdEmpresa
              LEFT JOIN suscripciones s ON s.IdEmpresa = u.IdEmpresa
              LEFT JOIN planes p ON p.IdPlan = s.IdPlan

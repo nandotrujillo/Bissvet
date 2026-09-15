@@ -37,8 +37,8 @@ router.get('/', async (req, res) => {
                 c.Telefono AS TelefonoCliente,
                 c.Correo AS CorreoCliente,
                 c.Direccion AS DireccionCliente
-            FROM bissvet.mascotas m
-            INNER JOIN bissvet.clientes c ON m.ClienteId = c.ClienteId
+            FROM mascotas m
+            INNER JOIN clientes c ON m.ClienteId = c.ClienteId
             WHERE m.Activo = 1 AND m.IdEmpresa = ?
             ORDER BY m.Nombre
         `, [req.auth.IdEmpresa]);
@@ -97,8 +97,8 @@ router.get('/:id', async (req, res) => {
                 c.Telefono AS TelefonoCliente,
                 c.Correo AS CorreoCliente,
                 c.Direccion AS DireccionCliente
-            FROM bissvet.mascotas m
-            INNER JOIN bissvet.clientes c ON m.ClienteId = c.ClienteId
+            FROM mascotas m
+            INNER JOIN clientes c ON m.ClienteId = c.ClienteId
             WHERE m.IdMascota = ? AND m.IdEmpresa = ?
         `, [id, req.auth.IdEmpresa]);
 
@@ -196,7 +196,7 @@ router.post('/', async (req, res) => {
         //const UsuarioId = parseInt(localStorage.getItem('UsuarioId'));
         const [result] = await pool.query(`
 
-            INSERT INTO bissvet.mascotas
+            INSERT INTO mascotas
             (
                 ClienteId,
                 Nombre,
@@ -293,7 +293,7 @@ router.put('/:id', async (req, res) => {
 
         const [result] = await pool.query(`
 
-            UPDATE bissvet.mascotas
+            UPDATE mascotas
 
             SET
                 ClienteId = ?,
@@ -373,7 +373,7 @@ router.delete('/:id', async (req, res) => {
 
         const [result] = await pool.query(`
 
-            UPDATE bissvet.mascotas
+            UPDATE mascotas
 
             SET
                 Activo = 0,
