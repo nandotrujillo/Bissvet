@@ -66,4 +66,9 @@ app.listen(PORT, () => {
     console.log(`  DB_PASSWORD: ${tiene(process.env.DB_PASSWORD)}`);
     console.log(`  DB_NAME:     ${process.env.DB_NAME || '(default BissVet)'}`);
     console.log(`  PORT:        ${PORT}`);
+    console.log(`  RAILWAY_SVC: ${process.env.RAILWAY_SERVICE_ID || '(no está)'}`);
+    // Listar TODAS las variables de entorno disponibles (solo keys)
+    const allKeys = Object.keys(process.env).sort();
+    console.log(`  Total vars:  ${allKeys.length}`);
+    console.log('  Keys:', allKeys.join(', '));
 });

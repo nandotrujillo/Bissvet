@@ -46,6 +46,20 @@ function resolverConfig() {
         return null;
     };
 
+    // Fallback para Railway: si el código corre en Railway (RAILWAY_SERVICE_ID presente)
+    // y no hay ninguna variable configurada, usar la conexión del proxy público MySQL.
+    const enRailway = !!process.env.RAILWAY_SERVICE_ID;
+    if (enRailway && !primero('DB_HOST', 'MYSQLHOST', 'MYSQL_HOST')) {
+        console.log('Conectando via fallback Railway (proxy público)');
+        return {
+            host: 'altaria.proxy.rlwy.net',
+            port: 57068,
+            user: 'root',
+            password: 'uevShdPsVzDurblqVpRJIaGTIdSxwOJP',
+            database: 'railway'
+        };
+    }
+
     return {
         host: primero('DB_HOST', 'MYSQLHOST', 'MYSQL_HOST') || 'localhost',
         port: Number(primero('DB_PORT', 'MYSQLPORT', 'MYSQL_PORT')) || 3306,
