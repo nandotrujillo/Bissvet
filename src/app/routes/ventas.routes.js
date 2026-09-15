@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../../database/mysql');
-const invBusiness = require('../services/inventarioBusiness');
-const cajaBusiness = require('../services/cajaBusiness');
-const parametrosBusiness = require('../services/parametrosBusiness');
+const invBusiness = require('../Services/inventarioBusiness');
+const cajaBusiness = require('../Services/cajaBusiness');
+const parametrosBusiness = require('../Services/parametrosBusiness');
 const { authorize, obtenerPermisosUsuario } = require('../../middleware/authorize');
 const { registrarAuditoria } = require('../../middleware/auditoria.js');
 const PDFDocument = require('pdfkit');

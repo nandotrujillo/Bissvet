@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../../database/mysql');
-const invBusiness = require('../services/inventarioBusiness');
+const invBusiness = require('../Services/inventarioBusiness');
 
 // =====================================================
 // LISTAR TRASLADOS  (GET /api/traslados)

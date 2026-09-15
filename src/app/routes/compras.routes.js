@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../../database/mysql');
-const invBusiness = require('../services/inventarioBusiness');
-const cajaBusiness = require('../services/cajaBusiness');
+const invBusiness = require('../Services/inventarioBusiness');
+const cajaBusiness = require('../Services/cajaBusiness');
 
 // =====================================================
 // LISTAR COMPRAS  (GET /api/compras)
